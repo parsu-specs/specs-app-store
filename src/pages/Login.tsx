@@ -108,9 +108,9 @@ export default function Login() {
       if (mode === "signup") {
         const failure = await signup(name, email, password);
         if (failure) setError(failure);
-        else window.history.replaceState({}, "", "/store");
+        else window.history.replaceState({}, "", "/discover");
       } else if (await signin(email, password)) {
-        window.history.replaceState({}, "", "/store");
+        window.history.replaceState({}, "", "/discover");
       } else {
         setError("That email and password don't match.");
       }
@@ -126,7 +126,7 @@ export default function Login() {
     try {
       const { error } = await getSupabase().auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/store` },
+        options: { redirectTo: `${window.location.origin}/discover` },
       });
       if (error) throw error;
     } catch (e) {
@@ -148,7 +148,7 @@ export default function Login() {
     } catch {
       // Non-fatal: the profile syncs on the next app load.
     }
-    window.history.replaceState({}, "", "/store");
+    window.history.replaceState({}, "", "/discover");
   };
 
   return (

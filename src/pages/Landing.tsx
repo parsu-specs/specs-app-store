@@ -41,7 +41,7 @@ export default function Landing() {
             finding collaborators across the SPECS community.
           </p>
           <div className="mt-9 flex flex-wrap gap-5">
-            <ButtonLink href="/signin">
+            <ButtonLink href="/Login">
               Sign in to CodeCanvas <RocketLaunch size={21} weight="duotone" />
             </ButtonLink>
             <ButtonLink href="#discover" variant="secondary">

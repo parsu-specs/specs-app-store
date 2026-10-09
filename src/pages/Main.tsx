@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
+import { ROUTES, isProtectedRoute, normalizePathname } from "./routes";
 
 // Route-split: each page (and its heavy deps like markdown/GitHub readers)
 // loads on demand instead of inflating the first paint.
@@ -21,7 +22,7 @@ function PageLoader() {
 }
 
 function currentPath() {
-  return window.location.pathname.replace(/\/$/, "") || "/";
+  return normalizePathname(window.location.pathname);
 }
 
 export default function Main() {
@@ -38,49 +39,35 @@ export default function Main() {
     if (loading) return;
 
     const current = currentPath();
+    const normalized = normalizePathname(current);
     const destination = user
-      ? current === "/" || current === "/signin"
-        ? "/store"
+      ? normalized === ROUTES.root || normalized === ROUTES.signin
+        ? ROUTES.discover
         : null
-      : current === "/"
-        ? "/landing"
-        : current === "/store" || current.startsWith("/store/")
-          ? "/signin"
+      : normalized === ROUTES.root
+        ? ROUTES.landing
+        : isProtectedRoute(normalized)
+          ? ROUTES.signin
           : null;
 
-    if (destination) {
+    if (destination && destination !== normalized) {
       window.history.replaceState({}, "", destination);
       setPath(destination);
+    } else if (normalized !== current) {
+      setPath(normalized);
     }
   }, [loading, path, user]);
 
   if (loading) return <PageLoader />;
 
+  const normalizedPath = normalizePathname(path);
+
   let page: React.ReactNode;
-  if (path === "/about") page = <About />;
-  else if (path === "/landing" || (path === "/" && !user)) page = <Landing />;
-  else if (user) page = <Store key={path} />;
-  else if (
-    [
-      "/signin",
-      "/store",
-      "/dashboard",
-      "/apps",
-      "/builders",
-      "/feed",
-      "/community",
-      "/leaderboard",
-      "/profile",
-      "/developers",
-      "/projects",
-      "/settings",
-    ].includes(path) ||
-    path.startsWith("/builders/") ||
-    path.startsWith("/developers/") ||
-    path.startsWith("/apps/") ||
-    path.startsWith("/projects/") ||
-    path.startsWith("/store/")
-  )
+  if (normalizedPath === ROUTES.about) page = <About />;
+  else if (normalizedPath === ROUTES.landing || (normalizedPath === ROUTES.root && !user))
+    page = <Landing />;
+  else if (user) page = <Store key={normalizedPath} />;
+  else if (isProtectedRoute(normalizedPath) || normalizedPath === ROUTES.signin)
     page = <Login />;
   else page = <Landing />;
 

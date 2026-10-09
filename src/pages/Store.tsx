@@ -86,6 +86,7 @@ import type {
   NotificationItem,
   Profile,
 } from "../data/types";
+import { ROUTES, normalizePathname } from "./routes";
 
 const categories: { label: CategoryFilter; Icon: typeof SquaresFour }[] = [
   { label: "All", Icon: SquaresFour },
@@ -99,11 +100,11 @@ type StoreView =
   "discover" | "builders" | "feed" | "leaderboard" | "profile" | "project" | "settings";
 
 const routeForView: Record<Exclude<StoreView, "profile" | "project">, string> = {
-  discover: "/store",
-  builders: "/builders",
-  feed: "/feed",
-  leaderboard: "/leaderboard",
-  settings: "/settings",
+  discover: ROUTES.discover,
+  builders: ROUTES.developers,
+  feed: ROUTES.feed,
+  leaderboard: ROUTES.leaderboard,
+  settings: ROUTES.settings,
 };
 
 function parsePath(path: string): {
@@ -111,20 +112,17 @@ function parsePath(path: string): {
   profileId: string | null;
   appId: string | null;
 } {
-  const clean = path.replace(/\/$/, "") || "/store";
-  if (clean === "/profile") return { view: "profile", profileId: "__me__", appId: null };
-  if (clean === "/builders" || clean === "/developers")
-    return { view: "builders", profileId: null, appId: null };
-  const builderMatch = clean.match(/^\/(builders|developers)\/(.+)$/);
+  const clean = normalizePathname(path || ROUTES.discover);
+  if (clean === ROUTES.profile) return { view: "profile", profileId: "__me__", appId: null };
+  if (clean === ROUTES.developers) return { view: "builders", profileId: null, appId: null };
+  const builderMatch = clean.match(/^\/developers\/(.+)$/);
   if (builderMatch)
-    return { view: "profile", profileId: decodeURIComponent(builderMatch[2]), appId: null };
-  const appMatch = clean.match(/^\/(apps|store|projects)\/(.+)$/);
-  if (appMatch && clean !== "/store")
-    return { view: "project", profileId: null, appId: decodeURIComponent(appMatch[2]) };
-  if (clean === "/feed" || clean === "/community")
-    return { view: "feed", profileId: null, appId: null };
-  if (clean === "/leaderboard") return { view: "leaderboard", profileId: null, appId: null };
-  if (clean === "/settings") return { view: "settings", profileId: null, appId: null };
+    return { view: "profile", profileId: decodeURIComponent(builderMatch[1]), appId: null };
+  const appMatch = clean.match(/^\/apps\/(.+)$/);
+  if (appMatch) return { view: "project", profileId: null, appId: decodeURIComponent(appMatch[1]) };
+  if (clean === ROUTES.feed) return { view: "feed", profileId: null, appId: null };
+  if (clean === ROUTES.leaderboard) return { view: "leaderboard", profileId: null, appId: null };
+  if (clean === ROUTES.settings) return { view: "settings", profileId: null, appId: null };
   return { view: "discover", profileId: null, appId: null };
 }
 
@@ -231,8 +229,12 @@ export default function Store() {
   const [projectEdit, setProjectEdit] = useState(false);
 
   useEffect(() => {
-    if ((window.location.pathname.replace(/\/$/, "") || "/") === "/community") {
-      window.history.replaceState({}, "", "/feed");
+    const canonical = normalizePathname(window.location.pathname);
+    if (
+      canonical !== window.location.pathname.replace(/\/$/, "") ||
+      canonical !== window.location.pathname
+    ) {
+      window.history.replaceState({}, "", canonical);
     }
   }, []);
 
@@ -688,7 +690,7 @@ export default function Store() {
   }, [user, readIds, visibleItems, fullApps, currentlyTagged, dismissedIds, seenAt]);
 
   const openFeed = useCallback(() => {
-    window.history.pushState({}, "", "/feed");
+    window.history.pushState({}, "", ROUTES.feed);
     setView("feed");
     setSelectedProfileId(null);
     setSelectedAppId(null);
@@ -697,7 +699,7 @@ export default function Store() {
   }, []);
 
   const logout = async () => {
-    window.history.replaceState({}, "", "/");
+    window.history.replaceState({}, "", ROUTES.root);
     await signout();
   };
   const [confirmLogout, setConfirmLogout] = useState(false);
@@ -750,7 +752,10 @@ export default function Store() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const openProfile = useCallback((profileId: string) => {
-    const path = profileId === "__me__" ? "/profile" : `/builders/${encodeURIComponent(profileId)}`;
+    const path =
+      profileId === "__me__"
+        ? ROUTES.profile
+        : `${ROUTES.developers}/${encodeURIComponent(profileId)}`;
     window.history.pushState({}, "", path);
     setSelectedProfileId(profileId);
     setSelectedAppId(null);
@@ -762,7 +767,7 @@ export default function Store() {
       e?.preventDefault();
       if (!user) return;
       setAccountMenuOpen(false);
-      window.history.pushState({}, "", "/profile");
+      window.history.pushState({}, "", ROUTES.profile);
       setSelectedProfileId(user.id);
       setView("profile");
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -770,7 +775,7 @@ export default function Store() {
     [user],
   );
   const openAppFromProfile = useCallback((appId: string) => {
-    window.history.pushState({}, "", `/apps/${encodeURIComponent(appId)}`);
+    window.history.pushState({}, "", `${ROUTES.discover}/${encodeURIComponent(appId)}`);
     setView("project");
     setSelectedProfileId(null);
     setSelectedAppId(appId);
@@ -778,7 +783,7 @@ export default function Store() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
   const openApp = useCallback((appId: string, edit = false) => {
-    window.history.pushState({}, "", `/apps/${encodeURIComponent(appId)}`);
+    window.history.pushState({}, "", `${ROUTES.discover}/${encodeURIComponent(appId)}`);
     setView("project");
     setSelectedProfileId(null);
     setSelectedAppId(appId);
@@ -805,36 +810,36 @@ export default function Store() {
   const appForCrumb =
     fullApps.find((a) => a.id === selectedAppId) ?? apps.find((a) => a.id === selectedAppId);
   const crumbs: Crumb[] = (() => {
-    if (view === "discover") return [{ label: "store", current: true }];
+    if (view === "discover") return [{ label: "discover", current: true }];
     if (view === "builders")
       return [
-        { label: "store", go: () => goPath("/store", "discover") },
-        { label: "builders", current: true },
+        { label: "discover", go: () => goPath(ROUTES.discover, "discover") },
+        { label: "developers", current: true },
       ];
     if (view === "feed")
       return [
-        { label: "store", go: () => goPath("/store", "discover") },
+        { label: "discover", go: () => goPath(ROUTES.discover, "discover") },
         { label: "feed", current: true },
       ];
     if (view === "leaderboard")
       return [
-        { label: "store", go: () => goPath("/store", "discover") },
+        { label: "discover", go: () => goPath(ROUTES.discover, "discover") },
         { label: "leaderboard", current: true },
       ];
     if (view === "settings")
       return [
-        { label: "store", go: () => goPath("/store", "discover") },
+        { label: "discover", go: () => goPath(ROUTES.discover, "discover") },
         { label: "settings", current: true },
       ];
     if (view === "profile")
       return [
-        { label: "store", go: () => goPath("/store", "discover") },
-        { label: "builders", go: () => goPath("/builders", "builders") },
+        { label: "discover", go: () => goPath(ROUTES.discover, "discover") },
+        { label: "developers", go: () => goPath(ROUTES.developers, "builders") },
         { label: profileForCrumb?.name ?? "profile", current: true },
       ];
     return [
-      { label: "store", go: () => goPath("/store", "discover") },
-      { label: "apps", go: () => goPath("/store", "discover") },
+      { label: "discover", go: () => goPath(ROUTES.discover, "discover") },
+      { label: "project", go: () => goPath(ROUTES.discover, "discover") },
       { label: appForCrumb?.title ?? "project", current: true },
     ];
   })();
@@ -1064,7 +1069,7 @@ export default function Store() {
           aria-label="Main navigation"
         >
           <a
-            href="/feed"
+            href={ROUTES.feed}
             onClick={(event) => goTab(event, "feed")}
             className={`${navClass("feed")} lg:order-3`}
           >
@@ -1072,7 +1077,7 @@ export default function Store() {
             <span>Feed</span>
           </a>
           <a
-            href="/store"
+            href={ROUTES.discover}
             onClick={(event) => goTab(event, "discover")}
             className={`${navClass("discover")} lg:order-1`}
           >
@@ -1080,7 +1085,7 @@ export default function Store() {
             Discover
           </a>
           <a
-            href="/builders"
+            href={ROUTES.developers}
             onClick={(event) => goTab(event, "builders")}
             className={`${navClass("builders")} hidden lg:flex lg:order-2`}
           >
@@ -1088,7 +1093,7 @@ export default function Store() {
             Developers
           </a>
           <a
-            href="/leaderboard"
+            href={ROUTES.leaderboard}
             onClick={(event) => goTab(event, "leaderboard")}
             className={`${navClass("leaderboard")} hidden lg:flex lg:order-4`}
           >
@@ -1096,14 +1101,14 @@ export default function Store() {
             Leaderboard
           </a>
           <a
-            href="/about"
+            href={ROUTES.about}
             className="hidden min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-0 text-center text-xs font-black leading-tight hover:bg-surface/15 lg:order-5 lg:flex lg:w-full lg:flex-row lg:justify-start lg:gap-3 lg:px-4 lg:py-3 lg:text-left lg:text-base"
           >
             <Info size={22} weight="duotone" />
             About
           </a>
           <a
-            href="/settings"
+            href={ROUTES.settings}
             onClick={(event) => goTab(event, "settings")}
             className={`${navClass("settings")} lg:order-6`}
           >
@@ -1175,7 +1180,7 @@ export default function Store() {
                   type="button"
                   onClick={() => {
                     setAccountMenuOpen(false);
-                    goPath("/builders", "builders");
+                    goPath(ROUTES.developers, "builders");
                   }}
                   className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left font-black hover:bg-cream"
                 >
@@ -1186,7 +1191,7 @@ export default function Store() {
                   type="button"
                   onClick={() => {
                     setAccountMenuOpen(false);
-                    goPath("/leaderboard", "leaderboard");
+                    goPath(ROUTES.leaderboard, "leaderboard");
                   }}
                   className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left font-black hover:bg-cream"
                 >
@@ -1194,7 +1199,7 @@ export default function Store() {
                   Leaderboard
                 </button>
                 <a
-                  href="/about"
+                  href={ROUTES.about}
                   onClick={() => setAccountMenuOpen(false)}
                   className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left font-black hover:bg-cream"
                 >
@@ -1251,6 +1256,19 @@ export default function Store() {
                 <span className="min-w-0 truncate">My profile</span>
               </Button>
             )}
+            <Button
+              variant="surface"
+              size="small"
+              type="button"
+              onClick={() => {
+                setAccountMenuOpen(false);
+                setConfirmLogout(true);
+              }}
+              className="text-alert"
+            >
+              <SignOut size={20} weight="bold" />
+              Log out
+            </Button>
           </div>
         </div>
       </aside>
@@ -1809,7 +1827,7 @@ export default function Store() {
                     profiles={profilesLookup}
                     startEditing={projectEdit}
                     onBack={() => {
-                      window.history.pushState({}, "", "/store");
+                      window.history.pushState({}, "", ROUTES.discover);
                       setView("discover");
                       setSelectedAppId(null);
                       setProjectEdit(false);
@@ -1819,7 +1837,7 @@ export default function Store() {
                     projectTrophies={projectTrophies}
                     onChanged={() => void loadApps()}
                     onDeleted={() => {
-                      window.history.pushState({}, "", "/store");
+                      window.history.pushState({}, "", ROUTES.discover);
                       setView("discover");
                       setSelectedAppId(null);
                       setProjectEdit(false);
@@ -1852,7 +1870,7 @@ export default function Store() {
                       };
                     })()}
                     onBack={() => {
-                      window.history.pushState({}, "", "/builders");
+                      window.history.pushState({}, "", ROUTES.developers);
                       setView("builders");
                       setSelectedProfileId(null);
                     }}
@@ -1998,7 +2016,7 @@ export default function Store() {
                         >
                           <div className="flex items-center gap-3">
                             <a
-                              href={`/builders/${encodeURIComponent(p.id)}`}
+                              href={`${ROUTES.developers}/${encodeURIComponent(p.id)}`}
                               onClick={(e) => {
                                 e.preventDefault();
                                 openProfile(p.id);
@@ -2015,7 +2033,7 @@ export default function Store() {
                             </a>
                             <h3 className="min-w-0 flex-1 wrap-break-word text-lg font-black">
                               <a
-                                href={`/builders/${encodeURIComponent(p.id)}`}
+                                href={`${ROUTES.developers}/${encodeURIComponent(p.id)}`}
                                 onClick={(e) => {
                                   e.preventDefault();
                                   openProfile(p.id);
@@ -2058,201 +2076,201 @@ export default function Store() {
                     </p>
                   </div>
                   <div className="min-w-0">
-                      <form
-                        onSubmit={(e) => void postMilestone(e)}
-                        className="toon-card rounded-lg bg-surface p-4 sm:p-5"
-                      >
-                        <h3 className="text-lg font-black">Share with the community</h3>
-                        <label className="mt-3 block">
-                          <span className="sr-only">What did you ship or learn?</span>
-                          <textarea
-                            value={mBody}
-                            onChange={(e) => setMBody(e.target.value)}
-                            maxLength={280}
-                            required
-                            placeholder="What did you ship or learn?…"
-                            className="toon-input min-h-20"
-                          />
-                        </label>
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <label className="min-w-0 flex-1">
-                            <span className="sr-only">Attach one of your projects (optional)</span>
-                            <select
-                              value={mAppId}
-                              onChange={(e) => setMAppId(e.target.value)}
-                              className="toon-input py-2 text-sm"
-                            >
-                              <option value="">No linked project</option>
-                              {user &&
-                                fullApps
-                                  .filter((a) =>
-                                    a.creatorId ? a.creatorId === user.id : a.creator === user.name,
-                                  )
-                                  .map((a) => (
-                                    <option key={a.id} value={a.id}>
-                                      {a.title}
-                                    </option>
-                                  ))}
-                            </select>
-                          </label>
-                          <span className="text-xs font-black text-muted">{mBody.length}/280</span>
-                          <Button
-                            size="small"
-                            type="submit"
-                            disabled={mPosting || !mBody.trim()}
-                            className="text-sm"
-                          >
-                            {mPosting ? "Posting…" : "Post update"}
-                          </Button>
-                        </div>
-                        {mPostError && (
-                          <p role="alert" className="mt-3 text-sm font-bold">
-                            {mPostError}
-                          </p>
-                        )}
-                      </form>
-
-                      <label className="relative mt-4 block">
-                        <span className="sr-only">Search updates</span>
-                        <MagnifyingGlass
-                          size={20}
-                          weight="bold"
-                          className="absolute left-4 top-1/2 -translate-y-1/2 text-muted"
-                        />
-                        <input
-                          value={msQuery}
-                          onChange={(event) => setMsQuery(event.target.value)}
-                          className="toon-input py-2.5 pl-11 text-sm"
-                          placeholder="Search posts or builders…"
+                    <form
+                      onSubmit={(e) => void postMilestone(e)}
+                      className="toon-card rounded-lg bg-surface p-4 sm:p-5"
+                    >
+                      <h3 className="text-lg font-black">Share with the community</h3>
+                      <label className="mt-3 block">
+                        <span className="sr-only">What did you ship or learn?</span>
+                        <textarea
+                          value={mBody}
+                          onChange={(e) => setMBody(e.target.value)}
+                          maxLength={280}
+                          required
+                          placeholder="What did you ship or learn?…"
+                          className="toon-input min-h-20"
                         />
                       </label>
-
-                      {milestonesLoading ? (
-                        <p className="mt-6 font-bold text-muted">Loading feed…</p>
-                      ) : milestonesError ? (
-                        <div className="toon-card mt-4 rounded-lg p-8 text-center">
-                          <h3 className="text-xl font-black">Could not load the feed</h3>
-                          <p className="font-bold text-muted">{milestonesError}</p>
-                        </div>
-                      ) : filteredMilestones.length ? (
-                        <ul className="mt-4 space-y-3">
-                          {filteredMilestones.map((m) => {
-                            const p = profilesLookup.get(m.authorId);
-                            const linked = m.appId
-                              ? fullApps.find((a) => a.id === m.appId)
-                              : undefined;
-                            return (
-                              <li key={m.id} className="toon-card rounded-lg bg-surface p-4 sm:p-5">
-                                <div className="flex items-center gap-3">
-                                  {p ? (
-                                    <button
-                                      onClick={() => openProfile(p.id)}
-                                      aria-label={`View ${p.name}'s profile`}
-                                      className="shrink-0"
-                                    >
-                                      <Avatar
-                                        name={p.name}
-                                        color={p.color}
-                                        imageUrl={p.imageUrl}
-                                        size="sm"
-                                      />
-                                    </button>
-                                  ) : (
-                                    <Avatar name={m.authorName} color="sky" size="sm" />
-                                  )}
-                                  <div className="min-w-0">
-                                    <p className="truncate text-sm font-black">
-                                      {p ? (
-                                        <button
-                                          onClick={() => openProfile(p.id)}
-                                          className="underline decoration-2 underline-offset-4"
-                                        >
-                                          {m.authorName}
-                                        </button>
-                                      ) : (
-                                        m.authorName
-                                      )}
-                                      {trophies.get(m.authorId) !== undefined && (
-                                        <TrophyMark
-                                          place={trophies.get(m.authorId) as 1 | 2 | 3}
-                                          size={16}
-                                        />
-                                      )}
-                                    </p>
-                                    <p className="text-xs font-bold text-muted">
-                                      {new Date(m.createdAt).toLocaleString()}
-                                    </p>
-                                  </div>
-                                </div>
-                                <p className="mt-3 leading-7">{m.body}</p>
-                                <div className="mt-3 flex flex-wrap items-center gap-3">
-                                  {linked && (
-                                    <button
-                                      onClick={() => openApp(linked.id)}
-                                      className="rounded-md border-2 border-ink bg-cream px-2.5 py-1 text-xs font-black hover:bg-yellow"
-                                    >
-                                      {linked.title}
-                                      {projectTrophies.get(linked.id) !== undefined && (
-                                        <TrophyMark
-                                          place={projectTrophies.get(linked.id) as 1 | 2 | 3}
-                                          size={14}
-                                        />
-                                      )}
-                                    </button>
-                                  )}
-                                  <Button
-                                    variant="vote"
-                                    onClick={() => void cheer(m)}
-                                    aria-pressed={Boolean(m.viewerHasCheered)}
-                                    disabled={!user || cheerPending.has(m.id)}
-                                    className={m.viewerHasCheered ? "" : "text-muted"}
-                                  >
-                                    <HandsClapping
-                                      size={18}
-                                      weight={m.viewerHasCheered ? "fill" : "duotone"}
-                                    />
-                                    {m.cheers ?? 0}
-                                    <span className="sr-only">
-                                      {m.viewerHasCheered ? "Uncheer" : "Cheer this on"}
-                                    </span>
-                                  </Button>
-                                  <button
-                                    onClick={() => toggleThread(m.id)}
-                                    aria-expanded={openThreads.has(m.id)}
-                                    className="flex items-center gap-1 text-sm font-black text-muted"
-                                  >
-                                    <ChatCircleDots size={18} weight="duotone" />
-                                    {openThreads.has(m.id) ? "Hide comments" : "Comment"}
-                                  </button>
-                                </div>
-                                {openThreads.has(m.id) && (
-                                  <div className="mt-3 border-t-2 border-dashed border-divider pt-4">
-                                    <Comments
-                                      appId={`ms:${m.id}`}
-                                      appTitle={`Update by ${m.authorName}`}
-                                      currentUser={user ?? null}
-                                      profiles={profilesLookup}
-                                      trophies={trophies}
-                                      onOpenProfile={openProfile}
-                                    />
-                                  </div>
-                                )}
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      ) : (
-                        <div className="toon-card paper-note mt-6 rounded-lg p-10 text-center">
-                          <h3 className="text-xl font-black">
-                            {milestones.length ? "No matching posts" : "Your feed starts here"}
-                          </h3>
-                          <p className="font-bold text-muted">
-                            {milestones.length
-                              ? "Try a different search."
-                              : "Share what you’re building and start a conversation."}
-                          </p>
-                        </div>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <label className="min-w-0 flex-1">
+                          <span className="sr-only">Attach one of your projects (optional)</span>
+                          <select
+                            value={mAppId}
+                            onChange={(e) => setMAppId(e.target.value)}
+                            className="toon-input py-2 text-sm"
+                          >
+                            <option value="">No linked project</option>
+                            {user &&
+                              fullApps
+                                .filter((a) =>
+                                  a.creatorId ? a.creatorId === user.id : a.creator === user.name,
+                                )
+                                .map((a) => (
+                                  <option key={a.id} value={a.id}>
+                                    {a.title}
+                                  </option>
+                                ))}
+                          </select>
+                        </label>
+                        <span className="text-xs font-black text-muted">{mBody.length}/280</span>
+                        <Button
+                          size="small"
+                          type="submit"
+                          disabled={mPosting || !mBody.trim()}
+                          className="text-sm"
+                        >
+                          {mPosting ? "Posting…" : "Post update"}
+                        </Button>
+                      </div>
+                      {mPostError && (
+                        <p role="alert" className="mt-3 text-sm font-bold">
+                          {mPostError}
+                        </p>
                       )}
+                    </form>
+
+                    <label className="relative mt-4 block">
+                      <span className="sr-only">Search updates</span>
+                      <MagnifyingGlass
+                        size={20}
+                        weight="bold"
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-muted"
+                      />
+                      <input
+                        value={msQuery}
+                        onChange={(event) => setMsQuery(event.target.value)}
+                        className="toon-input py-2.5 pl-11 text-sm"
+                        placeholder="Search posts or builders…"
+                      />
+                    </label>
+
+                    {milestonesLoading ? (
+                      <p className="mt-6 font-bold text-muted">Loading feed…</p>
+                    ) : milestonesError ? (
+                      <div className="toon-card mt-4 rounded-lg p-8 text-center">
+                        <h3 className="text-xl font-black">Could not load the feed</h3>
+                        <p className="font-bold text-muted">{milestonesError}</p>
+                      </div>
+                    ) : filteredMilestones.length ? (
+                      <ul className="mt-4 space-y-3">
+                        {filteredMilestones.map((m) => {
+                          const p = profilesLookup.get(m.authorId);
+                          const linked = m.appId
+                            ? fullApps.find((a) => a.id === m.appId)
+                            : undefined;
+                          return (
+                            <li key={m.id} className="toon-card rounded-lg bg-surface p-4 sm:p-5">
+                              <div className="flex items-center gap-3">
+                                {p ? (
+                                  <button
+                                    onClick={() => openProfile(p.id)}
+                                    aria-label={`View ${p.name}'s profile`}
+                                    className="shrink-0"
+                                  >
+                                    <Avatar
+                                      name={p.name}
+                                      color={p.color}
+                                      imageUrl={p.imageUrl}
+                                      size="sm"
+                                    />
+                                  </button>
+                                ) : (
+                                  <Avatar name={m.authorName} color="sky" size="sm" />
+                                )}
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-black">
+                                    {p ? (
+                                      <button
+                                        onClick={() => openProfile(p.id)}
+                                        className="underline decoration-2 underline-offset-4"
+                                      >
+                                        {m.authorName}
+                                      </button>
+                                    ) : (
+                                      m.authorName
+                                    )}
+                                    {trophies.get(m.authorId) !== undefined && (
+                                      <TrophyMark
+                                        place={trophies.get(m.authorId) as 1 | 2 | 3}
+                                        size={16}
+                                      />
+                                    )}
+                                  </p>
+                                  <p className="text-xs font-bold text-muted">
+                                    {new Date(m.createdAt).toLocaleString()}
+                                  </p>
+                                </div>
+                              </div>
+                              <p className="mt-3 leading-7">{m.body}</p>
+                              <div className="mt-3 flex flex-wrap items-center gap-3">
+                                {linked && (
+                                  <button
+                                    onClick={() => openApp(linked.id)}
+                                    className="rounded-md border-2 border-ink bg-cream px-2.5 py-1 text-xs font-black hover:bg-yellow"
+                                  >
+                                    {linked.title}
+                                    {projectTrophies.get(linked.id) !== undefined && (
+                                      <TrophyMark
+                                        place={projectTrophies.get(linked.id) as 1 | 2 | 3}
+                                        size={14}
+                                      />
+                                    )}
+                                  </button>
+                                )}
+                                <Button
+                                  variant="vote"
+                                  onClick={() => void cheer(m)}
+                                  aria-pressed={Boolean(m.viewerHasCheered)}
+                                  disabled={!user || cheerPending.has(m.id)}
+                                  className={m.viewerHasCheered ? "" : "text-muted"}
+                                >
+                                  <HandsClapping
+                                    size={18}
+                                    weight={m.viewerHasCheered ? "fill" : "duotone"}
+                                  />
+                                  {m.cheers ?? 0}
+                                  <span className="sr-only">
+                                    {m.viewerHasCheered ? "Uncheer" : "Cheer this on"}
+                                  </span>
+                                </Button>
+                                <button
+                                  onClick={() => toggleThread(m.id)}
+                                  aria-expanded={openThreads.has(m.id)}
+                                  className="flex items-center gap-1 text-sm font-black text-muted"
+                                >
+                                  <ChatCircleDots size={18} weight="duotone" />
+                                  {openThreads.has(m.id) ? "Hide comments" : "Comment"}
+                                </button>
+                              </div>
+                              {openThreads.has(m.id) && (
+                                <div className="mt-3 border-t-2 border-dashed border-divider pt-4">
+                                  <Comments
+                                    appId={`ms:${m.id}`}
+                                    appTitle={`Update by ${m.authorName}`}
+                                    currentUser={user ?? null}
+                                    profiles={profilesLookup}
+                                    trophies={trophies}
+                                    onOpenProfile={openProfile}
+                                  />
+                                </div>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <div className="toon-card paper-note mt-6 rounded-lg p-10 text-center">
+                        <h3 className="text-xl font-black">
+                          {milestones.length ? "No matching posts" : "Your feed starts here"}
+                        </h3>
+                        <p className="font-bold text-muted">
+                          {milestones.length
+                            ? "Try a different search."
+                            : "Share what you’re building and start a conversation."}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </section>
               )}

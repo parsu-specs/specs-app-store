@@ -2,8 +2,8 @@ import Brand from "./Brand";
 import { CONTACT_EMAIL } from "../data/team";
 
 const exploreLinks = [
-  { label: "Discover", href: "/store" },
-  { label: "Developers", href: "/builders" },
+  { label: "Discover", href: "/discover" },
+  { label: "Developers", href: "/developers" },
   { label: "Feed", href: "/feed" },
   { label: "Leaderboard", href: "/leaderboard" },
   { label: "About", href: "/about" },

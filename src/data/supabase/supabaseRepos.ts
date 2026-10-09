@@ -92,7 +92,7 @@ export function createSupabaseAuthRepo(): AuthRepo {
     async signinWithGoogleAccount(_account: GoogleAccount): Promise<GoogleSignInResult> {
       await getSupabase().auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/store` },
+        options: { redirectTo: `${window.location.origin}/discover` },
       });
       throw new AuthError("Redirecting to Google — continue there.");
     },
