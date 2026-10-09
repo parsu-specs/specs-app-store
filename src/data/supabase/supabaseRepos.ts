@@ -508,6 +508,21 @@ export function createSupabaseAppRepo(): AppRepo {
       return { ...toComment(toCommentRow(payload.row)), viewerHasLiked: payload.liked };
     },
 
+    async listCommentLikers(commentIds: string[]): Promise<Record<string, string[]>> {
+      const ids = [...new Set(commentIds.filter(Boolean))];
+      if (ids.length === 0) return {};
+      const { data, error } = await getSupabase()
+        .from("comment_likes")
+        .select("comment_id,user_id")
+        .in("comment_id", ids);
+      if (error) throw new Error(error.message);
+      const out: Record<string, string[]> = {};
+      for (const row of (data ?? []) as { comment_id: string; user_id: string }[]) {
+        (out[row.comment_id] ??= []).push(row.user_id);
+      }
+      return out;
+    },
+
     async listMilestones(userId?: string) {
       const supabase = getSupabase();
       const { data, error } = await supabase
@@ -690,7 +705,14 @@ export function createSupabaseProfileRepo(): ProfileRepo {
         })
         .select()
         .single();
-      if (error || !data) throw new Error(error?.message ?? "Could not create profile.");
+      if (error || !data) {
+        // 23505 = the profiles_lower_name_unique index below: someone else
+        // holds this display name. Friendly message instead of raw SQL text.
+        if (error && (error as { code?: string }).code === "23505") {
+          throw new Error("That display name is already taken. Try another.");
+        }
+        throw new Error(error?.message ?? "Could not create profile.");
+      }
       return this.getProfile(user.id);
     },
 
@@ -733,9 +755,9 @@ export function createSupabaseProfileRepo(): ProfileRepo {
       if (role.length > 80) throw new Error("Keep role under 80 characters.");
       if (bio.length > 280) throw new Error("Keep bio under 280 characters.");
       // Uniqueness is policed on rename only: palette/theme/bio-only saves
-      // must not trip over a same-named duplicate row (the claim flow merges
-      // those separately). Previously every save reverted with "already
-      // taken" for anyone sharing a display name, locking their settings.
+      // must not trip over a legacy same-named row. Display names are UNIQUE
+      // (see migration_unique_names.sql), so a rename collision is a real
+      // conflict, not a merge opportunity.
       if (name !== current.name) {
         const { data: taken } = await supabase
           .from("profiles")
@@ -752,25 +774,6 @@ export function createSupabaseProfileRepo(): ProfileRepo {
         .eq("id", id);
       if (error) throw new Error(error.message);
       return this.getProfile(id);
-    },
-
-    async claimProfile(duplicateProfileId: string, requester: User) {
-      const supabase = getSupabase();
-      if (duplicateProfileId === requester.id)
-        throw new Error("That is already your profile.");
-      // Authorization lives in the claim_profile RPC (requester = auth.uid(),
-      // name-equality checked server-side, all moves in one transaction).
-      // Only the duplicate id crosses the wire — never ownership claims.
-      const { error } = await supabase.rpc("claim_profile", { p_from: duplicateProfileId });
-      if (error) {
-        if (error.code === "42883" || error.message.includes("claim_profile")) {
-          throw new Error(
-            "Profile claiming is unavailable — ask an admin to run the latest database migration.",
-          );
-        }
-        throw new Error(error.message);
-      }
-      return this.ensureUserProfile(requester);
     },
   };
 }

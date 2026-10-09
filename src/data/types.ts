@@ -151,7 +151,7 @@ export type Milestone = {
   viewerHasCheered?: boolean;
 };
 
-export type NotificationKind = "comment" | "reply" | "vote" | "project" | "update" | "collab";
+export type NotificationKind = "comment" | "reply" | "vote" | "project" | "update" | "collab" | "like";
 
 export type NotificationItem = {
   /** Stable id: `c:<commentId>`, `vote:<appId>`, `app:<appId>`, `m:<milestoneId>`. */

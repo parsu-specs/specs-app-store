@@ -39,4 +39,13 @@ describe("updateProfile name guard", () => {
       "already taken",
     );
   });
+
+  it("creating a profile with a taken name fails", async () => {
+    const repo = createLocalProfileRepo();
+    const all = await repo.listProfiles();
+    const [a] = all;
+    await expect(
+      repo.ensureUserProfile({ id: "brand-new", email: "n@x.com", name: a.name }),
+    ).rejects.toThrow("already taken");
+  });
 });

@@ -448,6 +448,9 @@ export default function Store() {
   const [votersByApp, setVotersByApp] = useState<Map<string, Profile[]>>(new Map());
   const [voterBaseline, setVoterBaseline] = useState<Record<string, string[]>>({});
   const [voteCycles, setVoteCycles] = useState<Record<string, Record<string, number>>>({});
+  const [likersByComment, setLikersByComment] = useState<Map<string, string[]>>(new Map());
+  const [likeBaseline, setLikeBaseline] = useState<Record<string, string[]>>({});
+  const [likeCycles, setLikeCycles] = useState<Record<string, Record<string, number>>>({});
 
   useEffect(() => {
     if (!user) {
@@ -455,6 +458,8 @@ export default function Store() {
       setVoteBaseline({});
       setVoterBaseline({});
       setVoteCycles({});
+      setLikeBaseline({});
+      setLikeCycles({});
       setCollabBaseline([]);
       setDismissedIds([]);
       setSeenAt({});
@@ -467,6 +472,8 @@ export default function Store() {
     setVoteBaseline(stored.voteBaseline);
     setVoterBaseline(stored.voterBaseline);
     setVoteCycles(stored.voteCycles);
+    setLikeBaseline(stored.likeBaseline);
+    setLikeCycles(stored.likeCycles);
     setCollabBaseline(stored.collabBaseline);
     setDismissedIds(stored.dismissedIds);
     setSeenAt(stored.seenAt);
@@ -541,6 +548,29 @@ export default function Store() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, scanKey, pollTick]);
 
+  // Liker presence for my own comments only (one batched call per scan).
+  // Failures keep prior sets, so a failed fetch never looks like mass unlikes.
+  useEffect(() => {
+    if (!user) return;
+    const mine: string[] = [];
+    for (const list of threads.values()) {
+      for (const c of list) if (c.authorId === user.id) mine.push(c.id);
+    }
+    if (mine.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const result = await getAppRepo().listCommentLikers(mine);
+        if (!cancelled) setLikersByComment(new Map(Object.entries(result)));
+      } catch {
+        // Keep prior sets; retry on the next scan.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, threads, pollTick]);
+
   // Project ids currently tagging me (id or profile-name match). Drives both
   // the builder and the snapshot cleanup below.
   const currentlyTagged = useMemo(() => {
@@ -558,6 +588,14 @@ export default function Store() {
     return snap;
   }, [voterBaseline, votersByApp]);
 
+  // Same first-run rule for comment likes: current likers count as seen.
+  const likeBase = useMemo(() => {
+    if (Object.keys(likeBaseline).length > 0) return likeBaseline;
+    const snap: Record<string, string[]> = {};
+    for (const [id, list] of likersByComment) snap[id] = [...list];
+    return snap;
+  }, [likeBaseline, likersByComment]);
+
   const notifications: NotificationItem[] = useMemo(() => {
     if (!user) return [];
     return buildNotifications({
@@ -568,11 +606,14 @@ export default function Store() {
       voters: votersByApp,
       voterBaseline: voterBase,
       voteCycles,
+      likers: likersByComment,
+      likeBaseline: likeBase,
+      likeCycles,
       collabBaseline,
       profiles,
       arrivalAt: seenAt,
     });
-  }, [user, fullApps, threads, milestones, votersByApp, voterBase, voteCycles, collabBaseline, profiles, seenAt]);
+  }, [user, fullApps, threads, milestones, votersByApp, voterBase, voteCycles, likersByComment, likeBase, likeCycles, collabBaseline, profiles, seenAt]);
 
   // Single snapshot-sync writer (one effect = no lost updates between
   // competing saves). Converges — reruns are no-ops. It:
@@ -649,6 +690,32 @@ export default function Store() {
     const votersSame =
       JSON.stringify(nextVoterBaseline) === JSON.stringify(voterBaseline) &&
       JSON.stringify(nextCycles) === JSON.stringify(voteCycles);
+    // Same presence tracking for comment likes, scoped to comments still
+    // present in scanned threads (deleted comments stop tracking).
+    const liveCommentIds = new Set<string>();
+    for (const list of threads.values()) {
+      for (const c of list) if (c.authorId === user.id) liveCommentIds.add(c.id);
+    }
+    const nextLikeBaseline: Record<string, string[]> = {};
+    for (const [id, list] of likersByComment) {
+      if (liveCommentIds.has(id)) nextLikeBaseline[id] = [...list];
+    }
+    const nextLikeCycles: Record<string, Record<string, number>> = {};
+    for (const [id, counts] of Object.entries(likeCycles)) {
+      if (liveCommentIds.has(id) && Object.keys(counts).length > 0) nextLikeCycles[id] = { ...counts };
+    }
+    for (const [id, ids] of Object.entries(likeBaseline)) {
+      if (!liveCommentIds.has(id)) continue;
+      const now = new Set(nextLikeBaseline[id] ?? []);
+      const counts = nextLikeCycles[id] ?? {};
+      for (const uid of ids) {
+        if (!now.has(uid)) counts[uid] = (counts[uid] ?? 0) + 1;
+      }
+      if (Object.keys(counts).length > 0) nextLikeCycles[id] = counts;
+    }
+    const likesSame =
+      JSON.stringify(nextLikeBaseline) === JSON.stringify(likeBaseline) &&
+      JSON.stringify(nextLikeCycles) === JSON.stringify(likeCycles);
     const droppedCollab = (id: string) => id.startsWith("collab:") && !current.has(id.slice(7));
     const drainedVote = (id: string) => id.startsWith("vote:") && voteGained(id.slice(5)) <= 0;
     const nextBaseline = collabBaseline.filter((id) => current.has(id));
@@ -666,6 +733,7 @@ export default function Store() {
     if (
       seenSame &&
       votersSame &&
+      likesSame &&
       nextBaseline.length === collabBaseline.length &&
       nextReadIds.length === readIds.length &&
       nextDismissed.length === dismissedIds.length
@@ -675,6 +743,8 @@ export default function Store() {
     setSeenAt(nextSeen);
     setVoterBaseline(nextVoterBaseline);
     setVoteCycles(nextCycles);
+    setLikeBaseline(nextLikeBaseline);
+    setLikeCycles(nextLikeCycles);
     setCollabBaseline(nextBaseline);
     setReadIds(nextReadIds);
     setDismissedIds(nextDismissed);
@@ -683,6 +753,8 @@ export default function Store() {
       voteBaseline,
       voterBaseline: nextVoterBaseline,
       voteCycles: nextCycles,
+      likeBaseline: nextLikeBaseline,
+      likeCycles: nextLikeCycles,
       collabBaseline: nextBaseline,
       dismissedIds: nextDismissed,
       seenAt: nextSeen,
@@ -698,6 +770,9 @@ export default function Store() {
     votersByApp,
     voterBaseline,
     voteCycles,
+    likersByComment,
+    likeBaseline,
+    likeCycles,
     seenAt,
     readIds,
     collabBaseline,
@@ -744,6 +819,8 @@ export default function Store() {
       voteBaseline: currentVoteBaseline(fullApps, user),
       voterBaseline,
       voteCycles,
+      likeBaseline,
+      likeCycles,
       collabBaseline: currentlyTagged,
       dismissedIds,
       seenAt,
@@ -752,7 +829,7 @@ export default function Store() {
     setVoteBaseline(next.voteBaseline);
     setCollabBaseline(next.collabBaseline);
     saveNotificationState(user.id, next);
-  }, [user, readIds, notifications, fullApps, currentlyTagged, dismissedIds, seenAt, voterBaseline, voteCycles]);
+  }, [user, readIds, notifications, fullApps, currentlyTagged, dismissedIds, seenAt, voterBaseline, voteCycles, likeBaseline, likeCycles]);
 
   const markNotificationRead = useCallback(
     (id: string) => {
@@ -763,6 +840,8 @@ export default function Store() {
         voteBaseline,
         voterBaseline,
         voteCycles,
+        likeBaseline,
+        likeCycles,
         collabBaseline,
         dismissedIds,
         seenAt,
@@ -770,7 +849,7 @@ export default function Store() {
       setReadIds(next.readIds);
       saveNotificationState(user.id, next);
     },
-    [user, readIds, voteBaseline, voterBaseline, voteCycles, collabBaseline, dismissedIds, seenAt],
+    [user, readIds, voteBaseline, voterBaseline, voteCycles, likeBaseline, likeCycles, collabBaseline, dismissedIds, seenAt],
   );
 
   // Delete all: hide every visible item and snapshot the state-kind
@@ -784,6 +863,8 @@ export default function Store() {
       voteBaseline: currentVoteBaseline(fullApps, user),
       voterBaseline,
       voteCycles,
+      likeBaseline,
+      likeCycles,
       collabBaseline: currentlyTagged,
       dismissedIds: [...dismissedIds, ...visibleItems.map((n) => n.id)],
       seenAt,
@@ -793,7 +874,7 @@ export default function Store() {
     setCollabBaseline(next.collabBaseline);
     setDismissedIds(next.dismissedIds);
     saveNotificationState(user.id, next);
-  }, [user, readIds, visibleItems, fullApps, currentlyTagged, dismissedIds, seenAt, voterBaseline, voteCycles]);
+  }, [user, readIds, visibleItems, fullApps, currentlyTagged, dismissedIds, seenAt, voterBaseline, voteCycles, likeBaseline, likeCycles]);
 
   const openFeed = useCallback(() => {
     window.history.pushState({}, "", ROUTES.feed);
@@ -2040,12 +2121,6 @@ export default function Store() {
                     }}
                     onOpenApp={openAppFromProfile}
                     onOpenProfile={openProfile}
-                    onClaimed={() => {
-                      if (!user) return;
-                      openProfile(user.id);
-                      setProfileTick((t) => t + 1);
-                      void loadApps();
-                    }}
                     onProfileUpdated={() => setProfileTick((t) => t + 1)}
                   />
                 </section>

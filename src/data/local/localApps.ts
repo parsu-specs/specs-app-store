@@ -506,6 +506,20 @@ export function createLocalAppRepo(): AppRepo {
       });
       return { ...updated, viewerHasLiked: liked.has(userId) };
     },
+
+    async listCommentLikers(commentIds: string[]): Promise<Record<string, string[]>> {
+      await delay(80);
+      const wanted = new Set(commentIds.filter(Boolean));
+      if (wanted.size === 0) return {};
+      const store = loadComments();
+      const out: Record<string, string[]> = {};
+      for (const thread of Object.values(store)) {
+        for (const c of thread.map(normalizeComment)) {
+          if (wanted.has(c.id)) out[c.id] = [...(c.likedBy ?? [])];
+        }
+      }
+      return out;
+    },
   };
 }
 

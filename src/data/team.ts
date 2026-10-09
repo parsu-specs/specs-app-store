@@ -59,7 +59,7 @@ export const APP_INFO = {
     },
     {
       title: "Google sign-in",
-      body: "Join with email and password or continue with your Google account — duplicate profiles can be claimed and merged.",
+      body: "Join with email and password or continue with your Google account — every developer gets a unique display name.",
     },
   ],
 };
@@ -74,38 +74,17 @@ export type TeamMember = {
 
 export const TEAM: TeamMember[] = [
   {
-    name: "Your Name",
+    name: "Jay Romero",
     role: "Lead Developer",
     bio: "Owns the overall direction of the app store and keeps releases moving.",
     imageUrl: "https://picsum.photos/seed/specs-dev-1/200",
     color: "yellow",
   },
   {
-    name: "Teammate Two",
-    role: "Frontend Developer",
-    bio: "Builds the pages and components students tap through every day.",
-    imageUrl: "https://picsum.photos/seed/specs-dev-2/200",
+    name: "Kirby Paladan",
+    role: "Frontend Developer | Backend Developer | Database Handler | Security Handler | Penetration Tester | QA Engineer | DevOps | UI/UX",
+    bio: "mapping both codebases, then shipping features (vote notifications, publish bonus, theme and signup fixes) alongside hardening program (RLS policies, vote/claim guards, fail-closed admin API, CSP/headers, timeouts, telemetry, runbook) that took the app from local prototype to secured production on Vercel with Supabase.",
+    imageUrl: "https://raw.githubusercontent.com/kirbypaladan24-lgtm/Images-/9bb4a4a68a66d65c73329d3df1847962205ddb68/IMG_20251222_194153_156.jpg",
     color: "mint",
-  },
-  {
-    name: "Teammate Three",
-    role: "Backend Developer",
-    bio: "Keeps data, accounts, and content in good shape behind the scenes.",
-    imageUrl: "https://picsum.photos/seed/specs-dev-3/200",
-    color: "pink",
-  },
-  {
-    name: "Teammate Four",
-    role: "UI Designer",
-    bio: "Makes the app store feel playful, clear, and easy to use.",
-    imageUrl: "https://picsum.photos/seed/specs-dev-4/200",
-    color: "sky",
-  },
-  {
-    name: "Teammate Five",
-    role: "QA & Community",
-    bio: "Tests releases and keeps community feedback flowing back to builders.",
-    imageUrl: "https://picsum.photos/seed/specs-dev-5/200",
-    color: "lavender",
   },
 ];

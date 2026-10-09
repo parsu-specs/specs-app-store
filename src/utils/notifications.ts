@@ -39,6 +39,10 @@ export type NotificationState = {
   voterBaseline: Record<string, string[]>;
   /** Completed appearances per app -> voter — a re-vote after an unvote notifies under a fresh id. */
   voteCycles: Record<string, Record<string, number>>;
+  /** Liker ids seen at the last snapshot, per comment I authored. */
+  likeBaseline: Record<string, string[]>;
+  /** Completed appearances per comment -> liker — a re-like notifies under a fresh id. */
+  likeCycles: Record<string, Record<string, number>>;
   /** App ids the user was tagged on at the last snapshot (re-tag re-fires). */
   collabBaseline: string[];
   /** Dismissed (deleted) ids — hidden from the list, not just marked read. */
@@ -99,6 +103,8 @@ export function loadNotificationState(userId: string | undefined): NotificationS
     voteBaseline: {},
     voterBaseline: {},
     voteCycles: {},
+    likeBaseline: {},
+    likeCycles: {},
     collabBaseline: [],
     dismissedIds: [],
     seenAt: {},
@@ -116,6 +122,8 @@ export function loadNotificationState(userId: string | undefined): NotificationS
           : {},
       voterBaseline: cleanIdMap(parsed.voterBaseline),
       voteCycles: cleanCycles(parsed.voteCycles),
+      likeBaseline: cleanIdMap(parsed.likeBaseline),
+      likeCycles: cleanCycles(parsed.likeCycles),
       collabBaseline: cleanIds(parsed.collabBaseline),
       dismissedIds: cleanIds(parsed.dismissedIds),
       seenAt: cleanTimes(parsed.seenAt),
@@ -134,6 +142,8 @@ export function saveNotificationState(userId: string, state: NotificationState):
         voteBaseline: state.voteBaseline,
         voterBaseline: state.voterBaseline,
         voteCycles: state.voteCycles,
+        likeBaseline: state.likeBaseline,
+        likeCycles: state.likeCycles,
         collabBaseline: state.collabBaseline,
         dismissedIds: state.dismissedIds.slice(0, MAX_READ_IDS),
         seenAt: state.seenAt,
@@ -197,6 +207,12 @@ export type NotificationInput = {
   voterBaseline: Record<string, string[]>;
   /** Completed appearances per app -> voter (re-votes arrive under fresh ids). */
   voteCycles: Record<string, Record<string, number>>;
+  /** commentId -> current liker user ids (listCommentLikers snapshot). */
+  likers: Map<string, string[]>;
+  /** Liker ids seen at the last snapshot, per comment I authored. */
+  likeBaseline: Record<string, string[]>;
+  /** Completed appearances per comment -> liker (re-likes arrive under fresh ids). */
+  likeCycles: Record<string, Record<string, number>>;
   /** App ids tagged at the last snapshot — re-tags after untag re-fire. */
   collabBaseline?: string[];
   /** All known profiles — resolves tagged ids to names for the fallback. */
@@ -272,7 +288,7 @@ export function isTaggedCollaborator(app: AppItem, user: User, profiles: Profile
 }
 
 export function buildNotifications(input: NotificationInput): NotificationItem[] {
-  const { user, apps, threads, milestones, voters, voterBaseline, voteCycles } = input;
+  const { user, apps, threads, milestones, voters, voterBaseline, voteCycles, likers, likeBaseline, likeCycles } = input;
   const nowMs = input.nowMs ?? Date.now();
   const items: NotificationItem[] = [];
 
@@ -319,6 +335,33 @@ export function buildNotifications(input: NotificationInput): NotificationItem[]
           createdAt: c.createdAt,
           appId: c.appId,
           actorName: c.authorName,
+        });
+      }
+    }
+  }
+
+  // Comment-like appearances per liker. Only comments I authored notify;
+  // unlikes are silent, re-likes after an unlike arrive under a fresh id.
+  const nameById = new Map((input.profiles ?? []).map((p) => [p.id, p.name]));
+  for (const list of threads.values()) {
+    for (const c of list) {
+      if (c.authorId !== user.id || !validDate(c.createdAt)) continue;
+      const seenLikes = new Set(likeBaseline[c.id] ?? []);
+      const cycles = likeCycles[c.id] ?? {};
+      for (const uid of likers.get(c.id) ?? []) {
+        if (uid === user.id || seenLikes.has(uid)) continue;
+        const cycle = cycles[uid] ?? 0;
+        const name = nameById.get(uid)?.trim() || "Someone";
+        const app = appById.get(c.appId);
+        const appTitle = app?.title ?? "a project";
+        items.push({
+          id: cycle === 0 ? `like:${c.id}:${uid}` : `like:${c.id}:${uid}#${cycle}`,
+          kind: "like",
+          title: `${name} liked your comment on ${appTitle}`,
+          body: truncate(c.body, BODY_PREVIEW),
+          createdAt: c.createdAt,
+          appId: c.appId,
+          actorName: nameById.get(uid),
         });
       }
     }

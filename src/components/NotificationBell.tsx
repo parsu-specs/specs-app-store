@@ -6,6 +6,7 @@ import {
   Heart,
   RocketLaunch,
   Sparkle,
+  ThumbsUp,
   UsersThree,
   X,
 } from "@phosphor-icons/react";
@@ -33,6 +34,7 @@ const KIND_ICON: Record<NotificationItem["kind"], typeof Bell> = {
   comment: ChatCircleDots,
   reply: ChatCircleDots,
   vote: Heart,
+  like: ThumbsUp,
   project: RocketLaunch,
   update: Sparkle,
   collab: UsersThree,
@@ -42,6 +44,7 @@ const KIND_LABEL: Record<NotificationItem["kind"], string> = {
   comment: "Comment",
   reply: "Reply",
   vote: "Upvotes",
+  like: "Like",
   project: "New project",
   update: "Feed",
   collab: "Collaborator",
@@ -90,7 +93,9 @@ export default function NotificationBell({
     const uploaded = new Date(item.createdAt).toLocaleString();
     return item.kind === "vote"
       ? `New upvotes ${when} · Project uploaded ${uploaded}`
-      : `Tagged as collaborator ${when} · Project uploaded ${uploaded}`;
+      : item.kind === "like"
+        ? `Liked your comment ${when}`
+        : `Tagged as collaborator ${when} · Project uploaded ${uploaded}`;
   };
 
   return (
@@ -212,7 +217,7 @@ export default function NotificationBell({
                               {item.body}
                             </span>
                             <span className="mt-1 flex items-center gap-1">
-                              {item.kind === "vote" || item.kind === "collab" ? (
+                              {item.kind === "vote" || item.kind === "collab" || item.kind === "like" ? (
                                 <UploadStamp
                                   createdAt={item.createdAt}
                                   displayAt={arrivalAt[arrivalKeyOf(item)]}

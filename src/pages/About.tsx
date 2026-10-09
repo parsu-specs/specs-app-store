@@ -1,4 +1,6 @@
-import { ArrowLeft, EnvelopeSimple, Sparkle } from "@phosphor-icons/react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { ArrowLeft, EnvelopeSimple, Sparkle, X } from "@phosphor-icons/react";
 import Avatar from "../components/Avatar";
 import Brand from "../components/Brand";
 import Footer from "../components/Footer";
@@ -6,6 +8,20 @@ import { APP_INFO, CONTACT_EMAIL, TEAM } from "../data/team";
 import { ROUTES } from "./routes";
 
 export default function About() {
+  const [lightbox, setLightbox] = useState<{ src: string; name: string } | null>(null);
+
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightbox(null);
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [lightbox]);
   return (
     <div className="min-h-screen">
       <div className="px-5 pt-6 sm:px-8 lg:px-10">
@@ -47,19 +63,35 @@ export default function About() {
         <div className="mb-6 text-center">
           <p className="text-xs font-black uppercase text-purple">The builders</p>
           <h2 className="mt-1 text-2xl font-black">Developers of the Specs App Store.</h2>
-          <p className="mt-2 font-bold text-muted">
-            Edit names, roles, bios, and photos in <code className="rounded bg-ink px-1.5 py-0.5 text-xs text-surface">src/data/team.ts</code>
-          </p>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {TEAM.map((member) => (
             <article key={member.name} className="toon-card rounded-lg bg-surface p-6 text-center">
-              <Avatar
-                name={member.name}
-                color={member.color}
-                imageUrl={member.imageUrl}
-                size="lg"
-              />
+              <div className="flex justify-center">
+                {member.imageUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => setLightbox({ src: member.imageUrl as string, name: member.name })}
+                    aria-label={`View ${member.name}'s photo full size`}
+                    title="View full size"
+                    className="rounded-full transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-purple"
+                  >
+                    <Avatar
+                      name={member.name}
+                      color={member.color}
+                      imageUrl={member.imageUrl}
+                      size="xl"
+                    />
+                  </button>
+                ) : (
+                  <Avatar
+                    name={member.name}
+                    color={member.color}
+                    imageUrl={member.imageUrl}
+                    size="xl"
+                  />
+                )}
+              </div>
               <h3 className="mt-4 text-xl font-black">{member.name}</h3>
               <p className="mt-1 text-sm font-black uppercase text-purple">{member.role}</p>
               <p className="mt-2 text-sm leading-6 text-muted">{member.bio}</p>
@@ -91,6 +123,38 @@ export default function About() {
       <div className="pointer-events-none flex justify-center" aria-hidden="true">
         <Sparkle size={40} weight="duotone" className="text-pink" />
       </div>
+
+      {lightbox &&
+        createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${lightbox.name}'s photo full size`}
+            onClick={() => setLightbox(null)}
+            className="fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-ink/80 p-4"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="toon-card relative my-auto max-h-[85vh] w-full max-w-3xl overflow-hidden rounded-lg bg-surface"
+            >
+              <img
+                src={lightbox.src}
+                alt={`${lightbox.name}'s photo full size`}
+                className="max-h-[85vh] w-full object-contain"
+              />
+              <button
+                type="button"
+                onClick={() => setLightbox(null)}
+                aria-label="Close full size image"
+                autoFocus
+                className="absolute right-3 top-3 rounded-full border-2 border-ink bg-surface p-2"
+              >
+                <X size={18} weight="bold" />
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
 
       <Footer />
     </div>

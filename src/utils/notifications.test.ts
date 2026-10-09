@@ -63,6 +63,9 @@ function baseInput(over: Partial<NotificationInput> = {}): NotificationInput {
     voters: new Map(),
     voterBaseline: {},
     voteCycles: {},
+    likers: new Map(),
+    likeBaseline: {},
+    likeCycles: {},
     nowMs: NOW,
     ...over,
   };
@@ -143,6 +146,68 @@ describe("buildNotifications", () => {
       }),
     );
     expect(self.some((i) => i.kind === "vote")).toBe(false);
+  });
+
+  it("notifies per-liker appearances on my comments, including re-likes", () => {
+    const mine = app("mine", { creator: "Ann", creatorId: "u1" });
+    const mineThread = new Map([
+      ["mine", [comment("c1", { authorId: "u1", authorName: "Ann" })]],
+    ]);
+    const bobProfile = { id: "u2", name: "Bob", role: "r", bio: "", color: "sky", createdAt: H(9) };
+    const likers = new Map([["c1", ["u2"]]]);
+    const first = buildNotifications(
+      baseInput({ apps: [mine], threads: mineThread, likers, profiles: [bobProfile] }),
+    );
+    expect(first.find((i) => i.kind === "like")?.title).toBe(
+      "Bob liked your comment on App mine",
+    );
+
+    // A steady liker never re-fires.
+    const steady = buildNotifications(
+      baseInput({
+        apps: [mine],
+        threads: mineThread,
+        likers,
+        profiles: [bobProfile],
+        likeBaseline: { c1: ["u2"] },
+      }),
+    );
+    expect(steady.some((i) => i.kind === "like")).toBe(false);
+
+    // Unlike then re-like notifies again under a fresh id.
+    const re = buildNotifications(
+      baseInput({
+        apps: [mine],
+        threads: mineThread,
+        likers,
+        profiles: [bobProfile],
+        likeBaseline: { c1: [] },
+        likeCycles: { c1: { u2: 1 } },
+      }),
+    );
+    expect(re.find((i) => i.kind === "like")?.id).toBe("like:c1:u2#1");
+
+    // Likes on other people's comments never notify me, even on my project.
+    const others = buildNotifications(
+      baseInput({
+        apps: [mine],
+        threads: new Map([["mine", [comment("c1")]]]),
+        likers: new Map([["c1", ["u3"]]]),
+        profiles: [bobProfile],
+      }),
+    );
+    expect(others.some((i) => i.kind === "like")).toBe(false);
+
+    // My own likes on my own comments never notify.
+    const selfLike = buildNotifications(
+      baseInput({
+        apps: [mine],
+        threads: mineThread,
+        likers: new Map([["c1", ["u1"]]]),
+        profiles: [bobProfile],
+      }),
+    );
+    expect(selfLike.some((i) => i.kind === "like")).toBe(false);
   });
 
   it("matches collab tags by id or profile-row name, never strangers", () => {
@@ -226,6 +291,8 @@ describe("collab tag snapshots", () => {
       voteBaseline: {},
       voterBaseline: {},
       voteCycles: {},
+      likeBaseline: {},
+      likeCycles: {},
       collabBaseline: ["p1"],
       dismissedIds: [],
       seenAt: {},
@@ -244,6 +311,8 @@ describe("collab tag snapshots", () => {
       voteBaseline: {},
       voterBaseline: {},
       voteCycles: {},
+      likeBaseline: {},
+      likeCycles: {},
       collabBaseline: [],
       dismissedIds: [],
       seenAt: {},
@@ -257,6 +326,8 @@ describe("collab tag snapshots", () => {
       voteBaseline: {},
       voterBaseline: {},
       voteCycles: {},
+      likeBaseline: {},
+      likeCycles: {},
       collabBaseline: [],
       dismissedIds: [],
       seenAt: {},

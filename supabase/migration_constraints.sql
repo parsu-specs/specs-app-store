@@ -75,6 +75,6 @@ alter table profiles add constraint profiles_theme_valid
   check (theme is null or theme in ('pink', 'yellow', 'mint', 'sky', 'lavender', 'purple', 'black'));
 
 -- ── Deliberately NOT constrained ─────────────────────────────────────────
--- profiles.name has no UNIQUE index: duplicate display names are legal and
--- the claim/merge flow exists to reconcile them. screenshots/collaborators
--- stay schemaless jsonb: unknown ids are render-skipped, never executed.
+-- screenshots/collaborators stay schemaless jsonb: unknown ids are
+-- render-skipped, never executed. (Display-name uniqueness lives in
+-- migration_unique_names.sql.)

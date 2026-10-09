@@ -225,6 +225,12 @@ export function createHttpAppRepo(): AppRepo {
       return toComment(comment);
     },
 
+    async listCommentLikers(_commentIds: string[]): Promise<Record<string, string[]>> {
+      // No contract endpoint yet (see BACKEND_READINESS.md) — like
+      // notifications stay silent in http mode until the backend adds one.
+      return {};
+    },
+
     async listMilestones() {
       const { milestones } = await api<{ milestones: MilestoneRow[] }>("/milestones");
       return milestones.map(toMilestone);
@@ -304,14 +310,6 @@ export function createHttpProfileRepo(): ProfileRepo {
           }),
         },
       );
-      return toProfile(profile);
-    },
-
-    async claimProfile(duplicateProfileId: string, _requester: User) {
-      const { profile } = await api<{ profile: ProfileRow }>("/profiles/claim", {
-        method: "POST",
-        body: JSON.stringify({ duplicateProfileId }),
-      });
       return toProfile(profile);
     },
   };

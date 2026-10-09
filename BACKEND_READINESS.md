@@ -41,7 +41,8 @@ future database/server swap mechanical. Nothing here changes localhost behavior.
    - `GET /apps/:id/voters` → `{ voters }` (profiles of upvoters, any order)
    - `GET /apps/:id/comments` → `{ comments }` (flat, `parent_id` nests replies)
    - `POST /apps/:id/comments {body, parentId?}` → `{ comment }`
-   - `POST /apps/:id/comments/:commentId/like` → `{ comment }` (toggle)
+    - `POST /apps/:id/comments/:commentId/like` → `{ comment }` (toggle)
+    - `GET /comments/likers?ids=a,b` → `{ likers: { [commentId]: userId[] } }` (powers like notifications)
    - `DELETE /apps/:id/comments/:commentId` → 204 (author only, replies cascade)
    - `GET /milestones` → `{ milestones }` (newest first)
    - `POST /milestones {body, appId?}` → `{ milestone }`
@@ -49,8 +50,7 @@ future database/server swap mechanical. Nothing here changes localhost behavior.
    - `GET /profiles` → `{ profiles }` · `GET /profiles/:id` → `{ profile }`
    - `GET /profiles/by-name/:name` → `{ profile }` (404 → null)
    - `POST /profiles/ensure {id, email, name}` → `{ profile }`
-   - `PATCH /profiles/:id` → `{ profile }` (owner only)
-   - `POST /profiles/claim {duplicateProfileId}` → `{ profile }` (same-name only)
+    - `PATCH /profiles/:id` → `{ profile }` (owner only)
    - Errors as `{ message }` with proper HTTP status (404 drives not-found UI).
 5. Set `VITE_DATA_SOURCE=http` and `VITE_API_URL=https://<your-api>` in `.env`.
 6. Rate limits + abuse controls (votes, comments, uploads) — none exist today.

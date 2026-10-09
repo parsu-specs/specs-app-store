@@ -219,11 +219,15 @@ alter table profiles drop constraint if exists profiles_palette_valid;
 alter table profiles add constraint profiles_palette_valid
   check (palette is null or palette in ('candy', 'ocean', 'sunset', 'forest', 'mono', 'bubblegum', 'citrus', 'grape', 'midnight'));
 
--- profiles.name stays non-unique on purpose: duplicates are legal and the
--- claim/merge flow reconciles them. screenshots/collaborators stay schemaless.
+-- profiles.name is UNIQUE (case-insensitive): one display name per developer,
+-- enforced by profiles_lower_name_unique below. screenshots/collaborators
+-- stay schemaless.
 
 -- ── Helpful indexes ───────────────────────────────────────────────────────
 create index if not exists apps_creator_idx on apps (creator_id);
 create index if not exists comments_app_idx on comments (app_id, created_at);
 create index if not exists comments_parent_idx on comments (parent_id);
 create index if not exists milestones_created_idx on milestones (created_at desc);
+-- One display name per developer (mirrors migration_unique_names.sql).
+create unique index if not exists profiles_lower_name_unique
+  on profiles (lower(btrim(name)));

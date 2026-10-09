@@ -57,6 +57,11 @@ export type AppRepo = {
    */
   deleteComment(appId: string, commentId: string, requester: User): Promise<void>;
   toggleCommentLike(appId: string, commentId: string, userId: string): Promise<Comment>;
+  /**
+   * Liker user ids per comment id, batched in one call. Powers like
+   * notifications for comment authors. Empty input returns {}.
+   */
+  listCommentLikers(commentIds: string[]): Promise<Record<string, string[]>>;
   listMilestones(userId?: string): Promise<Milestone[]>;
   postMilestone(author: User, body: string, appId?: string): Promise<Milestone>;
   toggleMilestoneCheer(milestoneId: string, userId: string): Promise<Milestone>;
@@ -80,7 +85,6 @@ export type ProfileRepo = {
   getProfileByName(name: string): Promise<Profile | null>;
   ensureUserProfile(user: User): Promise<Profile>;
   updateProfile(id: string, patch: ProfilePatch, requesterId: string): Promise<Profile>;
-  claimProfile(duplicateProfileId: string, requester: User): Promise<Profile>;
 };
 
 export class AuthError extends Error {

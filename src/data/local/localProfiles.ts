@@ -1,6 +1,5 @@
 import { NotFoundError, type ProfileRepo } from "../repositories";
 import { AVATAR_COLORS, PROFILE_THEMES, SITE_PALETTE_IDS, type Profile, type User } from "../types";
-import { claimDuplicateProfile } from "./claim";
 import { seedProfiles } from "./seed";
 
 const PROFILES_KEY = "cc.profiles.v1";
@@ -93,13 +92,27 @@ export function createLocalProfileRepo(): ProfileRepo {
       const profiles = loadProfiles();
       const existing = profiles.find((p) => p.id === user.id);
       if (existing) {
-        // Keep display name in sync if the auth name changed.
+        // Keep display name in sync if the auth name changed — unless another
+        // row already owns that name (display names are unique now): then the
+        // stored name wins and the clash is left for the user to rename.
         if (existing.name !== user.name) {
-          const next = profiles.map((p) => (p.id === user.id ? { ...p, name: user.name } : p));
-          saveProfiles(next);
-          return { ...existing, name: user.name };
+          const clash = profiles.some(
+            (p) => p.id !== user.id && p.name.trim().toLowerCase() === user.name.trim().toLowerCase(),
+          );
+          if (!clash) {
+            const next = profiles.map((p) => (p.id === user.id ? { ...p, name: user.name } : p));
+            saveProfiles(next);
+            return { ...existing, name: user.name };
+          }
         }
         return existing;
+      }
+      if (
+        profiles.some(
+          (p) => p.name.trim().toLowerCase() === user.name.trim().toLowerCase(),
+        )
+      ) {
+        throw new Error("That display name is already taken. Try signing in instead.");
       }
       const created: Profile = {
         id: user.id,
@@ -161,11 +174,6 @@ export function createLocalProfileRepo(): ProfileRepo {
       };
       saveProfiles(profiles.map((p) => (p.id === id ? updated : p)));
       return updated;
-    },
-
-    async claimProfile(duplicateProfileId: string, requester: User): Promise<Profile> {
-      await delay(120);
-      return claimDuplicateProfile(duplicateProfileId, requester);
     },
   };
 }
