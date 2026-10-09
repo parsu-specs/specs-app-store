@@ -721,14 +721,20 @@ export function createSupabaseProfileRepo(): ProfileRepo {
       if (!role) throw new Error("Role is required.");
       if (role.length > 80) throw new Error("Keep role under 80 characters.");
       if (bio.length > 280) throw new Error("Keep bio under 280 characters.");
-      const { data: taken } = await supabase
-        .from("profiles")
-        .select("id")
-        .ilike("name", name)
-        .neq("id", id)
-        .limit(1);
-      if (taken && taken.length > 0)
-        throw new Error("That name is already taken by another developer.");
+      // Uniqueness is policed on rename only: palette/theme/bio-only saves
+      // must not trip over a same-named duplicate row (the claim flow merges
+      // those separately). Previously every save reverted with "already
+      // taken" for anyone sharing a display name, locking their settings.
+      if (name !== current.name) {
+        const { data: taken } = await supabase
+          .from("profiles")
+          .select("id")
+          .ilike("name", name)
+          .neq("id", id)
+          .limit(1);
+        if (taken && taken.length > 0)
+          throw new Error("That name is already taken by another developer.");
+      }
       const { error } = await supabase
         .from("profiles")
         .update({ name, role, bio, color, image_url: imageUrl || null, theme, palette })

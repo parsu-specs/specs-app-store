@@ -127,10 +127,14 @@ export function createLocalProfileRepo(): ProfileRepo {
       const name = patch.name?.trim() || target.name;
       if (!name) throw new Error("Name is required.");
       if (name.length > 40) throw new Error("Keep your name under 40 characters.");
-      const taken = profiles.some(
-        (p) => p.id !== id && p.name.trim().toLowerCase() === name.toLowerCase(),
-      );
-      if (taken) throw new Error("That name is already taken by another developer.");
+      // Same rule as the Supabase repo: uniqueness is policed on rename
+      // only, so palette/theme/bio-only saves never trip over duplicates.
+      if (name !== target.name) {
+        const taken = profiles.some(
+          (p) => p.id !== id && p.name.trim().toLowerCase() === name.toLowerCase(),
+        );
+        if (taken) throw new Error("That name is already taken by another developer.");
+      }
       if (!role) throw new Error("Role is required.");
       if (role.length > 80) throw new Error("Keep role under 80 characters.");
       if (bio.length > 280) throw new Error("Keep bio under 280 characters.");
