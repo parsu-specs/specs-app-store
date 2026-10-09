@@ -13,6 +13,14 @@ export function getSupabase(): SupabaseClient {
       "Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.",
     );
   }
-  client = createClient(url, anonKey);
+  client = createClient(url, anonKey, {
+    // Every PostgREST/RPC call inherits a 10s ceiling so a hung backend
+    // surfaces as an error instead of an infinite spinner. Callers may
+    // still pass their own signal (e.g. abort on unmount).
+    global: {
+      fetch: (input, init) =>
+        fetch(input, { ...init, signal: init?.signal ?? AbortSignal.timeout(10_000) }),
+    },
+  });
   return client;
 }

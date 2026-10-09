@@ -1,3 +1,5 @@
+import { isSafeImageUrl } from "../utils/urls";
+
 type AvatarProps = {
   name: string;
   color: string;
@@ -24,7 +26,9 @@ export function initials(name: string): string {
 }
 
 export default function Avatar({ name, color, imageUrl, size = "md", className = "" }: AvatarProps) {
-  if (imageUrl) {
+  // Untrusted rows (legacy, direct-DB) may hold javascript:/data:text URLs —
+  // fall back to initials instead of handing them to <img>.
+  if (imageUrl && isSafeImageUrl(imageUrl)) {
     return (
       <img
         src={imageUrl}

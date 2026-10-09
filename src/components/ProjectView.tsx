@@ -41,6 +41,7 @@ import {
   readGitHubMarkdownFiles,
   readGitHubReadme,
 } from "../utils/readGitHubReadme";
+import { isSafeHttpUrl } from "../utils/urls";
 import type { AppItem, Category, Profile, User } from "../data/types";
 
 type ProjectViewProps = {
@@ -524,9 +525,9 @@ export default function ProjectView({
               totalVotes={app.votes}
               onOpenProfile={onOpenProfile}
             />
-            {app.url && (
+            {isSafeHttpUrl(app.url) && (
               <ButtonLink
-                href={app.url}
+                href={app.url as string}
                 target="_blank"
                 rel="noreferrer"
                 className="ml-auto"

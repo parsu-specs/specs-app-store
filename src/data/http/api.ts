@@ -41,7 +41,11 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getApiToken();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) headers.Authorization = `Bearer ${token}`;
-  const response = await fetch(`${base}${path}`, { ...init, headers });
+  const response = await fetch(`${base}${path}`, {
+    ...init,
+    headers,
+    signal: init.signal ?? AbortSignal.timeout(10_000),
+  });
   if (response.status === 204) return undefined as T;
   let payload: unknown = null;
   try {

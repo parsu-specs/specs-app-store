@@ -15,6 +15,7 @@ import UploadStamp from "./UploadStamp";
 import VotersDialog from "./VotersDialog";
 import { profileForApp } from "../data/profileLinks";
 import type { AppItem, Profile, User } from "../data/types";
+import { isSafeHttpUrl } from "../utils/urls";
 import { Button, ButtonChip, ButtonLink } from "./Button";
 
 type AppCardProps = {
@@ -216,9 +217,9 @@ export default function AppCard({
                 <PencilSimple size={16} weight="duotone" />
               </Button>
             )}
-            {app.url && (
+            {isSafeHttpUrl(app.url) && (
               <ButtonLink
-                href={app.url}
+                href={app.url as string}
                 target="_blank"
                 rel="noreferrer"
                 variant="outline-flat"

@@ -43,6 +43,7 @@ import {
   currentVoteBaseline,
   isTaggedCollaborator,
   loadNotificationState,
+  restampRearrived,
   saveNotificationState,
 } from "../utils/notifications";
 import Comments from "../components/Comments";
@@ -444,23 +445,32 @@ export default function Store() {
   const [collabBaseline, setCollabBaseline] = useState<string[]>([]);
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
   const [seenAt, setSeenAt] = useState<Record<string, string>>({});
+  const [votersByApp, setVotersByApp] = useState<Map<string, Profile[]>>(new Map());
+  const [voterBaseline, setVoterBaseline] = useState<Record<string, string[]>>({});
+  const [voteCycles, setVoteCycles] = useState<Record<string, Record<string, number>>>({});
 
   useEffect(() => {
     if (!user) {
       setReadIds([]);
       setVoteBaseline({});
+      setVoterBaseline({});
+      setVoteCycles({});
       setCollabBaseline([]);
       setDismissedIds([]);
       setSeenAt({});
       prevUnreadCount.current = null;
+      prevNotifIds.current = null;
       return;
     }
     const stored = loadNotificationState(user.id);
     setReadIds(stored.readIds);
     setVoteBaseline(stored.voteBaseline);
+    setVoterBaseline(stored.voterBaseline);
+    setVoteCycles(stored.voteCycles);
     setCollabBaseline(stored.collabBaseline);
     setDismissedIds(stored.dismissedIds);
     setSeenAt(stored.seenAt);
+    prevNotifIds.current = null;
   }, [user?.id]);
 
   const scanApps = useMemo(() => {
@@ -482,6 +492,14 @@ export default function Store() {
     }
     let cancelled = false;
     setThreadsLoading(true);
+    const me = user;
+    const mineIds = new Set(
+      fullApps
+        .filter((a) =>
+          a.creatorId ? a.creatorId === me.id : a.creator.toLowerCase() === me.name.toLowerCase(),
+        )
+        .map((a) => a.id),
+    );
     void (async () => {
       const entries = await Promise.all(
         scanApps.map(async (app): Promise<[string, Comment[]]> => {
@@ -497,6 +515,26 @@ export default function Store() {
         setThreadsLoading(false);
       }
     })();
+    void (async () => {
+      // Voter presence for owned apps only. Failures keep prior sets (merge,
+      // never replace), so a failed fetch never looks like a mass unvote.
+      const results = await Promise.all(
+        [...mineIds].map(async (id) => {
+          try {
+            return [id, await getAppRepo().listVoters(id)] as const;
+          } catch {
+            return null;
+          }
+        }),
+      );
+      if (cancelled) return;
+      setVotersByApp((prev) => {
+        const next = new Map(prev);
+        for (const r of results) if (r) next.set(r[0], r[1]);
+        for (const id of [...next.keys()]) if (!mineIds.has(id)) next.delete(id);
+        return next;
+      });
+    })();
     return () => {
       cancelled = true;
     };
@@ -511,23 +549,30 @@ export default function Store() {
   }, [user, fullApps, profiles]);
   const taggedKey = useMemo(() => [...currentlyTagged].sort().join(","), [currentlyTagged]);
 
+  // First snapshot seeds silently: with no stored voter sets, current
+  // voters count as seen so old votes don't flood as fake "new".
+  const voterBase = useMemo(() => {
+    if (Object.keys(voterBaseline).length > 0) return voterBaseline;
+    const snap: Record<string, string[]> = {};
+    for (const [id, list] of votersByApp) snap[id] = list.map((v) => v.id);
+    return snap;
+  }, [voterBaseline, votersByApp]);
+
   const notifications: NotificationItem[] = useMemo(() => {
     if (!user) return [];
-    // No stored baseline yet (first run): treat current counts as seen so
-    // old votes don't surface as fake "new" notifications.
-    const baseline =
-      Object.keys(voteBaseline).length > 0 ? voteBaseline : currentVoteBaseline(fullApps, user);
     return buildNotifications({
       user,
       apps: fullApps,
       threads,
       milestones,
-      baseline,
+      voters: votersByApp,
+      voterBaseline: voterBase,
+      voteCycles,
       collabBaseline,
       profiles,
       arrivalAt: seenAt,
     });
-  }, [user, fullApps, threads, milestones, voteBaseline, collabBaseline, profiles, seenAt]);
+  }, [user, fullApps, threads, milestones, votersByApp, voterBase, voteCycles, collabBaseline, profiles, seenAt]);
 
   // Single snapshot-sync writer (one effect = no lost updates between
   // competing saves). Converges — reruns are no-ops. It:
@@ -560,6 +605,11 @@ export default function Store() {
         }
       }
     }
+    // Renewed same-content items (re-tag, revived vote) would otherwise keep
+    // their original stamp and sink — refresh to now so the list orders by
+    // when news actually arrived.
+    nextSeen = restampRearrived(notifications, prevNotifIds.current, nextSeen, new Date().toISOString());
+    prevNotifIds.current = new Set(notifications.map((n) => n.id));
     const current = new Set(taggedKey ? taggedKey.split(",") : []);
     const votesById = new Map(fullApps.map((a) => [a.id, a.votes]));
     const voteGained = (appId: string) => {
@@ -568,6 +618,37 @@ export default function Store() {
       const before = typeof voteBaseline[appId] === "number" ? voteBaseline[appId] : votes;
       return votes - before;
     };
+    // Presence tracking for per-voter appearances. Baseline follows the
+    // latest successful fetch (failures keep prior sets upstream); each
+    // disappearance bumps that voter's cycle so a later re-vote arrives
+    // under a fresh id even with identical content.
+    const ownedIds = new Set(
+      fullApps
+        .filter((a) =>
+          a.creatorId ? a.creatorId === user.id : a.creator.toLowerCase() === user.name.toLowerCase(),
+        )
+        .map((a) => a.id),
+    );
+    const nextVoterBaseline: Record<string, string[]> = {};
+    for (const [id, list] of votersByApp) {
+      if (ownedIds.has(id)) nextVoterBaseline[id] = list.map((v) => v.id);
+    }
+    const nextCycles: Record<string, Record<string, number>> = {};
+    for (const [id, counts] of Object.entries(voteCycles)) {
+      if (ownedIds.has(id) && Object.keys(counts).length > 0) nextCycles[id] = { ...counts };
+    }
+    for (const [id, ids] of Object.entries(voterBaseline)) {
+      if (!ownedIds.has(id)) continue;
+      const now = new Set(nextVoterBaseline[id] ?? []);
+      const counts = nextCycles[id] ?? {};
+      for (const vid of ids) {
+        if (!now.has(vid)) counts[vid] = (counts[vid] ?? 0) + 1;
+      }
+      if (Object.keys(counts).length > 0) nextCycles[id] = counts;
+    }
+    const votersSame =
+      JSON.stringify(nextVoterBaseline) === JSON.stringify(voterBaseline) &&
+      JSON.stringify(nextCycles) === JSON.stringify(voteCycles);
     const droppedCollab = (id: string) => id.startsWith("collab:") && !current.has(id.slice(7));
     const drainedVote = (id: string) => id.startsWith("vote:") && voteGained(id.slice(5)) <= 0;
     const nextBaseline = collabBaseline.filter((id) => current.has(id));
@@ -584,6 +665,7 @@ export default function Store() {
       nextSeenKeys.every((k) => seenAt[k] === nextSeen[k]);
     if (
       seenSame &&
+      votersSame &&
       nextBaseline.length === collabBaseline.length &&
       nextReadIds.length === readIds.length &&
       nextDismissed.length === dismissedIds.length
@@ -591,12 +673,16 @@ export default function Store() {
       return;
     }
     setSeenAt(nextSeen);
+    setVoterBaseline(nextVoterBaseline);
+    setVoteCycles(nextCycles);
     setCollabBaseline(nextBaseline);
     setReadIds(nextReadIds);
     setDismissedIds(nextDismissed);
     saveNotificationState(user.id, {
       readIds: nextReadIds,
       voteBaseline,
+      voterBaseline: nextVoterBaseline,
+      voteCycles: nextCycles,
       collabBaseline: nextBaseline,
       dismissedIds: nextDismissed,
       seenAt: nextSeen,
@@ -609,6 +695,9 @@ export default function Store() {
     taggedKey,
     fullApps,
     voteBaseline,
+    votersByApp,
+    voterBaseline,
+    voteCycles,
     seenAt,
     readIds,
     collabBaseline,
@@ -635,6 +724,9 @@ export default function Store() {
   // Reset on account switch in the user-load effect above so a fresh login
   // with a full inbox doesn't chime against the previous account's count.
   const prevUnreadCount = useRef<number | null>(null);
+  // Ids from the previous sync run — detects absent→present transitions so
+  // renewed same-content items re-stamp to now instead of their first date.
+  const prevNotifIds = useRef<Set<string> | null>(null);
   useEffect(() => {
     const count = unreadIds.size;
     if (prevUnreadCount.current === null) {
@@ -650,6 +742,8 @@ export default function Store() {
     const next = {
       readIds: [...readIds, ...notifications.map((n) => n.id)],
       voteBaseline: currentVoteBaseline(fullApps, user),
+      voterBaseline,
+      voteCycles,
       collabBaseline: currentlyTagged,
       dismissedIds,
       seenAt,
@@ -658,7 +752,7 @@ export default function Store() {
     setVoteBaseline(next.voteBaseline);
     setCollabBaseline(next.collabBaseline);
     saveNotificationState(user.id, next);
-  }, [user, readIds, notifications, fullApps, currentlyTagged, dismissedIds, seenAt]);
+  }, [user, readIds, notifications, fullApps, currentlyTagged, dismissedIds, seenAt, voterBaseline, voteCycles]);
 
   const markNotificationRead = useCallback(
     (id: string) => {
@@ -667,6 +761,8 @@ export default function Store() {
       const next = {
         readIds: [...readIds, id],
         voteBaseline,
+        voterBaseline,
+        voteCycles,
         collabBaseline,
         dismissedIds,
         seenAt,
@@ -674,7 +770,7 @@ export default function Store() {
       setReadIds(next.readIds);
       saveNotificationState(user.id, next);
     },
-    [user, readIds, voteBaseline, collabBaseline, dismissedIds, seenAt],
+    [user, readIds, voteBaseline, voterBaseline, voteCycles, collabBaseline, dismissedIds, seenAt],
   );
 
   // Delete all: hide every visible item and snapshot the state-kind
@@ -686,6 +782,8 @@ export default function Store() {
     const next = {
       readIds: [...readIds, ...visibleItems.map((n) => n.id)],
       voteBaseline: currentVoteBaseline(fullApps, user),
+      voterBaseline,
+      voteCycles,
       collabBaseline: currentlyTagged,
       dismissedIds: [...dismissedIds, ...visibleItems.map((n) => n.id)],
       seenAt,
@@ -695,7 +793,7 @@ export default function Store() {
     setCollabBaseline(next.collabBaseline);
     setDismissedIds(next.dismissedIds);
     saveNotificationState(user.id, next);
-  }, [user, readIds, visibleItems, fullApps, currentlyTagged, dismissedIds, seenAt]);
+  }, [user, readIds, visibleItems, fullApps, currentlyTagged, dismissedIds, seenAt, voterBaseline, voteCycles]);
 
   const openFeed = useCallback(() => {
     window.history.pushState({}, "", ROUTES.feed);
@@ -2159,6 +2257,9 @@ export default function Store() {
                       <div className="toon-card mt-4 rounded-lg p-8 text-center">
                         <h3 className="text-xl font-black">Could not load the feed</h3>
                         <p className="font-bold text-muted">{milestonesError}</p>
+                        <Button variant="secondary" onClick={() => void loadMilestones()} className="mt-5">
+                          Retry
+                        </Button>
                       </div>
                     ) : filteredMilestones.length ? (
                       <ul className="mt-4 space-y-3">

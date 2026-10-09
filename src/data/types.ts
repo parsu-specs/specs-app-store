@@ -92,6 +92,21 @@ export const SITE_PALETTE_IDS = [
   "midnight",
 ] as const;
 
+/**
+ * Allowlisted avatar colors. Single source of truth — localProfiles and
+ * supabaseRepos validate against it, and profiles_color_valid mirrors it.
+ */
+export const AVATAR_COLORS = [
+  "yellow",
+  "mint",
+  "pink",
+  "sky",
+  "lavender",
+  "purple",
+  "paper",
+  "surface",
+] as const;
+
 export type Profile = {
   id: string;
   name: string;

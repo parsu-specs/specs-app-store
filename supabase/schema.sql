@@ -139,23 +139,25 @@ create policy "owners manage profiles" on profiles
 create policy "owners manage apps" on apps
   for all using (auth.uid()::text = creator_id) with check (auth.uid()::text = creator_id);
 
--- Any signed-in user may vote/like/cheer/comment; removal of one's own row only.
+-- Any signed-in user may vote/like/cheer/comment as THEMSELVES; the row's
+-- author_id/user_id must equal the caller (see migration_authorship.sql).
+-- Removal of one's own row only.
 create policy "signed-in insert app_votes" on app_votes
-  for insert with check (auth.role() = 'authenticated');
+  for insert with check (auth.role() = 'authenticated' and auth.uid()::text = user_id);
 create policy "own delete app_votes" on app_votes
   for delete using (auth.uid()::text = user_id);
 create policy "signed-in insert comments" on comments
-  for insert with check (auth.role() = 'authenticated');
+  for insert with check (auth.role() = 'authenticated' and auth.uid()::text = author_id);
 create policy "own delete comments" on comments
   for delete using (auth.uid()::text = author_id);
 create policy "signed-in insert comment_likes" on comment_likes
-  for insert with check (auth.role() = 'authenticated');
+  for insert with check (auth.role() = 'authenticated' and auth.uid()::text = user_id);
 create policy "own delete comment_likes" on comment_likes
   for delete using (auth.uid()::text = user_id);
 create policy "signed-in insert milestones" on milestones
-  for insert with check (auth.role() = 'authenticated');
+  for insert with check (auth.role() = 'authenticated' and auth.uid()::text = author_id);
 create policy "signed-in insert milestone_cheers" on milestone_cheers
-  for insert with check (auth.role() = 'authenticated');
+  for insert with check (auth.role() = 'authenticated' and auth.uid()::text = user_id);
 create policy "own delete milestone_cheers" on milestone_cheers
   for delete using (auth.uid()::text = user_id);
 

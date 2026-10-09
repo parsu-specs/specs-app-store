@@ -4,6 +4,7 @@ import {
   buildNotifications,
   bumpCollabTag,
   loadNotificationState,
+  restampRearrived,
   saveNotificationState,
   type NotificationInput,
 } from "./notifications";
@@ -59,7 +60,9 @@ function baseInput(over: Partial<NotificationInput> = {}): NotificationInput {
     apps: [],
     threads: new Map(),
     milestones: [],
-    baseline: {},
+    voters: new Map(),
+    voterBaseline: {},
+    voteCycles: {},
     nowMs: NOW,
     ...over,
   };
@@ -113,12 +116,33 @@ describe("buildNotifications", () => {
     expect(items.find((i) => i.id === "c:c9")?.kind).toBe("comment");
   });
 
-  it("reports vote gains vs the baseline only", () => {
-    const mine = app("mine", { creator: "Ann", creatorId: "u1", votes: 5 });
-    const gained = buildNotifications(baseInput({ apps: [mine], baseline: { mine: 3 } }));
-    expect(gained.find((i) => i.kind === "vote")?.title).toBe("2 new upvotes on App mine");
-    const silent = buildNotifications(baseInput({ apps: [mine], baseline: { mine: 5 } }));
-    expect(silent.some((i) => i.kind === "vote")).toBe(false);
+  it("notifies per-voter appearances, including re-votes after unvotes", () => {
+    const mine = app("mine", { creator: "Ann", creatorId: "u1", votes: 1 });
+    const bob = { id: "u2", name: "Bob", role: "r", bio: "", color: "sky", createdAt: H(9) };
+    const voters = new Map([["mine", [bob]]]);
+    const first = buildNotifications(baseInput({ apps: [mine], voters }));
+    expect(first.find((i) => i.kind === "vote")?.title).toBe("Bob upvoted App mine");
+
+    // A steady voter never re-fires.
+    const steady = buildNotifications(
+      baseInput({ apps: [mine], voters, voterBaseline: { mine: ["u2"] } }),
+    );
+    expect(steady.some((i) => i.kind === "vote")).toBe(false);
+
+    // Unvote (baseline drops the voter) then re-vote notifies under a fresh id.
+    const re = buildNotifications(
+      baseInput({ apps: [mine], voters, voterBaseline: { mine: [] }, voteCycles: { mine: { u2: 1 } } }),
+    );
+    expect(re.find((i) => i.kind === "vote")?.id).toBe("vote:mine:u2#1");
+
+    // Own votes never notify.
+    const self = buildNotifications(
+      baseInput({
+        apps: [mine],
+        voters: new Map([["mine", [{ ...bob, id: "u1", name: "Ann" }]]]),
+      }),
+    );
+    expect(self.some((i) => i.kind === "vote")).toBe(false);
   });
 
   it("matches collab tags by id or profile-row name, never strangers", () => {
@@ -128,12 +152,12 @@ describe("buildNotifications", () => {
     const mia: User = { id: "google-1", email: "m@x.com", name: "Mia Santos" };
     const tagged = app("p1", { collaborators: ["mia"] });
     const byName = buildNotifications(
-      baseInput({ user: mia, apps: [tagged], profiles, baseline: {} }),
+      baseInput({ user: mia, apps: [tagged], profiles }),
     );
     expect(byName.some((i) => i.kind === "collab")).toBe(true);
     const stranger: User = { id: "u9", email: "z@x.com", name: "Zed" };
     const none = buildNotifications(
-      baseInput({ user: stranger, apps: [tagged], profiles, baseline: {} }),
+      baseInput({ user: stranger, apps: [tagged], profiles }),
     );
     expect(none.some((i) => i.kind === "collab")).toBe(false);
   });
@@ -144,6 +168,35 @@ describe("buildNotifications", () => {
     const c = { id: "vote:x", title: "T", body: "6 total" };
     expect(arrivalKeyOf(a)).toBe(arrivalKeyOf(b));
     expect(arrivalKeyOf(a)).not.toBe(arrivalKeyOf(c));
+  });
+
+  it("restamps same-content re-arrivals so renewed news sorts to the top", () => {
+    const item = { id: "collab:p1", title: "T", body: "B" };
+    const key = arrivalKeyOf(item);
+    const oldStamp = "2026-10-01T00:00:00.000Z";
+    const nowStamp = "2026-10-07T12:00:00.000Z";
+    const seenAt = { [key]: oldStamp };
+
+    // Absent -> present with an already-stamped key: refresh to now.
+    const refreshed = restampRearrived([item], new Set(["other"]), seenAt, nowStamp);
+    expect(refreshed[key]).toBe(nowStamp);
+    expect(seenAt[key]).toBe(oldStamp);
+
+    // Steady items keep their stamp (same object back, no rewrite).
+    const steady = restampRearrived([item], new Set(["collab:p1"]), seenAt, nowStamp);
+    expect(steady).toBe(seenAt);
+
+    // First sightings (unstamped keys) are left for the missing-key stamping.
+    const fresh = restampRearrived(
+      [{ id: "c:new", title: "T2", body: "B2" }],
+      new Set(["collab:p1"]),
+      seenAt,
+      nowStamp,
+    );
+    expect(fresh).toBe(seenAt);
+
+    // No history yet: nothing to compare against.
+    expect(restampRearrived([item], null, seenAt, nowStamp)).toBe(seenAt);
   });
 });
 
@@ -156,7 +209,6 @@ describe("collab tag snapshots", () => {
       baseInput({
         apps: [tagged()],
         profiles: [],
-        baseline: {},
         collabBaseline: load().collabBaseline,
       });
     const collabs = (uid: string) =>
@@ -172,6 +224,8 @@ describe("collab tag snapshots", () => {
     saveNotificationState("u1", {
       readIds: seen.map((i) => i.id),
       voteBaseline: {},
+      voterBaseline: {},
+      voteCycles: {},
       collabBaseline: ["p1"],
       dismissedIds: [],
       seenAt: {},
@@ -188,6 +242,8 @@ describe("collab tag snapshots", () => {
     expect(loadNotificationState("ghost")).toEqual({
       readIds: [],
       voteBaseline: {},
+      voterBaseline: {},
+      voteCycles: {},
       collabBaseline: [],
       dismissedIds: [],
       seenAt: {},
@@ -199,6 +255,8 @@ describe("collab tag snapshots", () => {
     expect(loadNotificationState("u1")).toEqual({
       readIds: ["c:x"],
       voteBaseline: {},
+      voterBaseline: {},
+      voteCycles: {},
       collabBaseline: [],
       dismissedIds: [],
       seenAt: {},

@@ -52,6 +52,7 @@ function GoogleContinueButton({
       try {
         const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
           headers: { Authorization: `Bearer ${token.access_token}` },
+          signal: AbortSignal.timeout(8_000),
         });
         if (!response.ok) throw new Error("profile fetch failed");
         const info = (await response.json()) as {

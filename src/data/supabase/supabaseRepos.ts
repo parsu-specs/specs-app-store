@@ -13,7 +13,9 @@ import {
   type ProfilePatch,
   type ProfileRepo,
 } from "../repositories";
+import { isSafeImageUrl } from "../../utils/urls";
 import {
+  AVATAR_COLORS,
   PROFILE_THEMES,
   SITE_PALETTE_IDS,
   type AppInput,
@@ -201,15 +203,20 @@ export function createSupabaseAppRepo(): AppRepo {
   return {
     async listApps(params: ListAppsParams = {}) {
       const { query = "", category = "All", limit = 100, offset = 0, userId } = params;
+      // Clamp caller-supplied paging: an unbounded limit would dump the table.
+      const safeLimit = Math.min(200, Math.max(1, Math.floor(limit) || 100));
+      const safeOffset = Math.max(0, Math.floor(offset) || 0);
       const supabase = getSupabase();
       let request = supabase.from("apps").select("*").order("created_at", { ascending: false });
       const q = query.trim();
       if (q) {
-        const like = `%${q.replace(/[%_]/g, "")}%`;
+        // Strip PostgREST `or=` metacharacters (,%_()") alongside wildcards so
+        // search text cannot reshape the filter or force a 400.
+        const like = `%${q.replace(/[%_(),"]/g, "").slice(0, 100)}%`;
         request = request.or(`title.ilike.${like},description.ilike.${like},creator.ilike.${like}`);
       }
       if (category !== "All") request = request.eq("category", category);
-      request = request.range(offset, offset + limit - 1);
+      request = request.range(safeOffset, safeOffset + safeLimit - 1);
       const { data, error } = await request;
       if (error) throw new Error(error.message);
       const rows = (data ?? []).map(toAppRow);
@@ -677,8 +684,15 @@ export function createSupabaseProfileRepo(): ProfileRepo {
     },
 
     async updateProfile(id: string, patch, requesterId: string) {
-      if (id !== requesterId) throw new Error("You can only edit your own profile.");
       const supabase = getSupabase();
+      // requesterId is caller-supplied and untrusted: verify identity
+      // against the server session instead (getUser validates the JWT
+      // with Supabase rather than parsing local storage).
+      const {
+        data: { user: sessionUser },
+      } = await supabase.auth.getUser();
+      if (!sessionUser || id !== sessionUser.id || requesterId !== sessionUser.id)
+        throw new Error("You can only edit your own profile.");
       const current = await this.getProfile(id);
       const name = patch.name?.trim() || current.name;
       const role = patch.role?.trim() ?? current.role;
@@ -695,6 +709,12 @@ export function createSupabaseProfileRepo(): ProfileRepo {
         patch.palette !== undefined ? patch.palette.trim() || null : (current.palette ?? null);
       if (palette !== null && !(SITE_PALETTE_IDS as readonly string[]).includes(palette)) {
         throw new Error("Pick a valid website palette.");
+      }
+      if (!(AVATAR_COLORS as readonly string[]).includes(color)) {
+        throw new Error("Pick a valid avatar color.");
+      }
+      if (imageUrl && !isSafeImageUrl(imageUrl)) {
+        throw new Error("Photo must be an https:// link or a small uploaded image.");
       }
       if (!name) throw new Error("Name is required.");
       if (name.length > 40) throw new Error("Keep your name under 40 characters.");
@@ -719,83 +739,20 @@ export function createSupabaseProfileRepo(): ProfileRepo {
 
     async claimProfile(duplicateProfileId: string, requester: User) {
       const supabase = getSupabase();
-      const duplicate = await this.getProfile(duplicateProfileId);
-      if (duplicate.id === requester.id) throw new Error("That is already your profile.");
-      if (duplicate.name.trim().toLowerCase() !== requester.name.trim().toLowerCase()) {
-        throw new Error("You can only claim a profile with your exact display name.");
-      }
-      const from = duplicate.id;
-      const to = requester.id;
-
-      const { data: ownedApps } = await supabase.from("apps").select("id").eq("creator_id", from);
-      for (const app of (ownedApps ?? []) as { id: string }[]) {
-        await supabase
-          .from("apps")
-          .update({ creator_id: to, creator: requester.name })
-          .eq("id", app.id);
-      }
-      const { data: ownedComments } = await supabase
-        .from("comments")
-        .select("id")
-        .eq("author_id", from);
-      for (const comment of (ownedComments ?? []) as { id: string }[]) {
-        await supabase
-          .from("comments")
-          .update({ author_id: to, author_name: requester.name })
-          .eq("id", comment.id);
-      }
-      const { data: ownedMilestones } = await supabase
-        .from("milestones")
-        .select("id")
-        .eq("author_id", from);
-      for (const milestone of (ownedMilestones ?? []) as { id: string }[]) {
-        await supabase
-          .from("milestones")
-          .update({ author_id: to, author_name: requester.name })
-          .eq("id", milestone.id);
-      }
-      const { data: votes } = await supabase.from("app_votes").select("app_id").eq("user_id", from);
-      for (const vote of (votes ?? []) as { app_id: string }[]) {
-        await supabase.from("app_votes").delete().eq("app_id", vote.app_id).eq("user_id", from);
-        await supabase
-          .from("app_votes")
-          .upsert({ app_id: vote.app_id, user_id: to }, { onConflict: "app_id,user_id" });
-      }
-      const { data: likes } = await supabase
-        .from("comment_likes")
-        .select("comment_id")
-        .eq("user_id", from);
-      for (const like of (likes ?? []) as { comment_id: string }[]) {
-        await supabase
-          .from("comment_likes")
-          .delete()
-          .eq("comment_id", like.comment_id)
-          .eq("user_id", from);
-        await supabase
-          .from("comment_likes")
-          .upsert(
-            { comment_id: like.comment_id, user_id: to },
-            { onConflict: "comment_id,user_id" },
+      if (duplicateProfileId === requester.id)
+        throw new Error("That is already your profile.");
+      // Authorization lives in the claim_profile RPC (requester = auth.uid(),
+      // name-equality checked server-side, all moves in one transaction).
+      // Only the duplicate id crosses the wire — never ownership claims.
+      const { error } = await supabase.rpc("claim_profile", { p_from: duplicateProfileId });
+      if (error) {
+        if (error.code === "42883" || error.message.includes("claim_profile")) {
+          throw new Error(
+            "Profile claiming is unavailable — ask an admin to run the latest database migration.",
           );
+        }
+        throw new Error(error.message);
       }
-      const { data: cheers } = await supabase
-        .from("milestone_cheers")
-        .select("milestone_id")
-        .eq("user_id", from);
-      for (const cheer of (cheers ?? []) as { milestone_id: string }[]) {
-        await supabase
-          .from("milestone_cheers")
-          .delete()
-          .eq("milestone_id", cheer.milestone_id)
-          .eq("user_id", from);
-        await supabase
-          .from("milestone_cheers")
-          .upsert(
-            { milestone_id: cheer.milestone_id, user_id: to },
-            { onConflict: "milestone_id,user_id" },
-          );
-      }
-      await supabase.from("profiles").delete().eq("id", from);
       return this.ensureUserProfile(requester);
     },
   };

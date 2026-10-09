@@ -3,14 +3,15 @@ import type { AppItem, Comment, Milestone, NotificationItem, Profile, User } fro
 /**
  * Derived notifications (no backend changes).
  *
- * The app has no notification table, and vote rows carry no per-voter
- * timestamp in local mode, so notifications are computed from data the UI
- * already reads: apps, comment threads, milestones, and vote counts.
+ * The app has no notification table, so notifications are computed from data
+ * the UI already reads: apps, comment threads, milestones, and voter lists.
  *
  * - comment: someone commented on one of my projects.
  * - reply: someone replied to one of my comments (any project).
- * - vote: upvote count on one of my projects grew since the last
- *   read snapshot (aggregate — per-voter timestamps don't exist locally).
+ * - vote: someone upvoted one of my projects (per-voter appearances from
+ *   listVoters snapshots — an unvote followed by a re-vote notifies again
+ *   under a fresh id, while a steady voter never re-fires; own votes never
+ *   notify).
  * - collab: another developer tagged me as a collaborator on their project
  *   (id match, or name match against a tagged profile row — uploaders pick
  *   from seed/duplicate profile rows whose id often differs from the
@@ -21,7 +22,7 @@ import type { AppItem, Comment, Milestone, NotificationItem, Profile, User } fro
  * - project: a new community project (7d window, not mine).
  * - update: a recent community milestone (7d window, not mine).
  *
- * Read state (read ids + vote baseline) lives in localStorage per user.
+ * Read state (read ids + voter presence) lives in localStorage per user.
  * Nothing here changes any repo contract or server schema.
  */
 
@@ -34,6 +35,10 @@ const BODY_PREVIEW = 120;
 export type NotificationState = {
   readIds: string[];
   voteBaseline: Record<string, number>;
+  /** Voter ids seen at the last snapshot, per owned app (presence tracking). */
+  voterBaseline: Record<string, string[]>;
+  /** Completed appearances per app -> voter — a re-vote after an unvote notifies under a fresh id. */
+  voteCycles: Record<string, Record<string, number>>;
   /** App ids the user was tagged on at the last snapshot (re-tag re-fires). */
   collabBaseline: string[];
   /** Dismissed (deleted) ids — hidden from the list, not just marked read. */
@@ -61,10 +66,39 @@ function cleanTimes(value: unknown): Record<string, string> {
   return out;
 }
 
+function cleanIdMap(value: unknown): Record<string, string[]> {
+  if (typeof value !== "object" || value === null) return {};
+  const out: Record<string, string[]> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof k === "string" && Array.isArray(v)) {
+      out[k] = v.filter((id): id is string => typeof id === "string").slice(0, 500);
+    }
+  }
+  return out;
+}
+
+function cleanCycles(value: unknown): Record<string, Record<string, number>> {
+  if (typeof value !== "object" || value === null) return {};
+  const out: Record<string, Record<string, number>> = {};
+  for (const [appId, v] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof appId !== "string" || typeof v !== "object" || v === null) continue;
+    const counts: Record<string, number> = {};
+    for (const [vid, n] of Object.entries(v as Record<string, unknown>)) {
+      if (typeof vid === "string" && typeof n === "number" && Number.isFinite(n) && n > 0) {
+        counts[vid] = Math.floor(n);
+      }
+    }
+    if (Object.keys(counts).length > 0) out[appId] = counts;
+  }
+  return out;
+}
+
 export function loadNotificationState(userId: string | undefined): NotificationState {
   const empty: NotificationState = {
     readIds: [],
     voteBaseline: {},
+    voterBaseline: {},
+    voteCycles: {},
     collabBaseline: [],
     dismissedIds: [],
     seenAt: {},
@@ -80,6 +114,8 @@ export function loadNotificationState(userId: string | undefined): NotificationS
         typeof parsed.voteBaseline === "object" && parsed.voteBaseline !== null
           ? (parsed.voteBaseline as Record<string, number>)
           : {},
+      voterBaseline: cleanIdMap(parsed.voterBaseline),
+      voteCycles: cleanCycles(parsed.voteCycles),
       collabBaseline: cleanIds(parsed.collabBaseline),
       dismissedIds: cleanIds(parsed.dismissedIds),
       seenAt: cleanTimes(parsed.seenAt),
@@ -96,6 +132,8 @@ export function saveNotificationState(userId: string, state: NotificationState):
       JSON.stringify({
         readIds: state.readIds.slice(0, MAX_READ_IDS),
         voteBaseline: state.voteBaseline,
+        voterBaseline: state.voterBaseline,
+        voteCycles: state.voteCycles,
         collabBaseline: state.collabBaseline,
         dismissedIds: state.dismissedIds.slice(0, MAX_READ_IDS),
         seenAt: state.seenAt,
@@ -153,8 +191,12 @@ export type NotificationInput = {
   /** appId -> comments (already fetched by the caller, capped). */
   threads: Map<string, Comment[]>;
   milestones: Milestone[];
-  /** Last-read vote counts per owned app. */
-  baseline: Record<string, number>;
+  /** appId -> current voters (listVoters snapshots, owned apps only). */
+  voters: Map<string, Profile[]>;
+  /** Voter ids seen at the last snapshot, per owned app. */
+  voterBaseline: Record<string, string[]>;
+  /** Completed appearances per app -> voter (re-votes arrive under fresh ids). */
+  voteCycles: Record<string, Record<string, number>>;
   /** App ids tagged at the last snapshot — re-tags after untag re-fire. */
   collabBaseline?: string[];
   /** All known profiles — resolves tagged ids to names for the fallback. */
@@ -187,6 +229,32 @@ export function arrivalKeyOf(item: Pick<NotificationItem, "id" | "title" | "body
 }
 
 /**
+ * Overwrite arrival stamps for ids that vanished and came back with
+ * identical content (same arrival key, already stamped). Stamps are
+ * otherwise write-once, so a re-tag or renewed vote kept its ORIGINAL
+ * date and sank to a random-looking position instead of topping the list.
+ * First sightings (unstamped keys) are left alone — the caller stamps those.
+ * Returns the input unchanged when nothing re-arrived.
+ */
+export function restampRearrived(
+  items: Pick<NotificationItem, "id" | "title" | "body">[],
+  prevIds: Set<string> | null,
+  seenAt: Record<string, string>,
+  nowIso: string,
+): Record<string, string> {
+  if (!prevIds) return seenAt;
+  let next = seenAt;
+  for (const item of items) {
+    if (prevIds.has(item.id)) continue;
+    const key = arrivalKeyOf(item);
+    if (next[key] === undefined) continue;
+    if (next === seenAt) next = { ...seenAt };
+    next[key] = nowIso;
+  }
+  return next;
+}
+
+/**
  * Is this user tagged as a collaborator on someone else's project?
  * Id match first, then profile-row name match (the picker lists
  * seed/duplicate rows whose id rarely equals the login id).
@@ -204,7 +272,7 @@ export function isTaggedCollaborator(app: AppItem, user: User, profiles: Profile
 }
 
 export function buildNotifications(input: NotificationInput): NotificationItem[] {
-  const { user, apps, threads, milestones, baseline } = input;
+  const { user, apps, threads, milestones, voters, voterBaseline, voteCycles } = input;
   const nowMs = input.nowMs ?? Date.now();
   const items: NotificationItem[] = [];
 
@@ -256,21 +324,26 @@ export function buildNotifications(input: NotificationInput): NotificationItem[]
     }
   }
 
-  // New upvotes since the last read snapshot (aggregate — no per-vote
-  // timestamps exist in local mode; createdAt reuses the project date
-  // for stable sorting and the body states the diff explicitly).
+  // Upvote appearances per voter. Presence (not totals) is the event, so an
+  // unvote followed by a re-vote notifies again under a fresh id while a
+  // steady voter never re-fires. Own votes never notify.
   for (const app of apps) {
     if (!myAppIds.has(app.id)) continue;
-    const before = typeof baseline[app.id] === "number" ? baseline[app.id] : app.votes;
-    const gained = app.votes - before;
-    if (gained > 0 && validDate(app.createdAt)) {
+    if (!validDate(app.createdAt)) continue;
+    const seen = new Set(voterBaseline[app.id] ?? []);
+    const cycles = voteCycles[app.id] ?? {};
+    for (const voter of voters.get(app.id) ?? []) {
+      if (voter.id === user.id || seen.has(voter.id)) continue;
+      const cycle = cycles[voter.id] ?? 0;
+      const name = voter.name?.trim() || "Someone";
       items.push({
-        id: `vote:${app.id}`,
+        id: cycle === 0 ? `vote:${app.id}:${voter.id}` : `vote:${app.id}:${voter.id}#${cycle}`,
         kind: "vote",
-        title: `${gained} new upvote${gained === 1 ? "" : "s"} on ${app.title}`,
+        title: `${name} upvoted ${app.title}`,
         body: `${app.votes} total`,
         createdAt: app.createdAt,
         appId: app.id,
+        actorName: voter.name,
       });
     }
   }

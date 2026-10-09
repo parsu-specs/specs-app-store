@@ -29,6 +29,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .then((session) => {
         if (!cancelled) setUser(session);
       })
+      .catch(() => {
+        if (!cancelled) setUser(null);
+      })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
@@ -69,8 +72,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signout = async () => {
-    await getAuthRepo().signout();
-    setUser(null);
+    try {
+      await getAuthRepo().signout();
+    } finally {
+      // Always clear locally (fail closed) even if the server call fails;
+      // the server session expires on its own. Callers show their own toast.
+      setUser(null);
+    }
   };
 
   const updateName = async (name: string) => {

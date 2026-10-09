@@ -1,8 +1,12 @@
 -- Counter toggles + project delete as SECURITY DEFINER functions.
--- Why: RLS has no UPDATE policy on the counter columns (deliberately — direct
--- row edits stay forbidden), so the app must mutate counters through these
--- RPCs. Each function verifies caller's identity itself and touches only the
--- counter + its membership row. Run in the Supabase SQL editor.
+-- Why: direct row edits of counters stay forbidden (see the
+-- apps_votes_guard trigger in migration_votes_guard.sql — owners could
+-- otherwise PATCH votes via the "owners manage apps" policy), so the app
+-- must mutate the apps.votes counter through toggle_app_vote below.
+-- (comments.likes and milestone cheers have no UPDATE policy at all, so
+-- their toggles need no extra guard.) Each function verifies caller's
+-- identity itself and touches only the counter + its membership row.
+-- Run in the Supabase SQL editor.
 
 -- ── Toggle a project upvote ───────────────────────────────────────────────
 create or replace function toggle_app_vote(p_app_id text)
@@ -19,6 +23,9 @@ begin
   if v_uid is null then
     raise exception 'Sign in to vote.';
   end if;
+  -- Permit the guarded counter write below for this transaction only
+  -- (see the apps_votes_guard trigger in migration_votes_guard.sql).
+  perform set_config('app.votes_rpc', 'on', true);
   if exists (select 1 from app_votes where app_id = p_app_id and user_id = v_uid) then
     delete from app_votes where app_id = p_app_id and user_id = v_uid;
     update apps set votes = greatest(0, votes - 1) where id = p_app_id returning * into v_row;

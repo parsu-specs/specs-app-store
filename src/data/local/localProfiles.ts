@@ -1,20 +1,11 @@
 import { NotFoundError, type ProfileRepo } from "../repositories";
-import { PROFILE_THEMES, SITE_PALETTE_IDS, type Profile, type User } from "../types";
+import { AVATAR_COLORS, PROFILE_THEMES, SITE_PALETTE_IDS, type Profile, type User } from "../types";
 import { claimDuplicateProfile } from "./claim";
 import { seedProfiles } from "./seed";
 
 const PROFILES_KEY = "cc.profiles.v1";
 
-const ALLOWED_COLORS = new Set([
-  "yellow",
-  "mint",
-  "pink",
-  "sky",
-  "lavender",
-  "purple",
-  "paper",
-  "surface",
-]);
+const ALLOWED_COLORS = new Set<string>(AVATAR_COLORS);
 
 function delay(ms = 80): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
