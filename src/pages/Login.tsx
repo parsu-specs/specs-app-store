@@ -198,7 +198,7 @@ export default function Login() {
             {mode === "signup" && (
               <label className="block">
                 <span className="toon-label">Display name</span>
-                <input
+                <Input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   type="text"

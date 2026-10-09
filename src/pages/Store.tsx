@@ -809,6 +809,7 @@ export default function Store() {
     await signout();
   };
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const [publishBonus, setPublishBonus] = useState<{ id: string; title: string } | null>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement>(null);
@@ -846,6 +847,18 @@ export default function Store() {
       document.body.style.overflow = "";
     };
   }, [confirmSignOut]);
+  useEffect(() => {
+    if (!publishBonus) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPublishBonus(null);
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [publishBonus]);
   const goTab = (
     event: React.MouseEvent<HTMLAnchorElement>,
     nextView: Exclude<StoreView, "profile" | "project">,
@@ -1020,6 +1033,8 @@ export default function Store() {
       setShowForm(false);
       setCategory("All");
       setQuery("");
+      // Celebrate the publish: +20 developer-board points (see rankDevelopers).
+      setPublishBonus({ id: created.id, title: created.title });
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : "Could not publish project.");
     } finally {
@@ -1413,6 +1428,49 @@ export default function Store() {
                   }}
                 >
                   Yes, sign out
+                </Button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {publishBonus &&
+        createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Project published"
+            onClick={() => setPublishBonus(null)}
+            className="fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-ink/80 p-4"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="toon-card my-auto w-full max-w-sm rounded-lg bg-surface p-6 text-center"
+            >
+              <Trophy size={40} weight="duotone" className="mx-auto text-purple" />
+              <h2 className="mt-3 text-xl font-black">Project published!</h2>
+              <p className="mt-1 text-sm font-bold text-muted">
+                {publishBonus.title} is live — plus 20 pts on the developer leaderboard.
+              </p>
+              <div className="mt-5 flex justify-center gap-3">
+                <Button
+                  variant="surface"
+                  size="small"
+                  onClick={() => setPublishBonus(null)}
+                  autoFocus
+                >
+                  Keep exploring
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="small"
+                  onClick={() => {
+                    openApp(publishBonus.id);
+                    setPublishBonus(null);
+                  }}
+                >
+                  View project
                 </Button>
               </div>
             </div>
@@ -2387,10 +2445,10 @@ export default function Store() {
               {view === "leaderboard" && (
                 <section className="mt-2">
                   <div className="mb-6">
-                    <p className="text-xs font-black uppercase text-purple">
-                      {boardTab === "developers"
-                        ? "Rank points = total upvotes"
-                        : "Ranked by project upvotes"}
+                      <p className="text-xs font-black uppercase text-purple">
+                        {boardTab === "developers"
+                          ? "Rank points = upvotes + 20 per published project"
+                          : "Ranked by project upvotes"}
                     </p>
                     <h2 className="mt-1 text-2xl font-black">
                       {boardTab === "developers" ? "Top developers" : "Top projects"}

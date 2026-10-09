@@ -6,13 +6,20 @@ export type RankedDeveloper = {
   points: number;
 };
 
+/** Ranking points awarded per published project (developer board only). */
+export const PUBLISH_BONUS_PTS = 20;
+
 function appsFor(p: Profile, apps: AppItem[]): AppItem[] {
   return apps.filter((a) =>
     a.creatorId ? a.creatorId === p.id : a.creator.toLowerCase() === p.name.toLowerCase(),
   );
 }
 
-/** All developers sorted by rank points (summed project upvotes). Single source of truth. */
+/**
+ * All developers sorted by rank points (summed project upvotes + publish
+ * bonus per project). Single source of truth. Project ranking is untouched
+ * (see rankProjects) — the bonus applies to developers only.
+ */
 export function rankDevelopers(profiles: Profile[], apps: AppItem[]): RankedDeveloper[] {
   return profiles
     .map((profile) => {
@@ -20,7 +27,7 @@ export function rankDevelopers(profiles: Profile[], apps: AppItem[]): RankedDeve
       return {
         profile,
         projects: mine.length,
-        points: mine.reduce((n, a) => n + a.votes, 0),
+        points: mine.reduce((n, a) => n + a.votes, 0) + mine.length * PUBLISH_BONUS_PTS,
       };
     })
     .sort(
