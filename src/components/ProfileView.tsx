@@ -187,9 +187,9 @@ export default function ProfileView({
             : undefined
         }
       >
-        <div className="flex flex-wrap items-start gap-5">
+        <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:items-start sm:text-left">
           <Avatar name={profile.name} color={profile.color} imageUrl={profile.imageUrl} size="xl" />
-          <div className="min-w-0 flex-1">
+          <div className="w-full min-w-0 flex-1 sm:w-auto">
             <p className="ink-stamp bg-surface">{isSelf ? "Your profile" : "Developer"}</p>
             <h2 className="mt-3 text-3xl font-black">
               {profile.name}
@@ -198,8 +198,8 @@ export default function ProfileView({
               )}
             </h2>
             <p className="mt-1 font-bold text-muted">{profile.role}</p>
-            {profile.bio && <p className="mt-3 max-w-2xl leading-7 text-body">{profile.bio}</p>}
-            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm font-black">
+            {profile.bio && <p className="mt-3 max-w-2xl break-words leading-7 text-body">{profile.bio}</p>}
+            <div className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm font-black sm:justify-start">
               <span>
                 {apps.length} project{apps.length === 1 ? "" : "s"}
               </span>
@@ -219,13 +219,16 @@ export default function ProfileView({
             )}
           </div>
           {isSelf && (
-            <Button
-              variant="secondary"
-              size="small"
-              onClick={() => setEditing((v) => !v)}
-            >
-              <PencilSimple size={18} weight="bold" /> {editing ? "Close" : "Edit profile"}
-            </Button>
+            <div className="w-full sm:w-auto">
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() => setEditing((v) => !v)}
+                className="w-full sm:w-auto"
+              >
+                <PencilSimple size={18} weight="bold" /> {editing ? "Close" : "Edit profile"}
+              </Button>
+            </div>
           )}
         </div>
 
