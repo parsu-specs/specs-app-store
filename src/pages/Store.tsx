@@ -1322,7 +1322,7 @@ export default function Store() {
           ref={accountMenuRef}
           className="fixed right-4 top-4 z-60 lg:relative lg:right-auto lg:top-auto lg:z-auto lg:mt-auto"
         >
-          <div className="lg:hidden -translate-y-1 flex gap-2 items-center">
+          <div className="lg:hidden -translate-y-1 relative flex gap-2 items-center">
             <Button
               type="button"
               variant="secondary"
@@ -1359,7 +1359,7 @@ export default function Store() {
                 id="account-menu"
                 role="group"
                 aria-label="Profile and site menu"
-                className="toon-card absolute right-0 mt-2 max-h-[calc(100dvh-6rem)] w-56 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl p-2 text-sm text-ink lg:bottom-full lg:left-0 lg:right-auto lg:top-auto lg:mb-2 lg:mt-0 lg:w-full"
+                className="toon-card absolute right-0 top-full z-10 mt-2 max-h-[calc(100dvh-6rem)] w-56 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl p-2 text-sm text-ink lg:bottom-full lg:left-0 lg:right-auto lg:top-auto lg:mb-2 lg:mt-0 lg:w-full"
               >
                 {myProfile && (
                   <button
