@@ -3,14 +3,14 @@ import Avatar from "../components/Avatar";
 import Brand from "../components/Brand";
 import Footer from "../components/Footer";
 import { APP_INFO, CONTACT_EMAIL, TEAM } from "../data/team";
+import { ROUTES } from "./routes";
 
 export default function About() {
-
   return (
     <div className="min-h-screen">
       <div className="px-5 pt-6 sm:px-8 lg:px-10">
         <a
-          href="/"
+          href={ROUTES.root}
           className="inline-flex items-center gap-2 text-sm font-black underline-offset-4 hover:underline"
         >
           <ArrowLeft size={18} weight="bold" /> Back to home

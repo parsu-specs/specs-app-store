@@ -9,12 +9,13 @@ import {
 import { ButtonLink } from "../components/Button";
 import Brand from "../components/Brand";
 import Footer from "../components/Footer";
+import { ROUTES } from "./routes";
 
 export default function Landing() {
   return (
     <div className="min-h-screen px-5 py-6 pb-0 lg:px-10">
       <nav className="mx-auto flex max-w-7xl items-center justify-between">
-        <a href="/landing" aria-label="CodeCanvas landing page">
+        <a href={ROUTES.landing} aria-label="CodeCanvas landing page">
           <Brand />
         </a>
         <span className="rounded-full border-2 border-ink bg-surface px-3 py-1 text-xs font-black">
@@ -41,7 +42,7 @@ export default function Landing() {
             finding collaborators across the SPECS community.
           </p>
           <div className="mt-9 flex flex-wrap gap-5">
-            <ButtonLink href="/Login">
+            <ButtonLink href={ROUTES.signin}>
               Sign in to CodeCanvas <RocketLaunch size={21} weight="duotone" />
             </ButtonLink>
             <ButtonLink href="#discover" variant="secondary">

@@ -8,6 +8,7 @@ import Input from "../components/Input";
 import { getProfileRepo } from "../data/factory";
 import { getSupabase } from "../data/supabase/client";
 import type { GoogleAccount } from "../data/repositories";
+import { ROUTES } from "./routes";
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 const isSupabaseMode = (import.meta.env.VITE_DATA_SOURCE as string | undefined) === "supabase";
@@ -108,9 +109,9 @@ export default function Login() {
       if (mode === "signup") {
         const failure = await signup(name, email, password);
         if (failure) setError(failure);
-        else window.history.replaceState({}, "", "/discover");
+        else window.history.replaceState({}, "", ROUTES.discover);
       } else if (await signin(email, password)) {
-        window.history.replaceState({}, "", "/discover");
+        window.history.replaceState({}, "", ROUTES.discover);
       } else {
         setError("That email and password don't match.");
       }
@@ -126,7 +127,7 @@ export default function Login() {
     try {
       const { error } = await getSupabase().auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/discover` },
+        options: { redirectTo: `${window.location.origin}${ROUTES.discover}` },
       });
       if (error) throw error;
     } catch (e) {
@@ -148,12 +149,12 @@ export default function Login() {
     } catch {
       // Non-fatal: the profile syncs on the next app load.
     }
-    window.history.replaceState({}, "", "/discover");
+    window.history.replaceState({}, "", ROUTES.discover);
   };
 
   return (
     <div className="relative grid min-h-screen place-items-center px-5 py-14">
-      <a href="/" className="absolute left-5 top-6 flex items-center gap-2 font-black sm:left-10">
+      <a href={ROUTES.root} className="absolute left-5 top-6 flex items-center gap-2 font-black sm:left-10">
         <ArrowLeft size={20} weight="bold" />
         Home
       </a>

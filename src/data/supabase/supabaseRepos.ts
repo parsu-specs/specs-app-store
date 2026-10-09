@@ -31,6 +31,7 @@ import {
   type CommentRow,
   type MilestoneRow,
 } from "../http/rows";
+import { ROUTES } from "../../pages/routes";
 
 const COLORS = ["yellow", "mint", "pink", "sky", "lavender"] as const;
 
@@ -87,12 +88,12 @@ export function createSupabaseAuthRepo(): AuthRepo {
       return sessionUser(data.user.id, data.user.email, cleanName);
     },
 
-    // Google uses the OAuth redirect flow in Supabase mode (see Login).
+    // Google uses the OAuth redirect flow in Supabase mode (see Sign In).
     // This method only runs if something calls it directly.
     async signinWithGoogleAccount(_account: GoogleAccount): Promise<GoogleSignInResult> {
       await getSupabase().auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/discover` },
+        options: { redirectTo: `${window.location.origin}${ROUTES.discover}` },
       });
       throw new AuthError("Redirecting to Google — continue there.");
     },
@@ -116,7 +117,7 @@ export function createSupabaseAuthRepo(): AuthRepo {
       if (profileError) throw new Error(profileError.message);
       // Fail loudly here: a silent metadata failure used to report success
       // while leaving stale auth metadata behind, which then clobbered the
-      // renamed profile row on the next login (see ensureUserProfile).
+      // renamed profile row on the next sign in (see ensureUserProfile).
       const { error: metaError } = await supabase.auth.updateUser({
         data: { name: clean },
       });
@@ -646,7 +647,7 @@ export function createSupabaseProfileRepo(): ProfileRepo {
             // The profile row is the source of truth for display names (it is
             // what the user edits in-app). Heal the auth metadata toward it.
             // The old direction did the reverse and wiped renames on every
-            // login whenever metadata drifted (failed updateUser call or an
+            // sign in whenever metadata drifted (failed updateUser call or an
             // OAuth provider refresh overwriting user_metadata).
             try {
               await supabase.auth.updateUser({ data: { name: storedName } });

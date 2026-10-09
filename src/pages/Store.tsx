@@ -86,7 +86,12 @@ import type {
   NotificationItem,
   Profile,
 } from "../data/types";
-import { ROUTES, normalizePathname } from "./routes";
+import {
+  ROUTES,
+  appDetailsPath,
+  developerProfilePath,
+  normalizePathname,
+} from "./routes";
 
 const categories: { label: CategoryFilter; Icon: typeof SquaresFour }[] = [
   { label: "All", Icon: SquaresFour },
@@ -107,6 +112,9 @@ const routeForView: Record<Exclude<StoreView, "profile" | "project">, string> = 
   settings: ROUTES.settings,
 };
 
+const routeTail = (pathname: string, route: string) =>
+  pathname.startsWith(`${route}/`) ? pathname.slice(route.length + 1) : null;
+
 function parsePath(path: string): {
   view: StoreView;
   profileId: string | null;
@@ -115,12 +123,12 @@ function parsePath(path: string): {
   const clean = normalizePathname(path || ROUTES.discover);
   if (clean === ROUTES.profile) return { view: "profile", profileId: "__me__", appId: null };
   if (clean === ROUTES.developers) return { view: "builders", profileId: null, appId: null };
-  const builderMatch = clean.match(/^\/developers\/(.+)$/);
-  if (builderMatch)
-    return { view: "profile", profileId: decodeURIComponent(builderMatch[1]), appId: null };
-  const appMatch = clean.match(/^\/apps\/(.+)$/);
-  if (appMatch) return { view: "project", profileId: null, appId: decodeURIComponent(appMatch[1]) };
-  if (clean === ROUTES.feed) return { view: "feed", profileId: null, appId: null };
+  const profileId = routeTail(clean, ROUTES.developers);
+  if (profileId) return { view: "profile", profileId: decodeURIComponent(profileId), appId: null };
+  const appId = routeTail(clean, ROUTES.apps) ?? routeTail(clean, ROUTES.discover);
+  if (appId) return { view: "project", profileId: null, appId: decodeURIComponent(appId) };
+  if (clean === ROUTES.feed || clean === ROUTES.community)
+    return { view: "feed", profileId: null, appId: null };
   if (clean === ROUTES.leaderboard) return { view: "leaderboard", profileId: null, appId: null };
   if (clean === ROUTES.settings) return { view: "settings", profileId: null, appId: null };
   return { view: "discover", profileId: null, appId: null };
@@ -698,11 +706,11 @@ export default function Store() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
-  const logout = async () => {
+  const signIn = async () => {
     window.history.replaceState({}, "", ROUTES.root);
     await signout();
   };
-  const [confirmLogout, setConfirmLogout] = useState(false);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement>(null);
@@ -729,9 +737,9 @@ export default function Store() {
   }, [accountMenuOpen]);
 
   useEffect(() => {
-    if (!confirmLogout) return;
+    if (!confirmSignOut) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setConfirmLogout(false);
+      if (e.key === "Escape") setConfirmSignOut(false);
     };
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
@@ -739,7 +747,7 @@ export default function Store() {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
-  }, [confirmLogout]);
+  }, [confirmSignOut]);
   const goTab = (
     event: React.MouseEvent<HTMLAnchorElement>,
     nextView: Exclude<StoreView, "profile" | "project">,
@@ -755,7 +763,7 @@ export default function Store() {
     const path =
       profileId === "__me__"
         ? ROUTES.profile
-        : `${ROUTES.developers}/${encodeURIComponent(profileId)}`;
+        : developerProfilePath(profileId);
     window.history.pushState({}, "", path);
     setSelectedProfileId(profileId);
     setSelectedAppId(null);
@@ -775,7 +783,7 @@ export default function Store() {
     [user],
   );
   const openAppFromProfile = useCallback((appId: string) => {
-    window.history.pushState({}, "", `${ROUTES.discover}/${encodeURIComponent(appId)}`);
+    window.history.pushState({}, "", appDetailsPath(appId));
     setView("project");
     setSelectedProfileId(null);
     setSelectedAppId(appId);
@@ -783,7 +791,7 @@ export default function Store() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
   const openApp = useCallback((appId: string, edit = false) => {
-    window.history.pushState({}, "", `${ROUTES.discover}/${encodeURIComponent(appId)}`);
+    window.history.pushState({}, "", appDetailsPath(appId));
     setView("project");
     setSelectedProfileId(null);
     setSelectedAppId(appId);
@@ -1211,12 +1219,12 @@ export default function Store() {
                   type="button"
                   onClick={() => {
                     setAccountMenuOpen(false);
-                    setConfirmLogout(true);
+                    setConfirmSignOut(true);
                   }}
                   className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left font-black text-red-700 hover:bg-cream"
                 >
                   <SignOut size={20} weight="bold" />
-                  Log out
+                  Sign out
                 </button>
               </div>
             )}
@@ -1262,24 +1270,24 @@ export default function Store() {
               type="button"
               onClick={() => {
                 setAccountMenuOpen(false);
-                setConfirmLogout(true);
+                setConfirmSignOut(true);
               }}
               className="text-alert"
             >
               <SignOut size={20} weight="bold" />
-              Log out
+              Sign out
             </Button>
           </div>
         </div>
       </aside>
 
-      {confirmLogout &&
+      {confirmSignOut &&
         createPortal(
           <div
             role="dialog"
             aria-modal="true"
             aria-label="Confirm sign out"
-            onClick={() => setConfirmLogout(false)}
+            onClick={() => setConfirmSignOut(false)}
             className="fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-ink/80 p-4"
           >
             <div
@@ -1288,12 +1296,12 @@ export default function Store() {
             >
               <SignOut size={28} weight="duotone" className="mx-auto" />
               <h2 className="mt-3 text-xl font-black">Sign out?</h2>
-              <p className="mt-1 text-sm font-bold text-muted">Are you sure you want to log out?</p>
+              <p className="mt-1 text-sm font-bold text-muted">Are you sure you want to sign out?</p>
               <div className="mt-5 flex justify-center gap-3">
                 <Button
                   variant="surface"
                   size="small"
-                  onClick={() => setConfirmLogout(false)}
+                  onClick={() => setConfirmSignOut(false)}
                   autoFocus
                 >
                   Cancel
@@ -1302,8 +1310,8 @@ export default function Store() {
                   variant="secondary"
                   size="small"
                   onClick={() => {
-                    setConfirmLogout(false);
-                    void logout();
+                    setConfirmSignOut(false);
+                    void signIn();
                   }}
                 >
                   Yes, sign out
@@ -2016,7 +2024,7 @@ export default function Store() {
                         >
                           <div className="flex items-center gap-3">
                             <a
-                              href={`${ROUTES.developers}/${encodeURIComponent(p.id)}`}
+                              href={developerProfilePath(p.id)}
                               onClick={(e) => {
                                 e.preventDefault();
                                 openProfile(p.id);
@@ -2033,7 +2041,7 @@ export default function Store() {
                             </a>
                             <h3 className="min-w-0 flex-1 wrap-break-word text-lg font-black">
                               <a
-                                href={`${ROUTES.developers}/${encodeURIComponent(p.id)}`}
+                                href={developerProfilePath(p.id)}
                                 onClick={(e) => {
                                   e.preventDefault();
                                   openProfile(p.id);

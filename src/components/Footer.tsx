@@ -1,12 +1,13 @@
 import Brand from "./Brand";
 import { CONTACT_EMAIL } from "../data/team";
+import { ROUTES } from "../pages/routes";
 
 const exploreLinks = [
-  { label: "Discover", href: "/discover" },
-  { label: "Developers", href: "/developers" },
-  { label: "Feed", href: "/feed" },
-  { label: "Leaderboard", href: "/leaderboard" },
-  { label: "About", href: "/about" },
+  { label: "Discover", href: ROUTES.discover },
+  { label: "Developers", href: ROUTES.developers },
+  { label: "Feed", href: ROUTES.feed },
+  { label: "Leaderboard", href: ROUTES.leaderboard },
+  { label: "About", href: ROUTES.about },
 ];
 
 export default function Footer() {

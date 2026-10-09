@@ -55,7 +55,7 @@ export const APP_INFO = {
     },
     {
       title: "Account safety",
-      body: "Signing out always asks for confirmation, and profile renames survive logout and login.",
+      body: "Signing out always asks for confirmation, and profile renames survive sign out and sign in.",
     },
     {
       title: "Google sign-in",

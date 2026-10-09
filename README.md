@@ -44,13 +44,13 @@ The UI only talks to repo interfaces (`src/data/repositories.ts`), so the storag
 - **Feed** (`/feed`) — share project updates, cheer builders, and join nested comment threads; `/community` remains a compatible legacy route
 - **Leaderboard** — developers and projects ranked with trophies
 - **Settings** (`/settings`) — sound mute toggle with chime preview, local demo-data reset
-- **Accounts** — email/password signup, Google sign-in, duplicate-profile claiming, logout confirmation
+- **Accounts** — email/password signup, Google sign-in, duplicate-profile claiming, sign out confirmation
 
 ## Project layout
 
 ```text
 src/
-  pages/        # Main (router), Store (app shell + views), Login, Landing, About
+  pages/        # Main (router), Store (app shell + views), Sign In, Landing, About
   components/   # Cards, dialogs, bell, voters, paged markdown, boundaries, …
   data/         # Repo contracts + local / supabase / http implementations
   utils/        # Notification builder, time stamps, sounds, scroll helper

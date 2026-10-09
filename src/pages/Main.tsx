@@ -67,8 +67,7 @@ export default function Main() {
   else if (normalizedPath === ROUTES.landing || (normalizedPath === ROUTES.root && !user))
     page = <Landing />;
   else if (user) page = <Store key={normalizedPath} />;
-  else if (isProtectedRoute(normalizedPath) || normalizedPath === ROUTES.signin)
-    page = <Login />;
+  else if (isProtectedRoute(normalizedPath) || normalizedPath === ROUTES.signin) page = <Login />;
   else page = <Landing />;
 
   return (

@@ -29,7 +29,7 @@ export default function SettingsView({
   const [paletteSaving, setPaletteSaving] = useState(false);
   const [armReset, setArmReset] = useState(false);
 
-  // Follow the account choice when it arrives (e.g. fresh login on a new
+  // Follow the account choice when it arrives (e.g. fresh sign in on a new
   // device); otherwise keep the device choice.
   useEffect(() => {
     setPaletteState(resolvePalette(profile?.palette));
