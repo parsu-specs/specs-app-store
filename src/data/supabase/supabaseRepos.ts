@@ -82,7 +82,18 @@ export function createSupabaseAuthRepo(): AuthRepo {
         password,
         options: { data: { name: cleanName } },
       });
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (/already (registered|exists)|already been registered/i.test(error.message)) {
+          throw new Error("An account with this email already exists. Try signing in instead.");
+        }
+        throw new Error(error.message);
+      }
+      // With email confirmation on, Supabase answers a duplicate signup with
+      // an obfuscated user that carries NO identities (anti-enumeration) —
+      // surface it instead of a fake "account created" success.
+      if ((data.user?.identities ?? []).length === 0) {
+        throw new Error("An account with this email already exists. Try signing in instead.");
+      }
       // Email confirmation on: account exists but no session yet.
       if (!data.session || !data.user) {
         throw new AuthError("Account created — check your email to confirm, then sign in.");
