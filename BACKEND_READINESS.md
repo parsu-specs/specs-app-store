@@ -53,7 +53,9 @@ future database/server swap mechanical. Nothing here changes localhost behavior.
     - `PATCH /profiles/:id` → `{ profile }` (owner only)
    - Errors as `{ message }` with proper HTTP status (404 drives not-found UI).
 5. Set `VITE_DATA_SOURCE=http` and `VITE_API_URL=https://<your-api>` in `.env`.
-6. Rate limits + abuse controls (votes, comments, uploads) — none exist today.
+6. Rate limits — DB-enforced in migration_rate_limits.sql (vote/like/cheer
+   toggles 30/min, comments 10/min, milestones 5/min). Still to do:
+   Supabase Auth CAPTCHA + rate limits in the dashboard, upload quotas.
 7. Tighten RLS (moderation roles), add CSP headers, move Google to auth-code flow
    with server-side verification. See the security review notes before real users.
 

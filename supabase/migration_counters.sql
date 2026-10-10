@@ -23,6 +23,7 @@ begin
   if v_uid is null then
     raise exception 'Sign in to vote.';
   end if;
+  perform check_rate('vote:toggle', 30, interval '1 minute');
   -- Permit the guarded counter write below for this transaction only
   -- (see the apps_votes_guard trigger in migration_votes_guard.sql).
   perform set_config('app.votes_rpc', 'on', true);
@@ -57,6 +58,7 @@ begin
   if v_uid is null then
     raise exception 'Sign in to like.';
   end if;
+  perform check_rate('like:toggle', 30, interval '1 minute');
   if exists (select 1 from comment_likes where comment_id = p_comment_id and user_id = v_uid) then
     delete from comment_likes where comment_id = p_comment_id and user_id = v_uid;
     update comments set likes = greatest(0, likes - 1) where id = p_comment_id returning * into v_row;
@@ -88,6 +90,7 @@ begin
   if v_uid is null then
     raise exception 'Sign in to cheer.';
   end if;
+  perform check_rate('cheer:toggle', 30, interval '1 minute');
   if exists (select 1 from milestone_cheers where milestone_id = p_milestone_id and user_id = v_uid) then
     delete from milestone_cheers where milestone_id = p_milestone_id and user_id = v_uid;
     update milestones set cheers = greatest(0, cheers - 1) where id = p_milestone_id returning * into v_row;
