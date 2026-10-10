@@ -48,6 +48,7 @@ import {
 } from "../utils/notifications";
 import Comments from "../components/Comments";
 import Avatar from "../components/Avatar";
+import Dropdown from "../components/Dropdown";
 import MarkdownFileViewer from "../components/MarkdownFileViewer";
 import MarkdownTextarea from "../components/MarkdownTextarea";
 import PagedMarkdown from "../components/PagedMarkdown";
@@ -2394,9 +2395,12 @@ export default function Store() {
                   <div className="min-w-0">
                     <form
                       onSubmit={(e) => void postMilestone(e)}
-                      className="toon-card rounded-lg bg-surface p-4 sm:p-5"
+                      className="toon-card paper-note rounded-lg bg-surface p-4 pt-10 sm:p-5 sm:pt-12"
                     >
-                      <h3 className="text-lg font-black">Share with the community</h3>
+                      <h3 className="flex items-center gap-2 text-lg font-black">
+                        <Newspaper size={22} weight="duotone" className="text-purple" />
+                        Share with the community
+                      </h3>
                       <label className="mt-3 block">
                         <span className="sr-only">What did you ship or learn?</span>
                         <textarea
@@ -2405,31 +2409,35 @@ export default function Store() {
                           maxLength={280}
                           required
                           placeholder="What did you ship or learn?…"
-                          className="toon-input min-h-20"
+                          rows={3}
+                          className="toon-input min-h-24 resize-y leading-7"
                         />
                       </label>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <label className="min-w-0 flex-1">
-                          <span className="sr-only">Attach one of your projects (optional)</span>
-                          <select
+                        <div className="min-w-0 flex-1">
+                          <Dropdown
+                            label="Attach one of your projects (optional)"
                             value={mAppId}
-                            onChange={(e) => setMAppId(e.target.value)}
-                            className="toon-input py-2 text-sm"
-                          >
-                            <option value="">No linked project</option>
-                            {user &&
-                              fullApps
-                                .filter((a) =>
-                                  a.creatorId ? a.creatorId === user.id : a.creator === user.name,
-                                )
-                                .map((a) => (
-                                  <option key={a.id} value={a.id}>
-                                    {a.title}
-                                  </option>
-                                ))}
-                          </select>
-                        </label>
-                        <span className="text-xs font-black text-muted">{mBody.length}/280</span>
+                            onChange={setMAppId}
+                            options={[
+                              { value: "", label: "No linked project" },
+                              ...(user
+                                ? fullApps
+                                    .filter((a) =>
+                                      a.creatorId
+                                        ? a.creatorId === user.id
+                                        : a.creator === user.name,
+                                    )
+                                    .map((a) => ({ value: a.id, label: a.title }))
+                                : []),
+                            ]}
+                          />
+                        </div>
+                        <span
+                          className={`ml-auto text-xs font-black tabular-nums ${mBody.length > 260 ? "text-alert" : "text-muted"}`}
+                        >
+                          {mBody.length}/280
+                        </span>
                         <Button
                           size="small"
                           type="submit"
