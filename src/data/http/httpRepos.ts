@@ -70,6 +70,21 @@ export function createHttpAuthRepo(): AuthRepo {
       return toUser(user);
     },
 
+    // Unimplemented backend surface (see BACKEND_READINESS.md) — the future
+    // server owns email delivery and password writes.
+    async requestPasswordReset(): Promise<void> {
+      throw new Error("Password reset isn't available yet.");
+    },
+
+    async updatePassword(): Promise<void> {
+      throw new Error("Password change isn't available yet.");
+    },
+
+    // Unbuilt backend surface — fail closed (prompt setup) rather than lie.
+    async hasPassword(): Promise<boolean> {
+      return false;
+    },
+
     // The server MUST verify the Google access token with Google (userinfo)
     // and match verified email -> account itself. Never trust bare claims.
     async signinWithGoogleAccount(account: GoogleAccount): Promise<GoogleSignInResult> {

@@ -164,6 +164,52 @@ export function createLocalAuthRepo(): AuthRepo {
       return user;
     },
 
+    // No email delivery in demo mode — but a signed-in user can still set
+    // a password directly (used by the recovery form once signed in).
+    async requestPasswordReset(): Promise<void> {
+      await delay();
+      throw new Error("Password reset emails aren't available in the local demo.");
+    },
+
+    async updatePassword(newPassword: string): Promise<void> {
+      await delay();
+      if (newPassword.length < 6) throw new Error("Password must be at least 6 characters.");
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (!raw) throw new Error("You are not signed in.");
+      let session: User;
+      try {
+        session = JSON.parse(raw) as User;
+        if (!session?.id) throw new Error("bad session");
+      } catch {
+        throw new Error("You are not signed in.");
+      }
+      const users = loadLocalUsers();
+      const account = users.find((u) => u.id === session.id);
+      if (!account) {
+        throw new Error("This account signs in with Google — no password to change.");
+      }
+      const salt = randomSalt();
+      const passwordHash = await hashPassword(newPassword, salt);
+      localStorage.setItem(
+        LOCAL_USERS_KEY,
+        JSON.stringify(users.map((u) => (u.id === account.id ? { ...u, salt, passwordHash } : u))),
+      );
+    },
+
+    // Email rows carry hashes; Google-linked rows don't — same rule as prod.
+    async hasPassword(): Promise<boolean> {
+      await delay(40);
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (!raw) return false;
+      try {
+        const session = JSON.parse(raw) as User;
+        if (!session?.id) return false;
+        return loadLocalUsers().some((u) => u.id === session.id);
+      } catch {
+        return false;
+      }
+    },
+
     async signinWithGoogleAccount(account: GoogleAccount): Promise<GoogleSignInResult> {
       await delay();
       const subject = account.sub.trim();

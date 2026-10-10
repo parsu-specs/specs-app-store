@@ -32,7 +32,9 @@ future database/server swap mechanical. Nothing here changes localhost behavior.
    - `POST /auth/google {accessToken}` → `{ user, token, picture? }`.
      Server MUST fetch Google userinfo itself and match verified email → account.
      Never trust client-sent claims.
-   - `POST /auth/signout` → 204 · `PATCH /auth/name {name}` → `{ user }`
+    - `POST /auth/signout` → 204 · `PATCH /auth/name {name}` → `{ user }`
+    - `POST /auth/recover {email}` → 204 (sends reset email, link lands on `/signin?mode=recovery`)
+    - `PATCH /auth/password {password}` → `{ user }` (current session only)
    - `GET /apps?query=&category=&limit=&offset=` → `{ apps }` (server fills
      `viewer_has_voted` / `comments_count` from the session)
    - `GET /apps/:id` → `{ app }` · `POST /apps` → `{ app }`

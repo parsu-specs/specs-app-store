@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { GoogleOAuthProvider, useGoogleLogin, type TokenResponse } from "@react-oauth/google";
 import { ArrowLeft, ArrowRight, Eye, EyeSlash, LockKey, Sparkle } from "@phosphor-icons/react";
 import { useAuth } from "../auth/AuthProvider";
@@ -6,7 +6,7 @@ import Brand from "../components/Brand";
 import { Button } from "../components/Button";
 import Input from "../components/Input";
 import Turnstile from "../components/Turnstile";
-import { getProfileRepo } from "../data/factory";
+import { getAuthRepo, getProfileRepo } from "../data/factory";
 import { getSupabase } from "../data/supabase/client";
 import type { GoogleAccount } from "../data/repositories";
 import { ROUTES } from "./routes";
@@ -111,6 +111,14 @@ export default function Login() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaRound, setCaptchaRound] = useState(0);
   const [captchaError, setCaptchaError] = useState<string | null>(null);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [recoverState, setRecoverState] = useState<"idle" | "checking" | "ready" | "invalid">(
+    "idle",
+  );
+  const [newPassword, setNewPassword] = useState("");
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
@@ -141,8 +149,98 @@ export default function Login() {
       setBusy(false);
     }
   };
-  // Supabase mode uses the OAuth redirect flow (Supabase Auth handles the
-  // session); local mode uses the GIS popup and signs in with the profile.
+  // Recovery landing: reset emails point here (?mode=recovery, plus the
+  // session code Supabase appends). Establish the recovery session, then
+  // offer the set-password form. Cleans its own URL on success.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const looksLikeRecovery =
+      params.get("mode") === "recovery" || params.has("code") || hash.get("type") === "recovery";
+    if (!looksLikeRecovery || !isSupabaseMode) return;
+    setForgotOpen(true);
+    setRecoverState("checking");
+    let cancelled = false;
+    void (async () => {
+      try {
+        const code = params.get("code");
+        if (code) {
+          try {
+            await getSupabase().auth.exchangeCodeForSession(code);
+          } catch {
+            // Client may have auto-exchanged on load; fall through to check.
+          }
+        }
+        for (let i = 0; i < 10; i++) {
+          const { data } = await getSupabase().auth.getSession();
+          if (cancelled) return;
+          if (data.session) {
+            setRecoverState("ready");
+            return;
+          }
+          await new Promise((r) => setTimeout(r, 500));
+        }
+        if (!cancelled) setRecoverState("invalid");
+      } catch {
+        if (!cancelled) setRecoverState("invalid");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const requestReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (resetBusy) return;
+    setResetError(null);
+    if (turnstileSiteKey && !captchaToken) {
+      setResetError("Complete the human check first.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setResetError("Enter a valid email address.");
+      return;
+    }
+    setResetBusy(true);
+    try {
+      await getAuthRepo().requestPasswordReset(email, captchaToken ?? undefined);
+      setCaptchaToken(null);
+      setCaptchaRound((r) => r + 1);
+      setResetSent(true);
+    } catch (err) {
+      setCaptchaToken(null);
+      setCaptchaRound((r) => r + 1);
+      setResetError(err instanceof Error ? err.message : "Could not send reset email.");
+    } finally {
+      setResetBusy(false);
+    }
+  };
+
+  const setRecoveryPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (resetBusy) return;
+    setResetError(null);
+    setResetBusy(true);
+    try {
+      await getAuthRepo().updatePassword(newPassword);
+      setNewPassword("");
+      window.history.replaceState({}, "", ROUTES.discover);
+    } catch (err) {
+      setResetError(err instanceof Error ? err.message : "Could not set password.");
+    } finally {
+      setResetBusy(false);
+    }
+  };
+
+  const closeRecovery = () => {
+    setForgotOpen(false);
+    setResetSent(false);
+    setResetError(null);
+    setRecoverState("idle");
+    setNewPassword("");
+    window.history.replaceState({}, "", ROUTES.signin);
+  };
   const supabaseGoogle = async () => {
     setGoogleBusy(true);
     setGoogleError(null);
@@ -298,11 +396,7 @@ export default function Login() {
               <ArrowRight size={20} weight="bold" />
             </Button>
           </form>
-          <div className="my-6 flex items-center gap-3 text-xs font-black uppercase text-muted">
-            <span className="h-0.5 flex-1 rounded bg-divider" aria-hidden="true" />
-            or continue with
-            <span className="h-0.5 flex-1 rounded bg-divider" aria-hidden="true" />
-          </div>
+          <div className="mt-4">
           {isSupabaseMode ? (
             <div className="flex flex-col gap-2">
               <button
@@ -350,6 +444,111 @@ export default function Login() {
               </code>{" "}
               in <code className="rounded bg-ink px-1.5 py-0.5 text-xs text-surface">.env</code>,
               then restart the dev server. See .env.example.
+            </div>
+          )}
+          </div>
+          {mode === "signin" && !forgotOpen && (
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotOpen(true);
+                  setResetSent(false);
+                  setResetError(null);
+                }}
+                className="text-sm font-black text-purple underline decoration-2 underline-offset-4"
+              >
+                Forgot password?
+              </button>
+            </div>
+          )}
+          {(forgotOpen || recoverState !== "idle") && (
+            <div className="mt-6 border-t-2 border-dashed border-divider pt-4">
+              {recoverState === "ready" ? (
+                <form onSubmit={setRecoveryPassword} className="space-y-4">
+                  <h2 className="text-xl font-black">Choose a new password</h2>
+                  <p className="text-sm font-bold text-muted">
+                    This signs you in on this browser with the new password.
+                  </p>
+                  <label className="block">
+                    <span className="toon-label">New password</span>
+                    <Input
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      minLength={6}
+                      placeholder="At least 6 characters"
+                      className="toon-input pr-12"
+                      required
+                    />
+                  </label>
+                  {resetError && (
+                    <p
+                      role="alert"
+                      className="rounded-xl border-[3px] border-ink bg-pink/50 px-4 py-3 text-sm font-bold"
+                    >
+                      {resetError}
+                    </p>
+                  )}
+                  <Button type="submit" fullWidth disabled={resetBusy}>
+                    {resetBusy ? "Saving…" : "Save new password"}
+                  </Button>
+                </form>
+              ) : recoverState === "checking" ? (
+                <p className="text-center text-sm font-bold text-muted">Checking reset link…</p>
+              ) : recoverState === "invalid" ? (
+                <div className="space-y-3 text-center">
+                  <p role="alert" className="text-sm font-bold">
+                    This reset link is invalid or expired. Request a new one below.
+                  </p>
+                  <Button variant="surface" size="small" type="button" onClick={closeRecovery}>
+                    Back to sign in
+                  </Button>
+                </div>
+              ) : resetSent ? (
+                <div className="space-y-3 text-center">
+                  <h2 className="text-xl font-black">Check your email</h2>
+                  <p className="text-sm font-bold text-muted">
+                    If an account uses that address, a reset link is on its way. Google-only
+                    accounts can also just keep using “Continue with Google”.
+                  </p>
+                  <Button variant="surface" size="small" type="button" onClick={closeRecovery}>
+                    Back to sign in
+                  </Button>
+                </div>
+              ) : (
+                <form onSubmit={requestReset} className="space-y-4">
+                  <h2 className="text-xl font-black">Reset password</h2>
+                  <label className="block">
+                    <span className="toon-label">Email address</span>
+                    <Input
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      type="email"
+                      autoComplete="off"
+                      className="toon-input"
+                      required
+                    />
+                  </label>
+                  {resetError && (
+                    <p
+                      role="alert"
+                      className="rounded-xl border-[3px] border-ink bg-pink/50 px-4 py-3 text-sm font-bold"
+                    >
+                      {resetError}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-3">
+                    <Button variant="surface" size="small" type="button" onClick={closeRecovery}>
+                      Back
+                    </Button>
+                    <Button type="submit" disabled={resetBusy} className="flex-1">
+                      {resetBusy ? "Sending…" : "Send reset link"}
+                    </Button>
+                  </div>
+                </form>
+              )}
             </div>
           )}
         </div>

@@ -32,6 +32,12 @@ export type AuthRepo = {
   signinWithGoogleAccount(account: GoogleAccount): Promise<GoogleSignInResult>;
   signout(): Promise<void>;
   updateName(name: string): Promise<User>;
+  /** Sends a password-reset email (link lands on /signin?mode=recovery). */
+  requestPasswordReset(email: string, captchaToken?: string): Promise<void>;
+  /** Sets a new password for the current session (used after recovery). */
+  updatePassword(newPassword: string): Promise<void>;
+  /** Whether the current session can sign in with email + password. */
+  hasPassword(): Promise<boolean>;
 };
 
 export type AppRepo = {

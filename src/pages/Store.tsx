@@ -16,6 +16,7 @@ import {
   Images,
   Info,
   LinkSimple,
+  LockKey,
   MagnifyingGlass,
   Newspaper,
   Palette,
@@ -57,7 +58,7 @@ import ProjectView from "../components/ProjectView";
 import SettingsView from "../components/SettingsView";
 import { Button, ButtonLabel, ButtonLink } from "../components/Button";
 import Input, { getInputClassName } from "../components/Input";
-import { getAppRepo, getProfileRepo } from "../data/factory";
+import { getAppRepo, getAuthRepo, getProfileRepo } from "../data/factory";
 import { indexProfiles } from "../data/profileLinks";
 import { fileToThumbnailDataUrl } from "../utils/images";
 import { enqueueVote } from "../utils/voteQueue";
@@ -205,6 +206,10 @@ export default function Store() {
   };
   const [query, setQuery] = useState("");
   const [devQuery, setDevQuery] = useState("");
+  // Password-setup nudge: Google-only accounts have no password. Shown on
+  // Discover until set or snoozed (7 days); never blocks anything.
+  const [hasPassword, setHasPassword] = useState<boolean | null>(null);
+  const [pwSnoozed, setPwSnoozed] = useState(false);
   const [msQuery, setMsQuery] = useState("");
   const [category, setCategory] = useState<CategoryFilter>("All");
   const [showForm, setShowForm] = useState(false);
@@ -480,8 +485,51 @@ export default function Store() {
     setCollabBaseline(stored.collabBaseline);
     setDismissedIds(stored.dismissedIds);
     setSeenAt(stored.seenAt);
-    prevNotifIds.current = null;
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!user) {
+      setHasPassword(null);
+      setPwSnoozed(false);
+      return;
+    }
+    let cancelled = false;
+    try {
+      const until = Number(localStorage.getItem(`cc.pw_nudge.v1:${user.id}`) ?? 0);
+      setPwSnoozed(Date.now() < until);
+    } catch {
+      setPwSnoozed(false);
+    }
+    void getAuthRepo()
+      .hasPassword()
+      .then((v) => {
+        if (!cancelled) setHasPassword(v);
+      })
+      .catch(() => {
+        if (!cancelled) setHasPassword(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  const snoozePasswordNudge = () => {
+    if (!user) return;
+    try {
+      localStorage.setItem(`cc.pw_nudge.v1:${user.id}`, String(Date.now() + 7 * 24 * 3_600_000));
+    } catch {
+      // Private mode — session-only snooze still applies below.
+    }
+    setPwSnoozed(true);
+  };
+
+  const goPasswordSettings = () => {
+    window.history.pushState({}, "", ROUTES.settings);
+    setView("settings");
+    setSelectedProfileId(null);
+    setSelectedAppId(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const scanApps = useMemo(() => {
     if (!user) return [];
@@ -2229,6 +2277,36 @@ export default function Store() {
                         </button>
                       </div>
                     )}
+                  {user && hasPassword === false && !pwSnoozed && (
+                    <div className="toon-card paper-note mb-6 flex flex-wrap items-center gap-4 rounded-lg bg-yellow p-6">
+                      <LockKey size={32} weight="duotone" className="shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-xl font-black">Unlock email sign-in</h3>
+                        <p className="mt-1 text-sm font-bold text-body">
+                          You joined with Google, so no password is set. Add one to
+                          sign in with email too.
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 flex-wrap gap-2">
+                        <Button
+                          variant="surface"
+                          size="small"
+                          type="button"
+                          onClick={snoozePasswordNudge}
+                        >
+                          Later
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="small"
+                          type="button"
+                          onClick={goPasswordSettings}
+                        >
+                          Add password
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                   <div className="mb-5 border-t-2 border-dashed border-divider pt-6">
                     <p className="text-xs font-black uppercase text-purple">Catalog</p>
                     <h2 className="mt-1 text-2xl font-black">Student projects</h2>
@@ -2771,10 +2849,20 @@ export default function Store() {
 
               {view === "settings" && (
                 <section className="mt-2">
-                  <SettingsView
-                    profile={myProfile}
-                    onChanged={() => setProfileTick((t) => t + 1)}
-                  />
+                    <SettingsView
+                      profile={myProfile}
+                      onChanged={() => setProfileTick((t) => t + 1)}
+                      hasPassword={hasPassword}
+                      onPasswordUpdated={() => {
+                        setHasPassword(true);
+                        setPwSnoozed(false);
+                        try {
+                          if (user) localStorage.removeItem(`cc.pw_nudge.v1:${user.id}`);
+                        } catch {
+                          // Ignore.
+                        }
+                      }}
+                    />
                 </section>
               )}
 

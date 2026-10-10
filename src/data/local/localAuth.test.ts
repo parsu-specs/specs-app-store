@@ -49,3 +49,36 @@ describe("duplicate emails", () => {
     expect(session).toMatchObject({ id: created.id, email: "ann@example.com", name: "Ann" });
   });
 });
+
+describe("password recovery", () => {
+  it("sets a new password for the signed-in email account", async () => {
+    const auth = createLocalAuthRepo();
+    await auth.signup("Ann", "ann@example.com", "secret123");
+    await auth.updatePassword("newsecret1");
+    const session = await auth.signin("ann@example.com", "newsecret1");
+    expect(session.email).toBe("ann@example.com");
+    await expect(auth.signin("ann@example.com", "secret123")).rejects.toThrow();
+  });
+
+  it("rejects short passwords and demo reset emails", async () => {
+    const auth = createLocalAuthRepo();
+    await auth.signup("Ann", "ann@example.com", "secret123");
+    await expect(auth.updatePassword("short")).rejects.toThrow("at least 6");
+    await expect(auth.requestPasswordReset("ann@example.com")).rejects.toThrow("local demo");
+  });
+});
+
+describe("local hasPassword", () => {
+  it("is true for email accounts, false for Google-linked or signed-out", async () => {
+    const auth = createLocalAuthRepo();
+    await auth.signup("Ann", "ann@example.com", "secret123");
+    await expect(auth.hasPassword()).resolves.toBe(true);
+    await auth.signinWithGoogleAccount({
+      sub: "google-1",
+      email: "mia@example.com",
+      name: "Mia",
+      emailVerified: true,
+    });
+    await expect(auth.hasPassword()).resolves.toBe(false);
+  });
+});

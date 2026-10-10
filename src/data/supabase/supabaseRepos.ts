@@ -110,6 +110,27 @@ export function createSupabaseAuthRepo(): AuthRepo {
 
     // Google uses the OAuth redirect flow in Supabase mode (see Sign In).
     // This method only runs if something calls it directly.
+    async requestPasswordReset(email: string, captchaToken?: string): Promise<void> {
+      const { error } = await getSupabase().auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}${ROUTES.signin}?mode=recovery`,
+        ...(captchaToken ? { captchaToken } : {}),
+      });
+      if (error) throw new Error(error.message);
+    },
+
+    async updatePassword(newPassword: string): Promise<void> {
+      if (newPassword.length < 6) throw new Error("Password must be at least 6 characters.");
+      const { error } = await getSupabase().auth.updateUser({ password: newPassword });
+      if (error) throw new Error(error.message);
+    },
+
+    // Email identities mean a password exists; Google-only accounts have none.
+    // getUser() validates the JWT server-side, so this can't be forged.
+    async hasPassword(): Promise<boolean> {
+      const { data } = await getSupabase().auth.getUser();
+      const identities = (data.user?.identities ?? []) as { provider?: string }[];
+      return identities.some((identity) => identity.provider === "email");
+    },
     async signinWithGoogleAccount(_account: GoogleAccount): Promise<GoogleSignInResult> {
       await getSupabase().auth.signInWithOAuth({
         provider: "google",

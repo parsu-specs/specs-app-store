@@ -15,6 +15,12 @@ function mockSignUp(result: SignUpResult) {
   } as never);
 }
 
+function mockGetUser(identities: { provider?: string }[]) {
+  vi.mocked(getSupabase).mockReturnValue({
+    auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { identities } } }) },
+  } as never);
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -54,5 +60,17 @@ describe("supabase signup duplicate detection", () => {
     });
     const user = await createSupabaseAuthRepo().signup("New", "new@x.com", "secret1");
     expect(user.id).toBe("u9");
+  });
+});
+
+describe("supabase hasPassword", () => {
+  it("is true with an email identity, false for Google-only", async () => {
+    const auth = createSupabaseAuthRepo();
+    mockGetUser([{ provider: "email" }, { provider: "google" }]);
+    await expect(auth.hasPassword()).resolves.toBe(true);
+    mockGetUser([{ provider: "google" }]);
+    await expect(auth.hasPassword()).resolves.toBe(false);
+    mockGetUser([]);
+    await expect(auth.hasPassword()).resolves.toBe(false);
   });
 });
