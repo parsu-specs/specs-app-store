@@ -6,8 +6,8 @@ import type { User } from "../data/types";
 type AuthContext = {
   user: User | null;
   loading: boolean;
-  signin: (email: string, password: string) => Promise<boolean>;
-  signup: (name: string, email: string, password: string) => Promise<string | null>;
+  signin: (email: string, password: string, captchaToken?: string) => Promise<boolean>;
+  signup: (name: string, email: string, password: string, captchaToken?: string) => Promise<string | null>;
   signinWithGoogleAccount: (
     account: GoogleAccount,
   ) => Promise<{ ok: boolean; user?: User; picture?: string; error?: string }>;
@@ -40,9 +40,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const signin = async (email: string, password: string) => {
+  const signin = async (email: string, password: string, captchaToken?: string) => {
     try {
-      const session = await getAuthRepo().signin(email, password);
+      const session = await getAuthRepo().signin(email, password, captchaToken);
       setUser(session);
       return true;
     } catch {
@@ -51,9 +51,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Returns an error message on failure, null on success.
-  const signup = async (name: string, email: string, password: string) => {
+  const signup = async (name: string, email: string, password: string, captchaToken?: string) => {
     try {
-      const session = await getAuthRepo().signup(name, email, password);
+      const session = await getAuthRepo().signup(name, email, password, captchaToken);
       setUser(session);
       return null;
     } catch (e) {

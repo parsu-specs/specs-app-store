@@ -5,6 +5,7 @@ import { useAuth } from "../auth/AuthProvider";
 import Brand from "../components/Brand";
 import { Button } from "../components/Button";
 import Input from "../components/Input";
+import Turnstile from "../components/Turnstile";
 import { getProfileRepo } from "../data/factory";
 import { getSupabase } from "../data/supabase/client";
 import type { GoogleAccount } from "../data/repositories";
@@ -12,6 +13,12 @@ import { ROUTES } from "./routes";
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 const isSupabaseMode = (import.meta.env.VITE_DATA_SOURCE as string | undefined) === "supabase";
+// Public Turnstile site key (Cloudflare). Empty = dev/unset: password flows
+// proceed without a human-check token (Supabase must then also have CAPTCHA
+// off, or every login fails server-side).
+const turnstileSiteKey = (
+  (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined) ?? ""
+).trim();
 
 function GoogleMark() {
   return (
@@ -101,19 +108,33 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [googleBusy, setGoogleBusy] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaRound, setCaptchaRound] = useState(0);
+  const [captchaError, setCaptchaError] = useState<string | null>(null);
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
     setError(null);
+    // Tokens are single-use: without a fresh one the server rejects the call.
+    if (turnstileSiteKey && !captchaToken) {
+      setError("Complete the human check first.");
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "signup") {
-        const failure = await signup(name, email, password);
+        const failure = await signup(name, email, password, captchaToken ?? undefined);
+        setCaptchaToken(null);
+        setCaptchaRound((r) => r + 1);
         if (failure) setError(failure);
         else window.history.replaceState({}, "", ROUTES.discover);
-      } else if (await signin(email, password)) {
+      } else if (await signin(email, password, captchaToken ?? undefined)) {
+        setCaptchaToken(null);
+        setCaptchaRound((r) => r + 1);
         window.history.replaceState({}, "", ROUTES.discover);
       } else {
+        setCaptchaToken(null);
+        setCaptchaRound((r) => r + 1);
         setError("That email and password don't match.");
       }
     } finally {
@@ -249,6 +270,21 @@ export default function Login() {
                 </button>
               </span>
             </label>
+            {turnstileSiteKey && (
+              <div>
+                <Turnstile
+                  key={captchaRound}
+                  siteKey={turnstileSiteKey}
+                  onToken={setCaptchaToken}
+                  onUnavailable={setCaptchaError}
+                />
+                {captchaError && (
+                  <p role="alert" className="mt-2 text-center text-sm font-bold">
+                    {captchaError}
+                  </p>
+                )}
+              </div>
+            )}
             {error && (
               <p
                 role="alert"

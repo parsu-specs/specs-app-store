@@ -68,19 +68,26 @@ export function createSupabaseAuthRepo(): AuthRepo {
       return sessionUser(user.id, user.email, user.user_metadata?.["name"]);
     },
 
-    async signin(email: string, password: string): Promise<User> {
-      const { data, error } = await getSupabase().auth.signInWithPassword({ email, password });
+    async signin(email: string, password: string, captchaToken?: string): Promise<User> {
+      const { data, error } = await getSupabase().auth.signInWithPassword({
+        email,
+        password,
+        options: captchaToken ? { captchaToken } : undefined,
+      });
       if (error || !data.user) throw new AuthError();
       return sessionUser(data.user.id, data.user.email, data.user.user_metadata?.["name"]);
     },
 
-    async signup(name: string, email: string, password: string): Promise<User> {
+    async signup(name: string, email: string, password: string, captchaToken?: string): Promise<User> {
       const cleanName = name.trim().slice(0, 40);
       if (!cleanName) throw new Error("Name is required.");
       const { data, error } = await getSupabase().auth.signUp({
         email: email.trim(),
         password,
-        options: { data: { name: cleanName } },
+        options: {
+          data: { name: cleanName },
+          ...(captchaToken ? { captchaToken } : {}),
+        },
       });
       if (error) {
         if (/already (registered|exists)|already been registered/i.test(error.message)) {
