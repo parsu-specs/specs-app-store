@@ -119,6 +119,7 @@ const raisedFaceClasses = [
   "relative",
   "z-10",
   "inline-flex",
+  "w-full",
   "items-center",
   "justify-center",
   "gap-2",
