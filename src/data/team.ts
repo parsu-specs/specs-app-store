@@ -23,7 +23,7 @@ export const APP_INFO = {
     },
     {
       title: "Notifications inbox",
-      body: "The bell collects comments, replies, upvotes, collaborator tags, new projects, and Feed posts — newest first, with sound chimes and delete-all.",
+      body: "The bell collects comments, replies, upvotes, comment likes, collaborator tags, new projects, and Feed posts — newest first, with sound chimes and delete-all.",
     },
     {
       title: "Voters viewer",
@@ -39,7 +39,7 @@ export const APP_INFO = {
     },
     {
       title: "Leaderboards & trophies",
-      body: "Developers and projects earn rank points from upvotes. Top 3 carry gold, silver, and bronze trophies everywhere.",
+      body: "Developers and projects earn rank points from upvotes, plus 20 bonus points per published project on the developer board. Top 3 carry gold, silver, and bronze trophies everywhere.",
     },
     {
       title: "Docs import",
@@ -55,7 +55,7 @@ export const APP_INFO = {
     },
     {
       title: "Account safety",
-      body: "Signing out always asks for confirmation, and profile renames survive sign out and sign in.",
+      body: "Signing out always asks for confirmation, and profile renames survive sign out and sign in. Google-only accounts can add a password anytime in Settings, with a reminder until they do.",
     },
     {
       title: "Google sign-in",
