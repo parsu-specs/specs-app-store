@@ -59,7 +59,9 @@ import Input, { getInputClassName } from "../components/Input";
 import { getAppRepo, getProfileRepo } from "../data/factory";
 import { indexProfiles } from "../data/profileLinks";
 import { fileToThumbnailDataUrl } from "../utils/images";
+import { enqueueVote } from "../utils/voteQueue";
 import { resolvePalette, setPalette } from "../utils/palette";
+import { formatCountdown } from "../utils/time";
 import { extractMentionIds } from "../utils/mentions";
 import { playNotificationSound, playVoteSound } from "../utils/sounds";
 import { useScrollToForm } from "../utils/scroll";
@@ -1045,37 +1047,99 @@ export default function Store() {
   })();
 
   const [votePending, setVotePending] = useState<Set<string>>(new Set());
+  const [voteNotice, setVoteNotice] = useState<string | null>(null);
+  const voteNoticeTimer = useRef<number | null>(null);
+  // Epoch-ms until which voting is paused (set when the server says so).
+  // Clicks inside the window ask the server for the live remainder instead
+  // of firing toggles that would only bounce.
+  const votePausedUntil = useRef(0);
 
-  const vote = async (id: string) => {
-    if (!user || votePending.has(id)) return;
+  const flashVoteNotice = (message: string) => {
+    setVoteNotice(message);
+    if (voteNoticeTimer.current !== null) window.clearTimeout(voteNoticeTimer.current);
+    voteNoticeTimer.current = window.setTimeout(() => {
+      setVoteNotice(null);
+      voteNoticeTimer.current = null;
+    }, 6000);
+  };
+
+  const vote = (id: string) => {
+    if (!user) return;
+    const me = user;
     setVotePending((prev) => new Set(prev).add(id));
-    const previous = apps;
-    const previousFull = fullApps;
-    const optimistic = (app: AppItem) =>
-      app.id === id
-        ? {
-            ...app,
-            votes: Math.max(0, app.votes + (app.viewerHasVoted ? -1 : 1)),
-            viewerHasVoted: !app.viewerHasVoted,
-          }
-        : app;
-    setApps((items) => items.map(optimistic));
-    setFullApps((items) => items.map(optimistic));
-    try {
-      const updated = await getAppRepo().toggleVote(id, user.id);
-      setApps((items) => items.map((app) => (app.id === id ? updated : app)));
-      setFullApps((items) => items.map((app) => (app.id === id ? updated : app)));
-      playVoteSound();
-    } catch {
-      setApps(previous);
-      setFullApps(previousFull);
-    } finally {
-      setVotePending((prev) => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-    }
+    // Serialized per app (see voteQueue): every click toggles exactly once,
+    // in order. Rapid clicks queue instead of vanishing into the pending
+    // guard, so the heart always converges to click parity on both surfaces.
+    enqueueVote(id, async () => {
+      try {
+        if (Date.now() < votePausedUntil.current) {
+          const secs = await getAppRepo()
+            .getVoteTimeoutSeconds()
+            .catch(() => 0);
+          const left = Math.max(
+            secs,
+            Math.ceil((votePausedUntil.current - Date.now()) / 1000),
+          );
+          flashVoteNotice(`Voting is paused — ${formatCountdown(left)} left.`);
+          return;
+        }
+        const optimistic = (app: AppItem) =>
+          app.id === id
+            ? {
+                ...app,
+                votes: Math.max(0, app.votes + (app.viewerHasVoted ? -1 : 1)),
+                viewerHasVoted: !app.viewerHasVoted,
+              }
+            : app;
+        setApps((items) => items.map(optimistic));
+        setFullApps((items) => items.map(optimistic));
+        const updated = await getAppRepo().toggleVote(id, me.id);
+        setApps((items) => items.map((app) => (app.id === id ? updated : app)));
+        setFullApps((items) => items.map((app) => (app.id === id ? updated : app)));
+        playVoteSound();
+      } catch (e) {
+        // Reconcile with the server instead of a stale snapshot: queued
+        // toggles or polls may have moved state since this click started.
+        try {
+          const fresh = await getAppRepo().getApp(id, me.id);
+          setApps((items) => items.map((app) => (app.id === id ? fresh : app)));
+          setFullApps((items) => items.map((app) => (app.id === id ? fresh : app)));
+        } catch {
+          // Last resort: flip the optimistic change back.
+          const revert = (app: AppItem) =>
+            app.id === id
+              ? {
+                  ...app,
+                  votes: Math.max(0, app.votes + (app.viewerHasVoted ? -1 : 1)),
+                  viewerHasVoted: !app.viewerHasVoted,
+                }
+              : app;
+          setApps((items) => items.map(revert));
+          setFullApps((items) => items.map(revert));
+        }
+        // Rate-limit pauses land here too — say why the vote bounced, and
+        // remember the pause so further clicks report time left, not toggles.
+        const message = e instanceof Error ? e.message : "Could not vote. Try again.";
+        if (/paus|slow down/i.test(message)) {
+          const secs = await getAppRepo()
+            .getVoteTimeoutSeconds()
+            .catch(() => 0);
+          const windowMs = secs > 0 ? secs * 1000 : 5 * 60_000;
+          votePausedUntil.current = Date.now() + windowMs;
+          flashVoteNotice(
+            secs > 0 ? `Voting is paused — ${formatCountdown(secs)} left.` : message,
+          );
+        } else {
+          flashVoteNotice(message);
+        }
+      } finally {
+        setVotePending((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }
+    });
   };
 
   const submit = async (event: React.FormEvent) => {
@@ -1555,6 +1619,19 @@ export default function Store() {
                 </Button>
               </div>
             </div>
+          </div>,
+          document.body,
+        )}
+
+      {voteNotice &&
+        createPortal(
+          <div
+            role="alert"
+            className="pointer-events-none fixed inset-x-0 bottom-24 z-100 flex justify-center px-4"
+          >
+            <p className="toon-card rounded-xl bg-surface px-5 py-3 text-center text-sm font-black">
+              {voteNotice}
+            </p>
           </div>,
           document.body,
         )}

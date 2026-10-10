@@ -52,3 +52,17 @@ export function formatUploadStamp(iso: string, nowMs: number = Date.now()): Uplo
   });
   return { text, title, dateTime };
 }
+
+/**
+ * Countdown label for a pause in whole seconds: "4:32", "0:07".
+ * Non-positive or non-finite input renders "0:00".
+ */
+export function formatCountdown(totalSeconds: number): string {
+  const safe =
+    typeof totalSeconds === "number" && Number.isFinite(totalSeconds)
+      ? Math.max(0, Math.ceil(totalSeconds))
+      : 0;
+  const minutes = Math.floor(safe / 60);
+  const seconds = safe % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}

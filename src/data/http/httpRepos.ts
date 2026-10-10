@@ -177,6 +177,11 @@ export function createHttpAppRepo(): AppRepo {
       return toApp(app);
     },
 
+    // No throttle endpoint yet (see BACKEND_READINESS.md) — never paused.
+    async getVoteTimeoutSeconds(): Promise<number> {
+      return 0;
+    },
+
     async listVoters(appId: string) {
       const { voters } = await api<{ voters: ProfileRow[] }>(
         `/apps/${encodeURIComponent(appId)}/voters`,

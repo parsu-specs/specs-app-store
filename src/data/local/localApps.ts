@@ -346,6 +346,11 @@ export function createLocalAppRepo(): AppRepo {
       return { ...updated, viewerHasVoted: !hasVoted };
     },
 
+    // No server throttles in local mode — never paused.
+    async getVoteTimeoutSeconds(): Promise<number> {
+      return 0;
+    },
+
     async listVoters(appId: string): Promise<Profile[]> {
       await delay(80);
       const votes = loadVotes();

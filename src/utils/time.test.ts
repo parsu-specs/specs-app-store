@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatUploadStamp } from "./time";
+import { formatCountdown, formatUploadStamp } from "./time";
 
 const NOW = Date.parse("2026-10-07T12:00:00.000Z");
 const ago = (ms: number) => new Date(NOW - ms).toISOString();
@@ -29,5 +29,20 @@ describe("formatUploadStamp", () => {
     const stamp = formatUploadStamp(ago(5 * 60_000), NOW);
     expect(stamp?.title).toBeTruthy();
     expect(stamp?.dateTime).toBeTruthy();
+  });
+});
+
+describe("formatCountdown", () => {
+  it("renders m:ss with zero-padded seconds", () => {
+    expect(formatCountdown(272)).toBe("4:32");
+    expect(formatCountdown(7)).toBe("0:07");
+    expect(formatCountdown(60)).toBe("1:00");
+  });
+
+  it("clamps bad input to 0:00 and rounds up partial seconds", () => {
+    expect(formatCountdown(0)).toBe("0:00");
+    expect(formatCountdown(-5)).toBe("0:00");
+    expect(formatCountdown(Number.NaN)).toBe("0:00");
+    expect(formatCountdown(4.2)).toBe("0:05");
   });
 });

@@ -23,7 +23,7 @@ begin
   if v_uid is null then
     raise exception 'Sign in to vote.';
   end if;
-  perform check_rate('vote:toggle', 30, interval '1 minute');
+  perform check_vote_spam();
   -- Permit the guarded counter write below for this transaction only
   -- (see the apps_votes_guard trigger in migration_votes_guard.sql).
   perform set_config('app.votes_rpc', 'on', true);

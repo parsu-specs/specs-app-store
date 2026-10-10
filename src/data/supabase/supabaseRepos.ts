@@ -378,7 +378,13 @@ export function createSupabaseAppRepo(): AppRepo {
       if (!payload?.row) throw new NotFoundError("Project not found.");
       const app = toApp(toAppRow(payload.row));
       const refreshed = await this.getApp(appId, userId);
-      return { ...app, comments: refreshed.comments, viewerHasVoted: Boolean(payload.liked) };
+      return { ...app, comments: refreshed.comments, viewerHasLiked: Boolean(payload.liked) };
+    },
+
+    async getVoteTimeoutSeconds(): Promise<number> {
+      const { data, error } = await getSupabase().rpc("vote_timeout_seconds");
+      if (error) return 0;
+      return typeof data === "number" && data > 0 ? Math.ceil(data) : 0;
     },
 
     async listVoters(appId: string) {

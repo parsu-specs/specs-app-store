@@ -30,6 +30,8 @@ import Input, { getInputClassName } from "./Input";
 import { getAppRepo, getProfileRepo } from "../data/factory";
 import { profileIdForApp } from "../data/profileLinks";
 import { fileToThumbnailDataUrl } from "../utils/images";
+import { enqueueVote } from "../utils/voteQueue";
+import { formatCountdown } from "../utils/time";
 import { extractMentionIds } from "../utils/mentions";
 import { bumpCollabTag } from "../utils/notifications";
 import { playVoteSound } from "../utils/sounds";
@@ -208,28 +210,86 @@ export default function ProjectView({
   }, [lightbox]);
 
   const [voting, setVoting] = useState(false);
+  const [voteNotice, setVoteNotice] = useState<string | null>(null);
+  const voteNoticeTimer = useRef<number | null>(null);
+  const votePausedUntil = useRef(0);
+
+  const flashVoteNotice = (message: string) => {
+    setVoteNotice(message);
+    if (voteNoticeTimer.current !== null) window.clearTimeout(voteNoticeTimer.current);
+    voteNoticeTimer.current = window.setTimeout(() => {
+      setVoteNotice(null);
+      voteNoticeTimer.current = null;
+    }, 6000);
+  };
   const editFormRef = useRef<HTMLFormElement>(null);
   useScrollToForm(editing, editFormRef);
 
-  const vote = async () => {
-    if (!app || !currentUser || voting) return;
+  const vote = () => {
+    if (!app || !currentUser) return;
+    const me = currentUser;
+    const targetId = app.id;
     setVoting(true);
-    const previous = app;
-    setApp({
-      ...app,
-      votes: Math.max(0, app.votes + (app.viewerHasVoted ? -1 : 1)),
-      viewerHasVoted: !app.viewerHasVoted,
+    // Same shared queue as the feed cards: card and detail votes for one
+    // project serialize instead of double-flipping the server.
+    enqueueVote(targetId, async () => {
+      try {
+        if (Date.now() < votePausedUntil.current) {
+          const secs = await getAppRepo()
+            .getVoteTimeoutSeconds()
+            .catch(() => 0);
+          const left = Math.max(
+            secs,
+            Math.ceil((votePausedUntil.current - Date.now()) / 1000),
+          );
+          flashVoteNotice(`Voting is paused — ${formatCountdown(left)} left.`);
+          return;
+        }
+        setApp((prev) =>
+          prev && prev.id === targetId
+            ? {
+                ...prev,
+                votes: Math.max(0, prev.votes + (prev.viewerHasVoted ? -1 : 1)),
+                viewerHasVoted: !prev.viewerHasVoted,
+              }
+            : prev,
+        );
+        const updated = await getAppRepo().toggleVote(targetId, me.id);
+        setApp(updated);
+        onChanged();
+        playVoteSound();
+      } catch (e) {
+        // Reconcile with the server (see Store vote): never a stale snapshot.
+        try {
+          setApp(await getAppRepo().getApp(targetId, me.id));
+        } catch {
+          setApp((prev) =>
+            prev && prev.id === targetId
+              ? {
+                  ...prev,
+                  votes: Math.max(0, prev.votes + (prev.viewerHasVoted ? -1 : 1)),
+                  viewerHasVoted: !prev.viewerHasVoted,
+                }
+              : prev,
+          );
+        }
+        const message = e instanceof Error ? e.message : "Could not vote. Try again.";
+        if (/paus|slow down/i.test(message)) {
+          const secs = await getAppRepo()
+            .getVoteTimeoutSeconds()
+            .catch(() => 0);
+          const windowMs = secs > 0 ? secs * 1000 : 5 * 60_000;
+          votePausedUntil.current = Date.now() + windowMs;
+          flashVoteNotice(
+            secs > 0 ? `Voting is paused — ${formatCountdown(secs)} left.` : message,
+          );
+        } else {
+          flashVoteNotice(message);
+        }
+      } finally {
+        setVoting(false);
+      }
     });
-    try {
-      const updated = await getAppRepo().toggleVote(app.id, currentUser.id);
-      setApp(updated);
-      onChanged();
-      playVoteSound();
-    } catch {
-      setApp(previous);
-    } finally {
-      setVoting(false);
-    }
   };
 
   const isOwner =
@@ -1042,6 +1102,19 @@ export default function ProjectView({
                 <X size={18} weight="bold" />
               </button>
             </div>
+          </div>,
+          document.body,
+        )}
+
+      {voteNotice &&
+        createPortal(
+          <div
+            role="alert"
+            className="pointer-events-none fixed inset-x-0 bottom-24 z-100 flex justify-center px-4"
+          >
+            <p className="toon-card rounded-xl bg-surface px-5 py-3 text-center text-sm font-black">
+              {voteNotice}
+            </p>
           </div>,
           document.body,
         )}

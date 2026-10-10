@@ -41,6 +41,8 @@ export type AppRepo = {
   updateApp(appId: string, author: User, patch: AppUpdate): Promise<AppItem>;
   deleteApp(appId: string, author: User): Promise<void>;
   toggleVote(appId: string, userId: string): Promise<AppItem>;
+  /** Remaining vote pause for the caller, in whole seconds (0 = not paused). */
+  getVoteTimeoutSeconds(): Promise<number>;
   /**
    * Profiles that upvoted a project, alphabetical by name. Only voters with
    * a resolvable profile are returned, so legacy seed counts may exceed the
