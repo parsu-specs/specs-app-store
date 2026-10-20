@@ -5,7 +5,7 @@ import "@fontsource/nunito/latin-400.css";
 import "@fontsource/nunito/latin-700.css";
 import "@fontsource/nunito/latin-900.css";
 import App from "./App";
-import "./styles/tailwind.css";
+import "./styles/style.css";
 
 const fontRequests = [
   document.fonts.load('700 1em "Fredoka"'),

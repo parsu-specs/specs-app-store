@@ -134,7 +134,12 @@ describe("buildNotifications", () => {
 
     // Unvote (baseline drops the voter) then re-vote notifies under a fresh id.
     const re = buildNotifications(
-      baseInput({ apps: [mine], voters, voterBaseline: { mine: [] }, voteCycles: { mine: { u2: 1 } } }),
+      baseInput({
+        apps: [mine],
+        voters,
+        voterBaseline: { mine: [] },
+        voteCycles: { mine: { u2: 1 } },
+      }),
     );
     expect(re.find((i) => i.kind === "vote")?.id).toBe("vote:mine:u2#1");
 
@@ -150,17 +155,13 @@ describe("buildNotifications", () => {
 
   it("notifies per-liker appearances on my comments, including re-likes", () => {
     const mine = app("mine", { creator: "Ann", creatorId: "u1" });
-    const mineThread = new Map([
-      ["mine", [comment("c1", { authorId: "u1", authorName: "Ann" })]],
-    ]);
+    const mineThread = new Map([["mine", [comment("c1", { authorId: "u1", authorName: "Ann" })]]]);
     const bobProfile = { id: "u2", name: "Bob", role: "r", bio: "", color: "sky", createdAt: H(9) };
     const likers = new Map([["c1", ["u2"]]]);
     const first = buildNotifications(
       baseInput({ apps: [mine], threads: mineThread, likers, profiles: [bobProfile] }),
     );
-    expect(first.find((i) => i.kind === "like")?.title).toBe(
-      "Bob liked your comment on App mine",
-    );
+    expect(first.find((i) => i.kind === "like")?.title).toBe("Bob liked your comment on App mine");
 
     // A steady liker never re-fires.
     const steady = buildNotifications(
@@ -216,14 +217,10 @@ describe("buildNotifications", () => {
     ];
     const mia: User = { id: "google-1", email: "m@x.com", name: "Mia Santos" };
     const tagged = app("p1", { collaborators: ["mia"] });
-    const byName = buildNotifications(
-      baseInput({ user: mia, apps: [tagged], profiles }),
-    );
+    const byName = buildNotifications(baseInput({ user: mia, apps: [tagged], profiles }));
     expect(byName.some((i) => i.kind === "collab")).toBe(true);
     const stranger: User = { id: "u9", email: "z@x.com", name: "Zed" };
-    const none = buildNotifications(
-      baseInput({ user: stranger, apps: [tagged], profiles }),
-    );
+    const none = buildNotifications(baseInput({ user: stranger, apps: [tagged], profiles }));
     expect(none.some((i) => i.kind === "collab")).toBe(false);
   });
 

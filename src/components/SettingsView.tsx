@@ -65,10 +65,11 @@ function PasswordForm({ mode, onSaved }: { mode: "add" | "change"; onSaved: () =
             autoComplete="new-password"
             minLength={6}
             placeholder="At least 6 characters"
-            className="toon-input pr-12"
+            className="pr-12"
             required
           />
-          <button
+          <Button
+            variant="plain"
             type="button"
             onClick={() => setShow((v) => !v)}
             aria-label={show ? "Hide password" : "Show password"}
@@ -76,7 +77,7 @@ function PasswordForm({ mode, onSaved }: { mode: "add" | "change"; onSaved: () =
             className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
           >
             {show ? <EyeSlash size={21} weight="bold" /> : <Eye size={21} weight="bold" />}
-          </button>
+          </Button>
         </span>
       </label>
       {error && (
@@ -155,8 +156,8 @@ export default function SettingsView({
 
   return (
     <div className="space-y-6">
-      <section className="toon-card paper-note rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
-        <div className="flex items-center gap-2">
+      <section className="toon-card toon-paper bg-paper rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
+        <div className="min-w-0 flex items-center gap-2 [&>*]:min-w-0 max-w-full">
           <LockKey size={22} weight="duotone" aria-hidden="true" />
           <h2 className="text-2xl font-black">Sign-in & password</h2>
         </div>
@@ -166,8 +167,8 @@ export default function SettingsView({
           <PasswordForm mode={hasPassword ? "change" : "add"} onSaved={onPasswordUpdated} />
         )}
       </section>
-      <section className="toon-card paper-note rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
-        <div className="flex items-center gap-2">
+      <section className="toon-card toon-paper bg-paper rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
+        <div className="min-w-0 flex items-center gap-2 [&>*]:min-w-0 max-w-full">
           <Palette size={22} weight="duotone" aria-hidden="true" />
           <h2 className="text-2xl font-black">Website theme</h2>
         </div>
@@ -180,24 +181,32 @@ export default function SettingsView({
             {paletteError}
           </p>
         )}
-        <div className="mt-4 grid gap-3 sm:grid-cols-2" role="group" aria-label="Website theme">
+        <div
+          className="min-w-0 mt-4 grid [&>*]:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-3 max-w-full"
+          role="group"
+          aria-label="Website theme"
+        >
           {PALETTES.map((p) => {
             const active = palette === p.id;
             return (
-              <button
+              <Button
+                variant="plain"
                 key={p.id}
                 type="button"
                 onClick={() => void pickPalette(p.id)}
                 disabled={paletteSaving}
                 aria-pressed={active}
-                className={`flex items-center gap-3 rounded-xl border-[3px] p-3 text-left ${active ? "border-ink bg-yellow shadow-[3px_3px_0_var(--color-ink)]" : "border-divider bg-surface hover:bg-cream"}`}
+                className={`min-w-0 flex flex-wrap items-center gap-3 rounded-xl border-[3px] p-3 text-left ${active ? "border-outline bg-yellow shadow-[3px_3px_0_var(--color-outline)]" : "border-divider bg-surface hover:bg-cream"} [&>*]:min-w-0 max-w-full`}
               >
-                <span className="flex shrink-0 -space-x-1.5" aria-hidden="true">
+                <span
+                  className="min-w-0 flex shrink-0 -space-x-1.5 [&>*]:min-w-0 max-w-full"
+                  aria-hidden="true"
+                >
                   {p.swatches.map((hex) => (
                     <span
                       key={hex}
                       style={{ backgroundColor: hex }}
-                      className="h-6 w-6 rounded-full border-2 border-ink"
+                      className="h-6 w-6 rounded-full border-2 border-outline"
                     />
                   ))}
                 </span>
@@ -207,13 +216,13 @@ export default function SettingsView({
                     {active ? "In use" : "Tap to apply"}
                   </span>
                 </span>
-              </button>
+              </Button>
             );
           })}
         </div>
       </section>
-      <section className="toon-card paper-note rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
-        <div className="flex items-center gap-2">
+      <section className="toon-card toon-paper bg-paper rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
+        <div className="min-w-0 flex items-center gap-2 [&>*]:min-w-0 max-w-full">
           {muted ? (
             <SpeakerSlash size={22} weight="duotone" aria-hidden="true" />
           ) : (
@@ -224,20 +233,21 @@ export default function SettingsView({
         <p className="mt-2 text-sm font-bold text-muted">
           Chimes for upvotes and new notifications. Stored on this device only.
         </p>
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button
+        <div className="min-w-0 mt-4 flex flex-wrap items-center gap-3 [&>*]:min-w-0 max-w-full">
+          <Button
+            variant="plain"
             type="button"
             role="switch"
             aria-checked={!muted}
             aria-label="Sound effects"
             onClick={toggleMute}
-            className={`flex w-16 items-center rounded-full border-[3px] border-ink p-1 ${muted ? "justify-start bg-divider" : "justify-end bg-mint"}`}
+            className={`min-w-0 flex w-16 items-center rounded-full border-[3px] border-outline p-1 ${muted ? "justify-start bg-divider" : "justify-end bg-mint"} [&>*]:min-w-0 max-w-full`}
           >
             <span
               aria-hidden="true"
-              className="h-6 w-6 rounded-full border-2 border-ink bg-surface"
+              className="h-6 w-6 rounded-full border-2 border-outline bg-surface"
             />
-          </button>
+          </Button>
           <span className="text-sm font-black">{muted ? "Muted" : "On"}</span>
           <Button
             variant="surface"
@@ -254,8 +264,8 @@ export default function SettingsView({
       </section>
 
       {isLocalMode && (
-        <section className="toon-card paper-note rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
-          <div className="flex items-center gap-2">
+        <section className="toon-card toon-paper bg-paper rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
+          <div className="min-w-0 flex items-center gap-2 [&>*]:min-w-0 max-w-full">
             <ArrowCounterClockwise size={22} weight="duotone" aria-hidden="true" />
             <h2 className="text-2xl font-black">Demo data</h2>
           </div>
@@ -276,7 +286,7 @@ export default function SettingsView({
           ) : (
             <div role="alert" className="mt-4 rounded-xl border-2 border-dashed border-divider p-3">
               <p className="text-sm font-black">Clear all local projects and activity?</p>
-              <div className="mt-3 flex flex-wrap gap-3">
+              <div className="min-w-0 mt-3 flex flex-wrap gap-3 [&>*]:min-w-0 max-w-full">
                 <Button variant="danger" size="small" type="button" onClick={resetDemo}>
                   Yes, reset it
                 </Button>

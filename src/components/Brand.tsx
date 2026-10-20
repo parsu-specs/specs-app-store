@@ -6,10 +6,12 @@ type BrandProps = {
 
 export default function Brand({ light = false, compact = false, className = "" }: BrandProps) {
   return (
-    <span className={`inline-flex items-center gap-3 ${className}`}>
+    <span
+      className={`min-w-0 inline-flex items-center gap-3 ${className} [&>*]:min-w-0 max-w-full`}
+    >
       <svg
         viewBox="0 0 48 48"
-        className="h-11 w-11 shrink-0 rotate-[-4deg] drop-shadow-[3px_3px_0_var(--color-ink)]"
+        className="h-9 w-9 sm:h-11 sm:w-11 shrink-0 rotate-[-4deg] drop-shadow-[3px_3px_0_var(--color-outline)]"
         aria-hidden="true"
       >
         <path
@@ -48,8 +50,10 @@ export default function Brand({ light = false, compact = false, className = "" }
         />
       </svg>
       {!compact && (
-        <div className="flex flex-col gap-0">
-          <span className={`font-display text-xl font-bold ${light ? "text-surface" : "text-ink"}`}>
+        <div className="min-w-0 flex flex-col gap-0 [&>*]:min-w-0 max-w-full">
+          <span
+            className={`font-display text-base sm:text-xl font-bold ${light ? "text-surface" : "text-ink"}`}
+          >
             Code<span className={light ? "text-yellow" : "text-purple"}>Canvas</span>
           </span>
           <span className={`-mt-1 text-xs font-black ${light ? "text-yellow" : "text-purple"}`}>

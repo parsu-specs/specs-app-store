@@ -22,9 +22,7 @@ describe("updateProfile name guard", () => {
     const [a] = all;
     // Forge the duplicate-row situation (Google-linking orphans): two rows,
     // one display name. Old code rejected EVERY save with "already taken".
-    const raw = JSON.parse(store.get("cc.profiles.v1") as string) as Array<
-      Record<string, unknown>
-    >;
+    const raw = JSON.parse(store.get("cc.profiles.v1") as string) as Array<Record<string, unknown>>;
     const dup = { ...raw[1], id: "dup-1", name: (raw[0] as { name: string }).name };
     store.set("cc.profiles.v1", JSON.stringify([...raw, dup]));
     const updated = await repo.updateProfile(a.id, { palette: "ocean" }, a.id);
@@ -35,9 +33,7 @@ describe("updateProfile name guard", () => {
     const repo = createLocalProfileRepo();
     const all = await repo.listProfiles();
     const [a, b] = all;
-    await expect(repo.updateProfile(a.id, { name: b.name }, a.id)).rejects.toThrow(
-      "already taken",
-    );
+    await expect(repo.updateProfile(a.id, { name: b.name }, a.id)).rejects.toThrow("already taken");
   });
 
   it("creating a profile with a taken name fails", async () => {

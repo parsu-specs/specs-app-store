@@ -1,7 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ChatCircleDots, Heart, Images, PencilSimple } from "@phosphor-icons/react";
+import {
+  ArrowLeft,
+  ChatCircleDots,
+  Heart,
+  Images,
+  PencilSimple,
+  Plus,
+  RocketLaunch,
+} from "@phosphor-icons/react";
 import Avatar from "./Avatar";
-import Input, { getInputClassName } from "./Input";
+import Input, { Select, FileInput } from "./Input";
 import MentionText from "./MentionText";
 import TrophyMark from "./TrophyMark";
 import { Button, ButtonLabel } from "./Button";
@@ -29,6 +37,7 @@ type ProfileViewProps = {
   onBack: () => void;
   onOpenApp: (appId: string) => void;
   onOpenProfile: (profileId: string) => void;
+  onSubmitProject: () => void;
   /** Refresh shared profile surfaces (sidebar, comments) after a save. */
   onProfileUpdated?: () => void;
 };
@@ -45,6 +54,7 @@ export default function ProfileView({
   onBack,
   onOpenApp,
   onOpenProfile,
+  onSubmitProject,
   onProfileUpdated,
 }: ProfileViewProps) {
   const { updateName } = useAuth();
@@ -148,7 +158,7 @@ export default function ProfileView({
   if (loading) return <p className="font-bold text-muted">Loading developer…</p>;
   if (error || !profile) {
     return (
-      <div className="toon-card paper-note rounded-lg p-10 text-center">
+      <div className="toon-card toon-paper bg-paper rounded-lg p-10 text-center">
         <h3 className="text-xl font-black">Developer not found</h3>
         <p className="font-bold text-muted">{error ?? "This profile does not exist."}</p>
         <Button variant="secondary" className="mt-5" onClick={onBack}>
@@ -161,24 +171,18 @@ export default function ProfileView({
   const totalVotes = apps.reduce((n, a) => n + a.votes, 0);
   const totalFeedback = apps.reduce((n, a) => n + a.comments, 0);
   // Allowlisted theme only — never renders raw stored values into styles.
-  const pageTheme = (PROFILE_THEMES as readonly string[]).includes(
-    profile.theme ?? "",
-  )
+  const pageTheme = (PROFILE_THEMES as readonly string[]).includes(profile.theme ?? "")
     ? profile.theme
     : undefined;
 
   return (
-    <div>
-      <Button
-        variant="surface"
-        size="small"
-        onClick={onBack}
-      >
+    <div className="@container/content min-w-0 max-w-full wrap-anywhere">
+      <Button variant="surface" size="small" onClick={onBack}>
         <ArrowLeft size={18} weight="bold" /> Back to developers
       </Button>
 
       <div
-        className="toon-card paper-note mt-5 rounded-lg p-6 pt-10 sm:p-8 sm:pt-12"
+        className="toon-card toon-paper bg-paper mt-5 rounded-lg p-6 pt-10 sm:p-8 sm:pt-12"
         style={
           pageTheme
             ? {
@@ -187,26 +191,30 @@ export default function ProfileView({
             : undefined
         }
       >
-        <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:items-start sm:text-left">
+        <div className="min-w-0 flex flex-col items-center gap-5 text-center sm:flex-row sm:items-start sm:text-left [&>*]:min-w-0 max-w-full">
           <Avatar name={profile.name} color={profile.color} imageUrl={profile.imageUrl} size="xl" />
           <div className="w-full min-w-0 flex-1 sm:w-auto">
-            <p className="ink-stamp bg-surface">{isSelf ? "Your profile" : "Developer"}</p>
-            <h2 className="mt-3 text-3xl font-black">
-              {profile.name}
+            <p className="min-w-0 inline-flex -rotate-2 items-center gap-2 border-2 border-dashed border-purple px-3 py-1 text-xs font-black uppercase text-purple bg-surface [&>*]:min-w-0 max-w-full">
+              {isSelf ? "Your profile" : "Developer"}
+            </p>
+            <h2 className="mt-3 flex min-w-0 max-w-full flex-wrap items-center justify-center gap-2 text-3xl font-black sm:justify-start [&>*]:min-w-0">
+              <span className="min-w-0 max-w-full wrap-anywhere">{profile.name}</span>
               {trophies.get(profile.id) !== undefined && (
                 <TrophyMark place={trophies.get(profile.id) as 1 | 2 | 3} size={32} />
               )}
             </h2>
             <p className="mt-1 font-bold text-muted">{profile.role}</p>
-            {profile.bio && <p className="mt-3 max-w-2xl break-words leading-7 text-body">{profile.bio}</p>}
-            <div className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm font-black sm:justify-start">
+            {profile.bio && (
+              <p className="mt-3 max-w-2xl break-words leading-7 text-body">{profile.bio}</p>
+            )}
+            <div className="min-w-0 mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm font-black sm:justify-start [&>*]:min-w-0 max-w-full">
               <span>
                 {apps.length} project{apps.length === 1 ? "" : "s"}
               </span>
-              <span className="flex items-center gap-1">
+              <span className="min-w-0 flex items-center gap-1 [&>*]:min-w-0 max-w-full">
                 <Heart size={16} weight="duotone" /> {totalVotes} votes received
               </span>
-              <span className="flex items-center gap-1">
+              <span className="min-w-0 flex items-center gap-1 [&>*]:min-w-0 max-w-full">
                 <ChatCircleDots size={16} weight="duotone" /> {totalFeedback} feedback
               </span>
             </div>
@@ -236,10 +244,10 @@ export default function ProfileView({
           <form
             ref={editFormRef}
             onSubmit={(e) => void save(e)}
-            className="mt-6 grid scroll-mt-28 gap-4 border-t-2 border-dashed border-divider pt-6 sm:grid-cols-2"
+            className="min-w-0 mt-6 grid [&>*]:min-w-0 scroll-mt-28 gap-4 border-t-2 border-dashed border-divider pt-6 @min-[36rem]/content:grid-cols-2 max-w-full"
           >
             <label>
-              <span className="toon-label">Display name</span>
+              <span className="mb-2 block text-xs font-black uppercase">Display name</span>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -249,7 +257,7 @@ export default function ProfileView({
               />
             </label>
             <label>
-              <span className="toon-label">Role</span>
+              <span className="mb-2 block text-xs font-black uppercase">Role</span>
               <Input
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
@@ -259,35 +267,37 @@ export default function ProfileView({
               />
             </label>
             <label>
-              <span className="toon-label">Avatar color</span>
-              <select className={getInputClassName()} value={color} onChange={(e) => setColor(e.target.value)}>
+              <span className="mb-2 block text-xs font-black uppercase">Avatar color</span>
+              <Select value={color} onChange={(e) => setColor(e.target.value)}>
                 {AVATAR_COLORS.map((c) => (
                   <option key={c} value={c}>
                     {c}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
-            <div className="sm:col-span-2">
-              <span className="toon-label">
+            <div className="@min-[36rem]/content:col-span-2">
+              <span className="mb-2 block text-xs font-black uppercase">
                 Profile theme (profile page only)
               </span>
               <div
-                className="flex flex-wrap items-center gap-2"
+                className="min-w-0 flex flex-wrap items-center gap-2 [&>*]:min-w-0 max-w-full"
                 role="group"
                 aria-label="Profile theme"
               >
-                <button
+                <Button
+                  variant="plain"
                   type="button"
                   onClick={() => setTheme("")}
                   aria-pressed={theme === ""}
                   title="Default"
-                  className={`rounded-full border-2 px-3 py-1 text-xs font-black ${theme === "" ? "border-ink bg-yellow shadow-[2px_2px_0_var(--color-ink)]" : "border-divider bg-surface"}`}
+                  className={`rounded-full border-2 px-3 py-1 text-xs font-black ${theme === "" ? "border-outline bg-yellow shadow-[2px_2px_0_var(--color-outline)]" : "border-divider bg-surface"}`}
                 >
                   Default
-                </button>
+                </Button>
                 {PROFILE_THEMES.map((c) => (
-                  <button
+                  <Button
+                    variant="text"
                     key={c}
                     type="button"
                     onClick={() => setTheme(c)}
@@ -295,13 +305,13 @@ export default function ProfileView({
                     title={c}
                     aria-label={`Profile theme ${c}`}
                     style={{ backgroundColor: `var(--color-${c})` }}
-                    className={`h-8 w-8 rounded-full border-2 ${theme === c ? "border-ink shadow-[2px_2px_0_var(--color-ink)]" : "border-divider"}`}
+                    className={`h-8 w-8 rounded-full border-2 ${theme === c ? "border-outline shadow-[2px_2px_0_var(--color-outline)]" : "border-divider"}`}
                   />
                 ))}
               </div>
             </div>
-            <label className="sm:col-span-2">
-              <span className="toon-label">Bio (280 chars)</span>
+            <label className="@min-[36rem]/content:col-span-2">
+              <span className="mb-2 block text-xs font-black uppercase">Bio (280 chars)</span>
               <Input
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
@@ -309,16 +319,14 @@ export default function ProfileView({
                 placeholder="What do you build?"
               />
             </label>
-            <label className="sm:col-span-2">
-              <span className="toon-label">Profile photo</span>
-              <span className="flex flex-wrap items-center gap-3">
+            <label className="@min-[36rem]/content:col-span-2">
+              <span className="mb-2 block text-xs font-black uppercase">Profile photo</span>
+              <span className="min-w-0 flex flex-wrap items-center gap-3 [&>*]:min-w-0 max-w-full">
                 <ButtonLabel variant="surface" size="small" className="cursor-pointer">
                   <Images size={18} weight="duotone" />
                   {photoBusy ? "Processing…" : "Choose from gallery"}
-                  <input
-                    type="file"
+                  <FileInput
                     accept="image/*"
-                    className="sr-only"
                     disabled={photoBusy || saving}
                     onChange={(e) => {
                       const file = e.target.files?.[0];
@@ -329,20 +337,23 @@ export default function ProfileView({
                       fileToThumbnailDataUrl(file, 256)
                         .then((dataUrl) => setImageUrl(dataUrl))
                         .catch((err) =>
-                          setSaveError(err instanceof Error ? err.message : "Could not read photo."),
+                          setSaveError(
+                            err instanceof Error ? err.message : "Could not read photo.",
+                          ),
                         )
                         .finally(() => setPhotoBusy(false));
                     }}
                   />
                 </ButtonLabel>
                 {imageUrl && (
-                  <button
+                  <Button
+                    variant="plain"
                     type="button"
                     onClick={() => setImageUrl("")}
                     className="text-sm font-black underline decoration-2 underline-offset-4"
                   >
                     Remove photo
-                  </button>
+                  </Button>
                 )}
               </span>
               <Input
@@ -353,7 +364,7 @@ export default function ProfileView({
                 placeholder="…or paste an https:// image link"
               />
             </label>
-            <div className="flex items-center gap-3 sm:col-span-2">
+            <div className="min-w-0 flex items-center gap-3 @min-[36rem]/content:col-span-2 [&>*]:min-w-0 max-w-full">
               <Avatar
                 name={name.trim() || profile.name}
                 color={color}
@@ -366,7 +377,7 @@ export default function ProfileView({
               </span>
             </div>
             {saveError && (
-              <p role="alert" className="text-sm font-bold sm:col-span-2">
+              <p role="alert" className="text-sm font-bold @min-[36rem]/content:col-span-2">
                 {saveError}
               </p>
             )}
@@ -374,7 +385,7 @@ export default function ProfileView({
               size="small"
               type="submit"
               disabled={saving}
-              className="sm:justify-self-start"
+              className="@min-[36rem]/content:justify-self-start"
             >
               {saving ? "Saving…" : "Save profile"}
             </Button>
@@ -382,22 +393,30 @@ export default function ProfileView({
         )}
       </div>
 
-      <div className="mb-5 mt-8 border-t-2 border-dashed border-divider pt-6">
-        <p className="text-xs font-black uppercase text-purple">Projects</p>
-        <h3 className="mt-1 text-2xl font-black">
-          {isSelf ? "Your projects" : `Projects by ${profile.name}`}
-        </h3>
+      <div className="mb-5 mt-8 flex flex-wrap items-center justify-between gap-4 border-t-2 border-dashed border-divider pt-6">
+        <div>
+          <p className="text-xs font-black uppercase text-purple">Projects</p>
+          <h3 className="mt-1 text-2xl font-black">
+            {isSelf ? "Your projects" : `Projects by ${profile.name}`}
+          </h3>
+        </div>
+        {isSelf && apps.length > 0 && (
+          <Button variant="secondary" size="small" onClick={onSubmitProject}>
+            <Plus size={18} weight="bold" /> Submit project
+          </Button>
+        )}
       </div>
       {apps.length ? (
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="min-w-0 grid [&>*]:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-6 max-w-full">
           {apps.map((app) => (
-            <button
+            <Button
+              variant="plain"
               key={app.id}
               onClick={() => onOpenApp(app.id)}
-              className="toon-card paper-note flex h-full flex-col rounded-lg p-5 pt-9 text-left"
+              className="toon-card toon-paper bg-paper flex h-full w-full min-w-0 max-w-sm flex-col rounded-lg p-5 pt-9 text-left [&>*]:min-w-0"
             >
               {app.screenshots?.[0] ? (
-                <span className="relative block h-24 w-full overflow-hidden rounded-sm border-[3px] border-ink bg-ink">
+                <span className="relative block h-24 w-full overflow-hidden rounded-sm border-[3px] border-outline bg-ink">
                   <img
                     src={app.screenshots[0]}
                     alt=""
@@ -415,14 +434,14 @@ export default function ProfileView({
               ) : (
                 <div
                   style={{ backgroundColor: `var(--color-${app.color})` }}
-                  className="project-cover flex h-24 items-center justify-center rounded-sm border-[3px] border-ink"
+                  className="min-w-0 bg-[repeating-linear-gradient(-45deg,transparent_0,transparent_12px,var(--color-cover-stripe)_12px,var(--color-cover-stripe)_24px)] flex h-24 items-center justify-center rounded-sm border-[3px] border-outline [&>*]:min-w-0 max-w-full"
                 >
                   <span className="rotate-[-4deg] text-3xl font-black">{app.title.charAt(0)}</span>
                 </div>
               )}
               <p className="mt-4 text-[10px] font-black uppercase text-purple">{app.category}</p>
-              <h4 className="text-lg font-black">
-                {app.title}
+              <h4 className="flex min-w-0 max-w-full flex-wrap items-center gap-2 text-lg font-black [&>*]:min-w-0">
+                <span className="min-w-0 max-w-full wrap-anywhere">{app.title}</span>
                 {projectTrophies.get(app.id) !== undefined && (
                   <TrophyMark place={projectTrophies.get(app.id) as 1 | 2 | 3} size={20} />
                 )}
@@ -435,26 +454,43 @@ export default function ProfileView({
                 />
               </p>
               <div aria-hidden="true" className="flex-1" />
-              <p className="mt-3 flex items-center gap-4 text-sm font-black">
-                <span className="flex items-center gap-1">
+              <p className="min-w-0 mt-3 flex flex-wrap items-center gap-4 text-sm font-black [&>*]:min-w-0 max-w-full">
+                <span className="min-w-0 flex items-center gap-1 [&>*]:min-w-0 max-w-full">
                   <Heart size={18} weight="duotone" /> {app.votes}
                 </span>
-                <span className="flex items-center gap-1">
+                <span className="min-w-0 flex items-center gap-1 [&>*]:min-w-0 max-w-full">
                   <ChatCircleDots size={18} weight="duotone" /> {app.comments}
                 </span>
               </p>
               <div className="mt-1">
                 <UploadStamp createdAt={app.createdAt} />
               </div>
-            </button>
+            </Button>
           ))}
         </div>
       ) : (
-        <div className="toon-card paper-note rounded-lg p-10 text-center">
-          <h4 className="text-xl font-black">No projects yet</h4>
-          <p className="font-bold text-muted">
-            {isSelf ? "Submit your first project from Discover." : "Check back soon."}
+        <div className="toon-card toon-paper bg-paper rounded-lg p-10 text-center">
+          {isSelf && (
+            <RocketLaunch
+              size={40}
+              weight="duotone"
+              aria-hidden="true"
+              className="mx-auto mb-4 text-purple"
+            />
+          )}
+          <h4 className="text-xl font-black">
+            {isSelf ? "You haven’t submitted a project yet" : "No projects yet"}
+          </h4>
+          <p className="mt-2 font-bold text-muted">
+            {isSelf
+              ? "Share your first build with the community. Your projects and their feedback will appear here."
+              : "Check back soon."}
           </p>
+          {isSelf && (
+            <Button className="mt-5" onClick={onSubmitProject}>
+              <Plus size={18} weight="bold" /> Submit your first project
+            </Button>
+          )}
         </div>
       )}
     </div>

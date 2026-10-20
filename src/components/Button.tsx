@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import type {
   AnchorHTMLAttributes,
   ButtonHTMLAttributes,
@@ -7,6 +8,9 @@ import type {
 } from "react";
 
 export type ButtonVariant =
+  | "icon"
+  | "menu"
+  | "plain"
   | "primary"
   | "secondary"
   | "surface"
@@ -43,21 +47,25 @@ type ButtonChipProps = HTMLAttributes<HTMLSpanElement> &
   };
 
 const commonClasses =
-  "inline-flex items-center justify-center gap-2 font-black focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-yellow focus-visible:ring-offset-2";
+  "inline-flex min-w-0 max-w-full whitespace-normal wrap-anywhere items-center justify-center gap-2 [&>svg]:shrink-0 font-black focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-yellow focus-visible:ring-offset-2";
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: "rounded-2xl border-[3px] border-ink bg-purple text-surface",
-  secondary: "rounded-2xl border-[3px] border-ink bg-yellow text-ink",
-  surface: "rounded-2xl border-[3px] border-ink bg-surface text-inherit",
-  danger: "rounded-2xl border-[3px] border-ink bg-alert text-surface",
+  icon: "shrink-0 rounded-full border-2 border-outline bg-surface transition-colors hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60",
+  menu: "w-full justify-start rounded-lg px-3 py-2 text-left text-sm hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60",
+  plain:
+    "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-yellow focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
+  primary: "rounded-2xl border-[3px] border-outline bg-purple text-surface",
+  secondary: "rounded-2xl border-[3px] border-outline bg-yellow text-ink",
+  surface: "rounded-2xl border-[3px] border-outline bg-surface text-inherit",
+  danger: "rounded-2xl border-[3px] border-outline bg-alert text-surface",
   outline:
-    "rounded-lg border-2 border-ink bg-transparent px-3 py-2 text-ink transition-colors hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60",
+    "rounded-lg border-2 border-outline bg-transparent px-3 py-2 text-ink transition-colors hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60",
   "outline-flat":
-    "min-w-max rounded-md border-2 border-ink bg-transparent text-ink transition-colors aria-pressed:bg-purple aria-pressed:text-surface aria-pressed:hover:bg-purple hover:bg-yellow disabled:cursor-not-allowed disabled:opacity-60",
+    "min-w-0 max-w-full rounded-md border-2 border-outline bg-transparent text-ink transition-colors aria-pressed:bg-purple aria-pressed:text-surface aria-pressed:hover:bg-purple hover:bg-yellow disabled:cursor-not-allowed disabled:opacity-60",
   ghost:
     "text-sm decoration-2 transition-colors hover:text-purple disabled:cursor-not-allowed disabled:opacity-60",
   filter:
-    "min-w-max rounded-md border-2 border-ink bg-transparent text-ink transition-colors aria-pressed:bg-purple aria-pressed:text-surface aria-pressed:hover:bg-purple hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60",
+    "min-w-0 max-w-full rounded-md border-2 border-outline bg-transparent text-ink transition-colors aria-pressed:bg-purple aria-pressed:text-surface aria-pressed:hover:bg-purple aria-selected:bg-purple aria-selected:text-surface aria-selected:hover:bg-purple hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60",
   vote: "gap-1 transition-colors hover:text-purple aria-pressed:text-vote aria-pressed:hover:text-vote disabled:cursor-not-allowed disabled:opacity-60",
   text: "inline border-0 bg-transparent p-0 font-inherit text-inherit transition-colors hover:text-purple disabled:cursor-not-allowed disabled:opacity-60",
 };
@@ -66,6 +74,8 @@ const raisedShellClasses = [
   "group",
   "relative",
   "isolate",
+  "min-w-0",
+  "max-w-full",
   "inline-flex",
   "cursor-pointer",
   "border-0",
@@ -96,7 +106,7 @@ const raisedSideClasses = [
 
   "rounded-[20px]",
   "border-[3px]",
-  "border-ink",
+  "border-outline",
   "bg-ink",
 
   "transition-[top,left,border-radius]",
@@ -116,6 +126,11 @@ const raisedSideClasses = [
 ].join(" ");
 
 const raisedFaceClasses = [
+  "min-w-0",
+  "max-w-full",
+  "whitespace-normal",
+  "wrap-anywhere",
+  "[&>svg]:shrink-0",
   "relative",
   "z-10",
   "inline-flex",
@@ -125,7 +140,7 @@ const raisedFaceClasses = [
   "gap-2",
   "rounded-2xl",
   "border-[3px]",
-  "border-ink",
+  "border-outline",
   "font-black",
 
   "translate-x-1",
@@ -170,6 +185,17 @@ function buttonClassName(
   fullWidth: boolean,
   fullHeight: boolean,
 ) {
+  if (variant === "plain") {
+    return [
+      "min-w-0 max-w-full wrap-anywhere",
+      variantClasses.plain,
+      fullWidth ? "w-full" : "",
+      fullHeight ? "h-full" : "",
+      className ?? "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }
   if (raisedVariants.has(variant)) {
     return [
       raisedShellClasses,
@@ -182,13 +208,15 @@ function buttonClassName(
   }
 
   const sizeClass =
-    variant === "filter" || variant === "outline-flat"
-      ? filterSizeClasses[size]
-      : variant === "vote"
-        ? size === "compact"
-          ? "text-xs"
-          : "text-sm"
-        : "";
+    variant === "icon"
+      ? ({ default: "p-2", small: "p-1.5", compact: "p-1", "compact-icon": "p-0.5" } as const)[size]
+      : variant === "filter" || variant === "outline-flat"
+        ? filterSizeClasses[size]
+        : variant === "vote"
+          ? size === "compact"
+            ? "text-xs"
+            : "text-sm"
+          : "";
 
   return [
     variant === "text" ? commonClasses.replace("inline-flex", "inline") : commonClasses,
@@ -239,20 +267,24 @@ function buttonContents(
   );
 }
 
-export function Button({
-  variant = "primary",
-  size = "default",
-  className,
-  fullWidth = false,
-  fullHeight = false,
-  children,
-  type = "button",
-  ...props
-}: ButtonProps) {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {
+    variant = "primary",
+    size = "default",
+    className,
+    fullWidth = false,
+    fullHeight = false,
+    children,
+    type = "button",
+    ...props
+  }: ButtonProps,
+  ref,
+) {
   const clickableClass = props.onClick && !props.disabled ? "cursor-pointer" : "";
 
   return (
     <button
+      ref={ref}
       {...props}
       type={type}
       className={buttonClassName(
@@ -266,7 +298,7 @@ export function Button({
       {buttonContents(variant, size, fullWidth, fullHeight, children)}
     </button>
   );
-}
+});
 
 export function ButtonLink({
   variant = "primary",
@@ -299,7 +331,16 @@ export function ButtonLabel({
   ...props
 }: ButtonLabelProps) {
   return (
-    <label {...props} className={buttonClassName(variant, size, className, fullWidth, fullHeight)}>
+    <label
+      {...props}
+      className={buttonClassName(
+        variant,
+        size,
+        `focus-within:ring-4 focus-within:ring-yellow focus-within:ring-offset-2 ${className ?? ""}`,
+        fullWidth,
+        fullHeight,
+      )}
+    >
       {buttonContents(variant, size, fullWidth, fullHeight, children)}
     </label>
   );
@@ -308,8 +349,8 @@ export function ButtonLabel({
 const chipToneClasses = {
   default: "bg-lavender text-ink",
   gold: "bg-yellow text-ink",
-  silver: "bg-[#c0c0c0] text-ink",
-  bronze: "bg-[#a85d1a] text-surface",
+  silver: "bg-medal-silver text-ink",
+  bronze: "bg-medal-bronze text-surface",
   muted: "bg-muted text-surface",
 } satisfies Record<NonNullable<ButtonChipProps["tone"]>, string>;
 

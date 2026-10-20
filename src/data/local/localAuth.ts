@@ -1,5 +1,10 @@
 import { MOCK_USERS } from "../../auth/mockCredentials";
-import { AuthError, type AuthRepo, type GoogleAccount, type GoogleSignInResult } from "../repositories";
+import {
+  AuthError,
+  type AuthRepo,
+  type GoogleAccount,
+  type GoogleSignInResult,
+} from "../repositories";
 import type { User } from "../types";
 
 const SESSION_KEY = "cc.session.v1";

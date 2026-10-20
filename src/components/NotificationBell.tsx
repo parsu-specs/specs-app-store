@@ -115,7 +115,7 @@ export default function NotificationBell({
         {unread > 0 && (
           <span
             aria-hidden="true"
-            className="absolute -right-2 -top-2 min-w-5 rounded-full border-2 border-ink bg-alert px-1 text-center text-[10px] font-black leading-4 text-surface"
+            className="absolute -right-2 -top-2 min-w-5 rounded-full border-2 border-outline bg-alert px-1 text-center text-[10px] font-black leading-4 text-surface"
           >
             {unread > 99 ? "99+" : unread}
           </span>
@@ -124,7 +124,8 @@ export default function NotificationBell({
 
       {open && (
         <>
-          <button
+          <Button
+            variant="text"
             type="button"
             aria-label="Close notifications"
             onClick={() => onOpenChange(false)}
@@ -134,39 +135,43 @@ export default function NotificationBell({
             ref={panelRef}
             role="dialog"
             aria-label="Notifications"
-            className="toon-card absolute right-0 top-full z-50 mt-2 flex max-h-[70vh] w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl bg-surface text-ink"
+            className="min-w-0 toon-card absolute right-0 top-full z-50 mt-2 flex max-h-[70vh] w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl bg-surface text-ink [&>*]:min-w-0"
           >
-            <div className="flex shrink-0 items-center justify-between gap-2 border-b-[3px] border-ink p-3">
+            <div className="min-w-0 flex shrink-0 flex-wrap items-center justify-between gap-2 border-b-[3px] border-outline p-3 [&>*]:min-w-0 max-w-full">
               <h2 className="text-base font-black">Notifications{unread > 0 && ` (${unread})`}</h2>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="min-w-0 flex shrink-0 items-center gap-2 [&>*]:min-w-0 max-w-full">
                 {unread > 0 && (
-                  <button
+                  <Button
+                    variant="plain"
                     type="button"
                     onClick={() => onMarkAllRead()}
                     className="text-xs font-black underline decoration-2 underline-offset-4"
                   >
                     Mark all read
-                  </button>
+                  </Button>
                 )}
                 {items.length > 0 && (
-                  <button
+                  <Button
+                    variant="text"
                     type="button"
                     onClick={() => onDeleteAll()}
                     title="Delete all notifications"
                     className="text-xs font-black text-alert underline decoration-2 underline-offset-4"
                   >
                     Delete all
-                  </button>
+                  </Button>
                 )}
-                <button
+                <Button
+                  variant="icon"
+                  size="compact"
                   type="button"
                   onClick={() => onOpenChange(false)}
                   aria-label="Close notifications"
                   autoFocus
-                  className="rounded-full border-2 border-ink bg-surface p-1 hover:bg-cream"
+                  className=""
                 >
                   <X size={14} weight="bold" />
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -188,18 +193,20 @@ export default function NotificationBell({
                     const isUnread = unreadIds.has(item.id);
                     return (
                       <li key={item.id}>
-                        <button
+                        <Button
+                          variant="icon"
+                          size="small"
                           type="button"
                           onClick={() => go(item)}
-                          className={`flex w-full items-start gap-2.5 rounded-lg border-2 p-2.5 text-left hover:bg-cream ${
-                            isUnread ? "border-ink bg-cream/60" : "border-transparent"
-                          }`}
+                          className={`min-w-0 flex w-full items-start gap-2.5 rounded-lg border-2 p-2.5 text-left hover:bg-cream ${
+                            isUnread ? "border-outline bg-cream/60" : "border-transparent"
+                          } [&>*]:min-w-0 max-w-full`}
                         >
-                          <span className="mt-0.5 shrink-0 rounded-full border-2 border-ink bg-surface p-1.5">
+                          <span className="mt-0.5">
                             <Icon size={16} weight="duotone" aria-hidden="true" />
                           </span>
                           <span className="min-w-0 flex-1">
-                            <span className="flex items-center gap-2">
+                            <span className="min-w-0 flex flex-wrap items-center gap-2 [&>*]:min-w-0 max-w-full">
                               <span className="rounded-full bg-purple/15 px-1.5 py-0.5 text-[10px] font-black uppercase text-purple">
                                 {KIND_LABEL[item.kind]}
                               </span>
@@ -216,8 +223,10 @@ export default function NotificationBell({
                             <span className="mt-0.5 block line-clamp-2 text-xs font-bold text-muted">
                               {item.body}
                             </span>
-                            <span className="mt-1 flex items-center gap-1">
-                              {item.kind === "vote" || item.kind === "collab" || item.kind === "like" ? (
+                            <span className="min-w-0 mt-1 flex items-center gap-1 [&>*]:min-w-0 max-w-full">
+                              {item.kind === "vote" ||
+                              item.kind === "collab" ||
+                              item.kind === "like" ? (
                                 <UploadStamp
                                   createdAt={item.createdAt}
                                   displayAt={arrivalAt[arrivalKeyOf(item)]}
@@ -234,7 +243,7 @@ export default function NotificationBell({
                               />
                             </span>
                           </span>
-                        </button>
+                        </Button>
                       </li>
                     );
                   })}

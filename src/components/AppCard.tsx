@@ -91,15 +91,16 @@ export default function AppCard({
         pressPos.current = { x: e.clientX, y: e.clientY };
       }}
       onClick={openFromCard}
-      className="toon-card paper-note flex h-full cursor-pointer flex-col rounded-lg p-4 rotate-1"
+      className="toon-card toon-paper bg-paper flex h-full w-full min-w-0 max-w-sm cursor-pointer flex-col rounded-lg p-4 *:min-w-0"
     >
-      <button
+      <Button
+        variant="plain"
         onClick={() => onOpenApp(app.id)}
         aria-label={`Open ${app.title} details`}
         className="block w-full"
       >
         {app.screenshots?.[0] ? (
-          <span className="relative block h-48 w-full overflow-hidden rounded-sm border-[3px] border-ink bg-ink">
+          <span className="relative block h-48 w-full overflow-hidden rounded-sm border-[3px] border-outline bg-ink">
             <img
               src={app.screenshots[0]}
               alt={`${app.title} thumbnail`}
@@ -110,18 +111,18 @@ export default function AppCard({
         ) : (
           <div
             style={{ backgroundColor: `var(--color-${app.color})` }}
-            className="project-cover flex h-48 items-center justify-center rounded-sm border-[3px] border-ink"
+            className="min-w-0 bg-[repeating-linear-gradient(-45deg,transparent_0,transparent_12px,var(--color-cover-stripe)_12px,var(--color-cover-stripe)_24px)] flex h-48 items-center justify-center rounded-sm border-[3px] border-outline [&>*]:min-w-0 max-w-full"
           >
             <span className="rotate-[-4deg] text-4xl font-black">{app.title.charAt(0)}</span>
           </div>
         )}
-      </button>
-      <div className="flex flex-1 flex-col">
-        <div className="mt-2 flex flex-col items-start gap-3">
+      </Button>
+      <div className="min-w-0 flex flex-1 flex-col *:min-w-0 max-w-full">
+        <div className="min-w-0 mt-2 flex flex-col items-start gap-3 *:min-w-0 max-w-full">
           <span className="text-[10px] font-black uppercase text-purple">{app.category}</span>
-          <div className="flex w-full flex-row justify-between items-center">
-            <div className="flex gap-1">
-              <h3 className="text-xl font-black">{app.title} </h3>
+          <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-2 *:min-w-0 max-w-full">
+            <div className="flex min-w-0 items-center gap-1 *:min-w-0 max-w-full">
+              <h3 className="min-w-0 wrap-anywhere text-xl font-black">{app.title} </h3>
               {projectRank !== undefined &&
                 (trophyPlace !== undefined ? (
                   <TrophyMark place={trophyPlace} size={24} />
@@ -134,8 +135,8 @@ export default function AppCard({
             <UploadStamp createdAt={app.createdAt} />
           </div>
         </div>
-        <div className="mt-2 overflow-hidden text-xs leading-5">
-          <p className="max-h-full overflow-hidden">
+        <div className="mt-2 text-xs leading-5">
+          <p className="wrap-anywhere">
             <UserIcon
               size={15}
               weight="duotone"
@@ -175,15 +176,15 @@ export default function AppCard({
             )}
           </p>
         </div>
-        <p className="my-4 line-clamp-4 flex-1 text-xs text-justify text-pretty leading-6 text-muted/75">
+        <p className="my-4 line-clamp-4 flex-1 text-xs text-left text-pretty leading-6 text-muted/75">
           <MentionText
             text={app.description}
             profiles={[...profiles.values()]}
             onOpenProfile={onOpenProfile}
           />
         </p>
-        <div className="flex min-h-8 items-center gap-4 border-t-2 border-dashed border-divider pt-4">
-          <span className="flex items-center gap-2">
+        <div className="min-w-0 flex min-h-8 flex-wrap items-center gap-3 border-t-2 border-dashed border-divider pt-4 *:min-w-0 max-w-full">
+          <span className="min-w-0 flex items-center gap-2 *:min-w-0 max-w-full">
             <Button variant="vote" onClick={() => onVote(app.id)} aria-pressed={voted}>
               <Heart size={20} weight={voted ? "fill" : "duotone"} />
               {app.votes}
@@ -206,7 +207,7 @@ export default function AppCard({
               onOpenProfile={onOpenProfile}
             />
           </span>
-          <span className="ml-auto flex items-center gap-2">
+          <span className="min-w-0 ml-auto flex items-center gap-2 *:min-w-0 max-w-full">
             {isOwner && (
               <Button
                 variant="outline-flat"
@@ -238,26 +239,28 @@ export default function AppCard({
               aria-modal="true"
               aria-label={`Comments for ${app.title}`}
               onClick={() => onToggle(app.id)}
-              className="fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-ink/80 p-4"
+              className="min-w-0 fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-ink/80 p-4 [&>*]:min-w-0 max-w-full"
             >
               <div
                 id={panelId}
                 onClick={(e) => e.stopPropagation()}
-                className="toon-card my-auto flex max-h-[85vh] min-h-0 w-full max-w-lg flex-col overflow-hidden rounded-lg bg-surface"
+                className="min-w-0 toon-card my-auto flex max-h-[85vh] min-h-0 w-full max-w-lg flex-col overflow-hidden rounded-lg bg-surface [&>*]:min-w-0"
               >
-                <div className="flex shrink-0 items-center justify-between gap-3 border-b-[3px] border-ink p-4">
+                <div className="min-w-0 flex shrink-0 items-center justify-between gap-3 border-b-[3px] border-outline p-4 [&>*]:min-w-0 max-w-full">
                   <h4 className="truncate text-lg font-black">
                     Feedback ({app.comments}) · {app.title}
                   </h4>
-                  <button
+                  <Button
+                    variant="icon"
+                    size="small"
                     type="button"
                     onClick={() => onToggle(app.id)}
                     aria-label="Close comments"
                     autoFocus
-                    className="shrink-0 rounded-full border-2 border-ink bg-surface p-1.5"
+                    className=""
                   >
                     <X size={16} weight="bold" />
-                  </button>
+                  </Button>
                 </div>
                 <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
                   <Comments

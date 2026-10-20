@@ -1,0 +1,288 @@
+@import "tailwindcss";
+
+@theme {
+  --color-black: #000000;
+  --color-google-button: #1e1e1e;
+  --color-google-yellow: #ffc107;
+  --color-google-red: #ff3d00;
+  --color-google-green: #4caf50;
+  --color-google-blue: #1976d2;
+
+  --color-gold-light: #fff7c2;
+  --color-gold-mid: #f5c518;
+  --color-gold-dark: #8a6100;
+  --color-gold-glow: rgba(245, 197, 24, 0.6);
+  --color-metal-highlight: #ffffff;
+  --color-silver-mid: #c3cad6;
+  --color-silver-dark: #59616f;
+  --color-silver-glow: rgba(195, 202, 214, 0.6);
+  --color-bronze-light: #f9d3a6;
+  --color-bronze-mid: #d08a4a;
+  --color-bronze-dark: #6e3f1d;
+  --color-bronze-glow: rgba(208, 138, 74, 0.55);
+  --color-podium-gold: #f7de6b;
+  --color-podium-silver: #dde3ea;
+  --color-podium-bronze: #eac39e;
+
+  --color-ink: #20283c;
+  --color-outline: var(--color-ink);
+  --color-cream: #f6f4ed;
+  --color-purple: #6558bd;
+  --color-yellow: #e8c451;
+  --color-mint: #9bcab5;
+  --color-pink: #dfa0a4;
+  --color-sky: #91b8c8;
+  --color-lavender: #b9b3d0;
+  --color-paper: #fbfaf5;
+  --color-surface: #ffffff;
+  --color-body: #3f485b;
+  --color-muted: #626a78;
+  --color-placeholder: #cbd1dc;
+  --color-divider: #b8becc;
+  --color-divider-strong: #9ca4b4;
+  --color-alert: #ff5b82;
+  --color-vote: #e83e70;
+  --color-medal-silver: #c0c0c0;
+  --color-medal-bronze: #a85d1a;
+
+  --color-paper-line: rgb(114 89 242 / 11%);
+  --color-margin-line: rgb(255 91 130 / 38%);
+  --color-ink-dots: rgb(23 35 60 / 22%);
+  --color-ink-shadow: rgb(23 35 60 / 22%);
+  --color-tape: rgb(255 216 77 / 72%);
+  --color-tape-border: rgb(23 35 60 / 24%);
+  --color-cover-stripe: rgb(255 255 255 / 28%);
+
+  --font-sans: "Nunito", system-ui, sans-serif;
+  --font-display: "Fredoka", "Nunito", sans-serif;
+  --animate-loader-bounce: loader-bounce 600ms ease-in-out infinite alternate;
+
+  @keyframes loader-bounce {
+    to {
+      transform: translateY(-10px);
+    }
+  }
+}
+
+/* Shared card surfaces stay below utilities so component variants can override them. */
+@layer components {
+  .toon-card {
+    @apply border-2 border-outline shadow-[4px_4px_0_var(--color-ink-shadow)] wrap-anywhere;
+  }
+
+  .toon-paper {
+    position: relative;
+    clip-path: polygon(
+      -5px -5px,
+      calc(100% - 36px) -5px,
+      calc(100% + 5px) 36px,
+      calc(100% + 5px) calc(100% + 5px),
+      -5px calc(100% + 5px)
+    );
+
+    &::before {
+      @apply absolute -top-[7px] left-1/2 z-2 h-[22px] w-[72px] -translate-x-1/2 -rotate-2 border border-tape-border bg-tape;
+      content: "";
+    }
+  }
+}
+
+/* Runtime palette variables are shared design tokens. */
+:root {
+  color-scheme: light;
+  font-synthesis: none;
+}
+
+:root[data-palette="ocean"] {
+  --color-purple: #2f6df6;
+  --color-yellow: #ffcf5c;
+  --color-mint: #4fd1b5;
+  --color-pink: #ff9ec6;
+  --color-sky: #6fc3e8;
+  --color-lavender: #9aa8f0;
+  --color-paper: #f6f3ea;
+  --color-cream: #ebf2ec;
+  --color-surface: #ffffff;
+}
+
+:root[data-palette="sunset"] {
+  --color-purple: #9d4edd;
+  --color-yellow: #ff9e00;
+  --color-mint: #8ac926;
+  --color-pink: #ff5d8f;
+  --color-sky: #4cc9f0;
+  --color-lavender: #c4b5fd;
+  --color-paper: #faf3ea;
+  --color-cream: #f6e9dd;
+  --color-surface: #ffffff;
+}
+
+:root[data-palette="forest"] {
+  --color-purple: #2d6a4f;
+  --color-yellow: #e9c46a;
+  --color-mint: #74c69d;
+  --color-pink: #e5989b;
+  --color-sky: #6aaed6;
+  --color-lavender: #a78bfa;
+  --color-paper: #f4f1e6;
+  --color-cream: #e9efe3;
+  --color-surface: #ffffff;
+}
+
+:root[data-palette="mono"] {
+  --color-purple: #3f3f3f;
+  --color-yellow: #8a8a8a;
+  --color-mint: #b0b0b0;
+  --color-pink: #c9c9c9;
+  --color-sky: #dcdcdc;
+  --color-lavender: #e8e8e8;
+  --color-paper: #fafafa;
+  --color-cream: #f1f1f1;
+  --color-surface: #ffffff;
+}
+
+:root[data-palette="bubblegum"] {
+  --color-purple: #d6336c;
+  --color-yellow: #ffd166;
+  --color-mint: #8ce8d2;
+  --color-pink: #ff5d8f;
+  --color-sky: #a9def9;
+  --color-lavender: #d0b3f5;
+  --color-paper: #fdf2f6;
+  --color-cream: #fbdfea;
+  --color-surface: #ffffff;
+}
+
+:root[data-palette="citrus"] {
+  --color-purple: #65a30d;
+  --color-yellow: #facc15;
+  --color-mint: #4ade80;
+  --color-pink: #fb7185;
+  --color-sky: #22d3ee;
+  --color-lavender: #a78bfa;
+  --color-paper: #faf9ec;
+  --color-cream: #f3eedb;
+  --color-surface: #ffffff;
+}
+
+:root[data-palette="grape"] {
+  --color-purple: #6d28d9;
+  --color-yellow: #e9d5ff;
+  --color-mint: #c4b5fd;
+  --color-pink: #f0abfc;
+  --color-sky: #a5b4fc;
+  --color-lavender: #ddd6fe;
+  --color-paper: #f7f3fc;
+  --color-cream: #efe9fb;
+  --color-surface: #ffffff;
+}
+
+/* Midnight is the only dark palette: dark surfaces + light text, but the
+   accent hues stay saturated (brightened where needed so they read on dark)
+   instead of going grayscale — the old gray wash is what looked inverted.
+   Tape, grid lines, and alert colors are shared because they read fine. */
+:root[data-palette="midnight"] {
+  color-scheme: dark;
+  --color-purple: #8b7cf6;
+  --color-yellow: #e8c451;
+  --color-mint: #7dd3b8;
+  --color-pink: #f2a3b3;
+  --color-sky: #7cc7e8;
+  --color-lavender: #b9b3d0;
+  --color-paper: #101013;
+  --color-cream: #17171b;
+  --color-surface: #202026;
+  --color-ink: #f4f4f5;
+  --color-outline: #43434c;
+  --color-body: #b9bdc6;
+  --color-muted: #868b95;
+  --color-placeholder: #555a64;
+  --color-divider: #2c2c31;
+  --color-divider-strong: #3d3d44;
+  --color-ink-dots: rgb(244 244 245 / 10%);
+  --color-ink-shadow: rgb(0 0 0 / 60%);
+}
+
+/* Only document canvas painting, native scrollbar defaults, and the accessibility
+   preference remain global. Base-layer rules allow component utilities to win. */
+@layer base {
+  html {
+    scrollbar-color: var(--color-yellow) var(--color-ink);
+    scrollbar-width: auto;
+    background-color: var(--color-cream);
+    background-image:
+      linear-gradient(90deg, transparent 63px, var(--color-margin-line) 64px, transparent 65px),
+      linear-gradient(var(--color-paper-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-paper-line) 1px, transparent 1px),
+      radial-gradient(var(--color-ink-dots) 1px, transparent 1px);
+    background-size:
+      100% 100%,
+      36px 36px,
+      36px 36px,
+      36px 36px;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: -100vmax;
+    z-index: -1;
+    pointer-events: none;
+    background-color: var(--color-cream);
+    background-image:
+      linear-gradient(90deg, transparent 63px, var(--color-margin-line) 64px, transparent 65px),
+      linear-gradient(var(--color-paper-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-paper-line) 1px, transparent 1px);
+    background-size:
+      100vw 100%,
+      36px 36px,
+      36px 36px,
+      36px 36px;
+    background-position:
+      100vmax 0,
+      0 0,
+      0 0,
+      0 0;
+    background-repeat: repeat-y, repeat, repeat, repeat;
+  }
+
+  *::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: var(--color-ink);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    min-width: 36px;
+    min-height: 36px;
+    background: var(--color-yellow);
+    border: 3px solid var(--color-yellow);
+    border-radius: 999px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--color-yellow);
+  }
+
+  *::-webkit-scrollbar-button {
+    width: 14px;
+    height: 14px;
+    background: var(--color-yellow);
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: var(--color-ink);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

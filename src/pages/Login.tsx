@@ -3,7 +3,7 @@ import { GoogleOAuthProvider, useGoogleLogin, type TokenResponse } from "@react-
 import { ArrowLeft, ArrowRight, Eye, EyeSlash, LockKey, Sparkle } from "@phosphor-icons/react";
 import { useAuth } from "../auth/AuthProvider";
 import Brand from "../components/Brand";
-import { Button } from "../components/Button";
+import { ButtonLink, Button } from "../components/Button";
 import Input from "../components/Input";
 import Turnstile from "../components/Turnstile";
 import { getAuthRepo, getProfileRepo } from "../data/factory";
@@ -24,19 +24,19 @@ function GoogleMark() {
   return (
     <svg viewBox="0 0 48 48" aria-hidden="true" className="h-5 w-5 shrink-0">
       <path
-        fill="#FFC107"
+        fill="var(--color-google-yellow)"
         d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.6-.4-3.9z"
       />
       <path
-        fill="#FF3D00"
+        fill="var(--color-google-red)"
         d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"
       />
       <path
-        fill="#4CAF50"
+        fill="var(--color-google-green)"
         d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"
       />
       <path
-        fill="#1976D2"
+        fill="var(--color-google-blue)"
         d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.1 5.7l6.2 5.2C36.9 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z"
       />
     </svg>
@@ -85,15 +85,16 @@ function GoogleContinueButton({
     onError: () => onError("Google sign-in failed. Try again."),
   });
   return (
-    <button
+    <Button
+      variant="plain"
       type="button"
       onClick={() => login()}
       disabled={disabled}
-      className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#1e1e1e] px-5 py-3.5 text-base font-semibold text-white transition hover:bg-black disabled:opacity-60"
+      className="min-w-0 flex w-full items-center justify-center gap-3 rounded-xl bg-google-button px-5 py-3.5 text-base font-semibold text-metal-highlight transition hover:bg-black disabled:opacity-60 [&>*]:min-w-0 max-w-full"
     >
       <GoogleMark />
       {disabled ? "Connecting…" : "Continue with Google"}
-    </button>
+    </Button>
   );
 }
 
@@ -273,11 +274,15 @@ export default function Login() {
   };
 
   return (
-    <div className="relative grid min-h-screen place-items-center px-5 py-14">
-      <a href={ROUTES.root} className="absolute left-5 top-6 flex items-center gap-2 font-black sm:left-10">
+    <div className="min-w-0 relative grid [&>*]:min-w-0 min-h-screen place-items-center px-5 py-14 max-w-full">
+      <ButtonLink
+        variant="plain"
+        href={ROUTES.root}
+        className="min-w-0 absolute left-5 top-6 flex items-center gap-2 font-black sm:left-10 [&>*]:min-w-0 max-w-full"
+      >
         <ArrowLeft size={20} weight="bold" />
         Home
-      </a>
+      </ButtonLink>
       <Sparkle
         size={90}
         weight="duotone"
@@ -290,16 +295,21 @@ export default function Login() {
           <h1 className="mt-2 text-3xl font-black">Sign in to CodeCanvas</h1>
           <p className="mt-2 text-muted">Access projects shared by the SPECS community.</p>
         </div>
-        <div className="toon-card paper-note rounded-lg bg-surface p-7 pt-10 sm:p-9 sm:pt-11">
-          <div className="mb-6 flex items-center justify-between">
+        <div className="toon-card toon-paper rounded-lg bg-surface p-4 pt-10 sm:p-7 sm:p-9 sm:pt-11">
+          <div className="min-w-0 mb-6 flex items-center justify-between [&>*]:min-w-0 max-w-full">
             <h2 className="text-2xl font-black">
               {mode === "signup" ? "Create account" : "Sign in"}
             </h2>
             <LockKey size={25} weight="duotone" className="text-purple" />
           </div>
-          <div className="mb-5 flex gap-2" role="tablist" aria-label="Sign in or create account">
+          <div
+            className="min-w-0 mb-5 flex flex-wrap gap-2 [&>*]:min-w-0 max-w-full"
+            role="tablist"
+            aria-label="Sign in or create account"
+          >
             {(["signin", "signup"] as const).map((tab) => (
-              <button
+              <Button
+                variant="filter"
                 key={tab}
                 role="tab"
                 aria-selected={mode === tab}
@@ -307,53 +317,54 @@ export default function Login() {
                   setMode(tab);
                   setError(null);
                 }}
-                className={`flex-1 rounded-md border-2 border-ink px-3 py-2 text-sm font-black ${mode === tab ? "bg-purple text-surface" : "bg-surface"}`}
+                className="flex-1 bg-surface"
               >
                 {tab === "signin" ? "Sign in" : "Create account"}
-              </button>
+              </Button>
             ))}
           </div>
           <form onSubmit={submit} className="space-y-5">
             {mode === "signup" && (
               <label className="block">
-                <span className="toon-label">Display name</span>
+                <span className="mb-2 block text-xs font-black uppercase">Display name</span>
                 <Input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   type="text"
                   autoComplete="nickname"
                   maxLength={40}
-                  placeholder="What should we call you?"
-                  className="toon-input"
+                  placeholder="what should we call you?"
+
                   required
                 />
               </label>
             )}
             <label className="block">
-              <span className="toon-label">Email address</span>
+              <span className="mb-2 block text-xs font-black uppercase">Email address</span>
               <Input
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 type="email"
                 autoComplete="off"
-                className="toon-input"
+                placeholder="name@example.com"
                 required
               />
             </label>
             <label className="block">
-              <span className="toon-label">Password</span>
+              <span className="mb-2 block text-xs font-black uppercase">Password</span>
               <span className="relative block">
                 <Input
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   type={showPassword ? "text" : "password"}
                   autoComplete="new-password"
-                  minLength={mode === "signup" ? 6 : undefined}
-                  placeholder={mode === "signup" ? "At least 6 characters" : "Enter your password"}
-                  className="toon-input pr-12"
+                  minLength={mode === "signup" ? 8 : undefined}
+                  placeholder={mode === "signup" ? "at least 8 characters" : "********"}
+                  className="pr-12"
                   required
                 />
-                <button
+                <Button
+                  variant="plain"
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
@@ -365,7 +376,7 @@ export default function Login() {
                   ) : (
                     <Eye size={21} weight="bold" />
                   )}
-                </button>
+                </Button>
               </span>
             </label>
             {turnstileSiteKey && (
@@ -386,7 +397,7 @@ export default function Login() {
             {error && (
               <p
                 role="alert"
-                className="rounded-xl border-[3px] border-ink bg-pink/50 px-4 py-3 text-sm font-bold"
+                className="rounded-xl border-[3px] border-outline bg-pink/50 px-4 py-3 text-sm font-bold"
               >
                 {error}
               </p>
@@ -397,59 +408,61 @@ export default function Login() {
             </Button>
           </form>
           <div className="mt-4">
-          {isSupabaseMode ? (
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => void supabaseGoogle()}
-                disabled={googleBusy}
-                className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#1e1e1e] px-5 py-3.5 text-base font-semibold text-white transition hover:bg-black disabled:opacity-60"
-              >
-                <GoogleMark />
-                {googleBusy ? "Connecting…" : "Continue with Google"}
-              </button>
-              {googleError && (
-                <p
-                  role="alert"
-                  className="w-full rounded-xl border-[3px] border-ink bg-pink/50 px-4 py-3 text-sm font-bold"
-                >
-                  {googleError}
-                </p>
-              )}
-            </div>
-          ) : googleClientId ? (
-            <div className="flex flex-col gap-2">
-              <GoogleOAuthProvider clientId={googleClientId}>
-                <GoogleContinueButton
+            {isSupabaseMode ? (
+              <div className="min-w-0 flex flex-col gap-2 [&>*]:min-w-0 max-w-full">
+                <Button
+                  variant="plain"
+                  type="button"
+                  onClick={() => void supabaseGoogle()}
                   disabled={googleBusy}
-                  onAccount={(account) => void onGoogleAccount(account)}
-                  onError={setGoogleError}
-                />
-              </GoogleOAuthProvider>
-              {googleError && (
-                <p
-                  role="alert"
-                  className="w-full rounded-xl border-[3px] border-ink bg-pink/50 px-4 py-3 text-sm font-bold"
+                  className="min-w-0 flex w-full items-center justify-center gap-3 rounded-xl bg-google-button px-5 py-3.5 text-base font-semibold text-metal-highlight transition hover:bg-black disabled:opacity-60 [&>*]:min-w-0 max-w-full"
                 >
-                  {googleError}
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="rounded-2xl border-2 border-dashed border-ink bg-cream p-4 text-sm leading-6">
-              <span className="font-black">Google sign-in not configured.</span> To enable it,
-              create a Web OAuth client ID in Google Cloud Console, add it as{" "}
-              <code className="rounded bg-ink px-1.5 py-0.5 text-xs text-surface">
-                VITE_GOOGLE_CLIENT_ID
-              </code>{" "}
-              in <code className="rounded bg-ink px-1.5 py-0.5 text-xs text-surface">.env</code>,
-              then restart the dev server. See .env.example.
-            </div>
-          )}
+                  <GoogleMark />
+                  {googleBusy ? "Connecting…" : "Continue with Google"}
+                </Button>
+                {googleError && (
+                  <p
+                    role="alert"
+                    className="w-full rounded-xl border-[3px] border-outline bg-pink/50 px-4 py-3 text-sm font-bold"
+                  >
+                    {googleError}
+                  </p>
+                )}
+              </div>
+            ) : googleClientId ? (
+              <div className="min-w-0 flex flex-col gap-2 [&>*]:min-w-0 max-w-full">
+                <GoogleOAuthProvider clientId={googleClientId}>
+                  <GoogleContinueButton
+                    disabled={googleBusy}
+                    onAccount={(account) => void onGoogleAccount(account)}
+                    onError={setGoogleError}
+                  />
+                </GoogleOAuthProvider>
+                {googleError && (
+                  <p
+                    role="alert"
+                    className="w-full rounded-xl border-[3px] border-outline bg-pink/50 px-4 py-3 text-sm font-bold"
+                  >
+                    {googleError}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-2xl border-2 border-dashed border-outline bg-cream p-4 text-sm leading-6">
+                <span className="font-black">Google sign-in not configured.</span> To enable it,
+                create a Web OAuth client ID in Google Cloud Console, add it as{" "}
+                <code className="rounded bg-ink px-1.5 py-0.5 text-xs text-surface">
+                  VITE_GOOGLE_CLIENT_ID
+                </code>{" "}
+                in <code className="rounded bg-ink px-1.5 py-0.5 text-xs text-surface">.env</code>,
+                then restart the dev server. See .env.example.
+              </div>
+            )}
           </div>
           {mode === "signin" && !forgotOpen && (
             <div className="mt-4 text-center">
-              <button
+              <Button
+                variant="text"
                 type="button"
                 onClick={() => {
                   setForgotOpen(true);
@@ -459,7 +472,7 @@ export default function Login() {
                 className="text-sm font-black text-purple underline decoration-2 underline-offset-4"
               >
                 Forgot password?
-              </button>
+              </Button>
             </div>
           )}
           {(forgotOpen || recoverState !== "idle") && (
@@ -471,7 +484,7 @@ export default function Login() {
                     This signs you in on this browser with the new password.
                   </p>
                   <label className="block">
-                    <span className="toon-label">New password</span>
+                    <span className="mb-2 block text-xs font-black uppercase">New password</span>
                     <Input
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
@@ -479,14 +492,14 @@ export default function Login() {
                       autoComplete="new-password"
                       minLength={6}
                       placeholder="At least 6 characters"
-                      className="toon-input pr-12"
+                      className="pr-12"
                       required
                     />
                   </label>
                   {resetError && (
                     <p
                       role="alert"
-                      className="rounded-xl border-[3px] border-ink bg-pink/50 px-4 py-3 text-sm font-bold"
+                      className="rounded-xl border-[3px] border-outline bg-pink/50 px-4 py-3 text-sm font-bold"
                     >
                       {resetError}
                     </p>
@@ -521,25 +534,25 @@ export default function Login() {
                 <form onSubmit={requestReset} className="space-y-4">
                   <h2 className="text-xl font-black">Reset password</h2>
                   <label className="block">
-                    <span className="toon-label">Email address</span>
+                    <span className="mb-2 block text-xs font-black uppercase">Email address</span>
                     <Input
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       type="email"
                       autoComplete="off"
-                      className="toon-input"
+                      placeholder="name@example.com"
                       required
                     />
                   </label>
                   {resetError && (
                     <p
                       role="alert"
-                      className="rounded-xl border-[3px] border-ink bg-pink/50 px-4 py-3 text-sm font-bold"
+                      className="rounded-xl border-[3px] border-outline bg-pink/50 px-4 py-3 text-sm font-bold"
                     >
                       {resetError}
                     </p>
                   )}
-                  <div className="flex flex-wrap gap-3">
+                  <div className="min-w-0 flex flex-wrap gap-3 [&>*]:min-w-0 max-w-full">
                     <Button variant="surface" size="small" type="button" onClick={closeRecovery}>
                       Back
                     </Button>

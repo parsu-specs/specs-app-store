@@ -1,3 +1,4 @@
+import { Button } from "./Button";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Heart, X } from "@phosphor-icons/react";
@@ -70,7 +71,8 @@ export default function VotersDialog({
 
   return (
     <>
-      <button
+      <Button
+        variant="text"
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
@@ -83,7 +85,7 @@ export default function VotersDialog({
         className="text-xs font-bold text-muted underline decoration-2 underline-offset-4 hover:text-ink"
       >
         Voters
-      </button>
+      </Button>
 
       {open &&
         createPortal(
@@ -92,28 +94,30 @@ export default function VotersDialog({
             aria-modal="true"
             aria-label={`Voters for ${appTitle}`}
             onClick={() => setOpen(false)}
-            className="fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-ink/80 p-4"
+            className="min-w-0 fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-ink/80 p-4 [&>*]:min-w-0 max-w-full"
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="toon-card my-auto flex max-h-[85vh] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-lg bg-surface"
+              className="min-w-0 toon-card my-auto flex max-h-[85vh] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-lg bg-surface [&>*]:min-w-0"
             >
-              <div className="flex shrink-0 items-center justify-between gap-3 border-b-[3px] border-ink p-4">
-                <h4 className="flex min-w-0 items-center gap-2 truncate text-lg font-black">
+              <div className="min-w-0 flex shrink-0 items-center justify-between gap-3 border-b-[3px] border-outline p-4 [&>*]:min-w-0 max-w-full">
+                <h4 className="flex min-w-0 items-center gap-2 truncate text-lg font-black [&>*]:min-w-0 max-w-full">
                   <Heart size={20} weight="duotone" aria-hidden="true" />
                   <span className="truncate">
                     Upvoted by{voters !== null && ` (${voters.length})`}
                   </span>
                 </h4>
-                <button
+                <Button
+                  variant="icon"
+                  size="small"
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label="Close voters"
                   autoFocus
-                  className="shrink-0 rounded-full border-2 border-ink bg-surface p-1.5"
+                  className=""
                 >
                   <X size={16} weight="bold" />
-                </button>
+                </Button>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
                 {loading ? (
@@ -123,21 +127,23 @@ export default function VotersDialog({
                     <p role="alert" className="text-sm font-bold">
                       {error}
                     </p>
-                    <button
+                    <Button
+                      variant="text"
                       type="button"
                       onClick={() => setAttempt((n) => n + 1)}
                       className="mt-3 text-sm font-black underline decoration-2 underline-offset-4"
                     >
                       Try again
-                    </button>
+                    </Button>
                   </div>
                 ) : voters !== null && voters.length > 0 ? (
                   <>
                     <ul className="space-y-1">
                       {voters.map((v) => (
                         <li key={v.id}>
-                          <span className="flex w-full items-center gap-3 rounded-xl border-2 border-transparent p-2 hover:border-ink hover:bg-cream">
-                            <button
+                          <span className="min-w-0 flex w-full items-center gap-3 rounded-xl border-2 border-transparent p-2 hover:border-outline hover:bg-cream [&>*]:min-w-0 max-w-full">
+                            <Button
+                              variant="plain"
                               type="button"
                               onClick={() => goProfile(v.id)}
                               aria-label={`View ${v.name}'s profile`}
@@ -149,14 +155,15 @@ export default function VotersDialog({
                                 imageUrl={v.imageUrl}
                                 size="sm"
                               />
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              variant="text"
                               type="button"
                               onClick={() => goProfile(v.id)}
                               className="min-w-0 flex-1 truncate text-left text-sm font-black underline decoration-2 underline-offset-4"
                             >
                               {v.name}
-                            </button>
+                            </Button>
                           </span>
                         </li>
                       ))}

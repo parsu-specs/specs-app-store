@@ -84,7 +84,8 @@ export const TEAM: TeamMember[] = [
     name: "Kirby Paladan",
     role: "Frontend Developer | Backend Developer | Database Handler | Security Handler | Penetration Tester | QA Engineer | DevOps | UI/UX",
     bio: "mapping both codebases, then shipping features (vote notifications, publish bonus, theme and signup fixes) alongside hardening program (RLS policies, vote/claim guards, fail-closed admin API, CSP/headers, timeouts, telemetry, runbook) that took the app from local prototype to secured production on Vercel with Supabase.",
-    imageUrl: "https://raw.githubusercontent.com/kirbypaladan24-lgtm/Images-/9bb4a4a68a66d65c73329d3df1847962205ddb68/IMG_20251222_194153_156.jpg",
+    imageUrl:
+      "https://raw.githubusercontent.com/kirbypaladan24-lgtm/Images-/9bb4a4a68a66d65c73329d3df1847962205ddb68/IMG_20251222_194153_156.jpg",
     color: "mint",
   },
 ];

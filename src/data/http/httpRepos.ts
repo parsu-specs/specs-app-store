@@ -1,5 +1,5 @@
 // HTTP implementations of the repo contracts. Inactive until
-// VITE_DATA_SOURCE=http AND VITE_API_URL are set — see BACKEND_READINESS.md
+// VITE_DATA_SOURCE=http AND VITE_API_URL are set — see docs/backends.md
 // for the endpoint contract the server must honor. Local behavior is untouched.
 
 import {
@@ -70,7 +70,7 @@ export function createHttpAuthRepo(): AuthRepo {
       return toUser(user);
     },
 
-    // Unimplemented backend surface (see BACKEND_READINESS.md) — the future
+    // Unimplemented backend surface (see docs/backends.md) — the future
     // server owns email delivery and password writes.
     async requestPasswordReset(): Promise<void> {
       throw new Error("Password reset isn't available yet.");
@@ -192,7 +192,7 @@ export function createHttpAppRepo(): AppRepo {
       return toApp(app);
     },
 
-    // No throttle endpoint yet (see BACKEND_READINESS.md) — never paused.
+    // No throttle endpoint yet (see docs/backends.md) — never paused.
     async getVoteTimeoutSeconds(): Promise<number> {
       return 0;
     },
@@ -246,7 +246,7 @@ export function createHttpAppRepo(): AppRepo {
     },
 
     async listCommentLikers(_commentIds: string[]): Promise<Record<string, string[]>> {
-      // No contract endpoint yet (see BACKEND_READINESS.md) — like
+      // No contract endpoint yet (see docs/backends.md) — like
       // notifications stay silent in http mode until the backend adds one.
       return {};
     },

@@ -25,7 +25,13 @@ export function initials(name: string): string {
     .toUpperCase();
 }
 
-export default function Avatar({ name, color, imageUrl, size = "md", className = "" }: AvatarProps) {
+export default function Avatar({
+  name,
+  color,
+  imageUrl,
+  size = "md",
+  className = "",
+}: AvatarProps) {
   // Untrusted rows (legacy, direct-DB) may hold javascript:/data:text URLs —
   // fall back to initials instead of handing them to <img>.
   if (imageUrl && isSafeImageUrl(imageUrl)) {
@@ -34,7 +40,7 @@ export default function Avatar({ name, color, imageUrl, size = "md", className =
         src={imageUrl}
         alt={`${name}'s profile`}
         loading="lazy"
-        className={`${sizes[size]} shrink-0 rounded-full border-[3px] border-ink object-cover ${className}`}
+        className={`${sizes[size]} shrink-0 rounded-full border-[3px] border-outline object-cover ${className}`}
       />
     );
   }
@@ -42,7 +48,7 @@ export default function Avatar({ name, color, imageUrl, size = "md", className =
     <span
       aria-hidden="true"
       style={{ backgroundColor: `var(--color-${color})` }}
-      className={`grid ${sizes[size]} shrink-0 place-items-center rounded-full border-[3px] border-ink font-black ${className}`}
+      className={`min-w-0 grid [&>*]:min-w-0 ${sizes[size]} shrink-0 place-items-center rounded-full border-[3px] border-outline font-black ${className} max-w-full`}
     >
       {initials(name)}
     </span>

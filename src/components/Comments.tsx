@@ -1,10 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  ChatCircleDots,
-  DotsThreeVertical,
-  Heart,
-  Trash,
-} from "@phosphor-icons/react";
+import { ChatCircleDots, DotsThreeVertical, Heart, Trash } from "@phosphor-icons/react";
 import Avatar from "./Avatar";
 import TrophyMark from "./TrophyMark";
 import { Button } from "./Button";
@@ -38,31 +33,32 @@ function authorHeader(
   const displayName = p ? p.name : c.authorName;
   const place = trophies.get(c.authorId);
   return (
-    <div className="flex items-center gap-2">
+    <div className="min-w-0 flex items-center gap-2 [&>*]:min-w-0 max-w-full">
       {p ? (
-        <button
+        <Button
+          variant="plain"
           onClick={() => onOpenProfile(p.id)}
           aria-label={`View ${p.name}'s profile`}
           className="shrink-0"
         >
           <Avatar name={p.name} color={p.color} imageUrl={p.imageUrl} size={avatarSize} />
-        </button>
+        </Button>
       ) : (
         <Avatar name={c.authorName} color="sky" size={avatarSize} />
       )}
       <p className="min-w-0 text-xs font-black">
         {p ? (
-          <button
+          <Button
+            variant="text"
             onClick={() => onOpenProfile(p.id)}
             className="underline decoration-2 underline-offset-4"
           >
             {displayName}
-          </button>
+          </Button>
         ) : (
           displayName
         )}
-        {place !== undefined && <TrophyMark place={place} size={16} />}
-        {" "}
+        {place !== undefined && <TrophyMark place={place} size={16} />}{" "}
         <span className="font-bold text-muted">· {new Date(c.createdAt).toLocaleString()}</span>
       </p>
     </div>
@@ -288,8 +284,11 @@ export default function Comments({
   const form = (
     <>
       {currentUser ? (
-        <form onSubmit={(e) => void postTop(e)} className="flex gap-2">
-          <label className="min-w-0 flex-1">
+        <form
+          onSubmit={(e) => void postTop(e)}
+          className="min-w-0 flex flex-wrap items-start gap-2 [&>*]:min-w-0 max-w-full"
+        >
+          <label className="min-w-0 basis-48 flex-1">
             <span className="sr-only">Add feedback for {appTitle}</span>
             <Input
               value={body}
@@ -339,7 +338,7 @@ export default function Comments({
         }
       >
         {authorHeader(c, profiles, trophies, onOpenProfile)}
-        <p className="mt-1.5 text-sm leading-6">
+        <p className="mt-1.5 wrap-anywhere text-sm leading-6">
           {depth >= 2 && parent && (
             <span
               title={`Replying to ${parent.authorName}`}
@@ -350,18 +349,19 @@ export default function Comments({
           )}
           {c.body}
         </p>
-        <div className="mt-1.5 flex items-center gap-4">
+        <div className="min-w-0 mt-1.5 flex flex-wrap items-center gap-4 [&>*]:min-w-0 max-w-full">
           {likeButton(c, depth > 0)}
           {currentUser ? (
-            <button
+            <Button
+              variant="plain"
               type="button"
               onClick={() => (replyTo === c.id ? setReplyTo(null) : openReply(c.id))}
-              className="flex items-center gap-1 text-xs font-black text-muted"
+              className="min-w-0 flex items-center gap-1 text-xs font-black text-muted [&>*]:min-w-0 max-w-full"
             >
               <ChatCircleDots size={15} weight="duotone" />
               {replyTo === c.id ? "Cancel" : "Reply"}
               {kids.length > 0 && ` (${kids.length})`}
-            </button>
+            </Button>
           ) : (
             kids.length > 0 && (
               <span className="text-xs font-black text-muted">
@@ -371,7 +371,8 @@ export default function Comments({
           )}
           {currentUser && c.authorId === currentUser.id && (
             <span className="relative ml-auto">
-              <button
+              <Button
+                variant="plain"
                 type="button"
                 onClick={() => openMenu(c.id)}
                 aria-haspopup="menu"
@@ -380,10 +381,11 @@ export default function Comments({
                 className="rounded-full p-1 text-muted hover:bg-cream hover:text-ink"
               >
                 <DotsThreeVertical size={18} weight="bold" aria-hidden="true" />
-              </button>
+              </Button>
               {menuFor === c.id && (
                 <>
-                  <button
+                  <Button
+                    variant="plain"
                     type="button"
                     aria-label="Close options"
                     onClick={closeMenu}
@@ -392,7 +394,7 @@ export default function Comments({
                   <span
                     role="menu"
                     aria-label="Comment options"
-                    className="absolute right-0 z-50 mt-1 w-48 rounded-xl border-2 border-ink bg-surface p-1.5 shadow-[3px_3px_0_var(--color-ink)]"
+                    className="absolute right-0 z-50 mt-1 w-48 max-w-[calc(100vw-2rem)] rounded-xl border-2 border-outline bg-surface p-1.5 shadow-[3px_3px_0_var(--color-outline)]"
                   >
                     {confirmDeleteId === c.id ? (
                       <span className="block p-1">
@@ -407,7 +409,7 @@ export default function Comments({
                             {deleteError.message}
                           </span>
                         )}
-                        <span className="mt-2 flex gap-2">
+                        <span className="min-w-0 mt-2 flex gap-2 [&>*]:min-w-0 max-w-full">
                           <Button
                             variant="danger"
                             size="compact"
@@ -429,15 +431,16 @@ export default function Comments({
                         </span>
                       </span>
                     ) : (
-                      <button
+                      <Button
+                        variant="plain"
                         type="button"
                         role="menuitem"
                         onClick={() => setConfirmDeleteId(c.id)}
-                        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-black text-alert hover:bg-cream"
+                        className="min-w-0 flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-black text-alert hover:bg-cream [&>*]:min-w-0 max-w-full"
                       >
                         <Trash size={16} weight="bold" aria-hidden="true" />
                         Delete
-                      </button>
+                      </Button>
                     )}
                   </span>
                 </>
@@ -451,7 +454,7 @@ export default function Comments({
         )}
 
         {kids.length > REPLY_INITIAL && (
-          <div className="mt-2 flex flex-wrap items-center gap-2">
+          <div className="min-w-0 mt-2 flex flex-wrap items-center gap-2 [&>*]:min-w-0 max-w-full">
             {hidden > 0 && (
               <Button
                 variant="surface"
@@ -483,30 +486,35 @@ export default function Comments({
               </Button>
             )}
             {hidden > 0 ? (
-              <button
+              <Button
+                variant="text"
                 type="button"
                 onClick={() => setVisibleReplies((prev) => ({ ...prev, [c.id]: kids.length }))}
                 className="text-xs font-black underline decoration-2 underline-offset-4"
               >
                 Show all ({kids.length})
-              </button>
+              </Button>
             ) : (
               visible > REPLY_INITIAL && (
-                <button
+                <Button
+                  variant="text"
                   type="button"
                   onClick={() => setVisibleReplies((prev) => ({ ...prev, [c.id]: REPLY_INITIAL }))}
                   className="text-xs font-black underline decoration-2 underline-offset-4"
                 >
                   Collapse
-                </button>
+                </Button>
               )
             )}
           </div>
         )}
 
         {replyTo === c.id && currentUser && (
-          <form onSubmit={(e) => void postReply(e, c.id)} className="mt-3 flex gap-2">
-            <label className="min-w-0 flex-1">
+          <form
+            onSubmit={(e) => void postReply(e, c.id)}
+            className="min-w-0 mt-3 flex flex-wrap items-start gap-2 [&>*]:min-w-0 max-w-full"
+          >
+            <label className="min-w-0 basis-48 flex-1">
               <span className="sr-only">
                 Reply to {replyTarget ? replyTarget.authorName : "comment"}
               </span>
@@ -519,15 +527,15 @@ export default function Comments({
                 className="py-2 text-sm"
               />
             </label>
-              <Button
-                variant="secondary"
-                size="small"
+            <Button
+              variant="secondary"
+              size="small"
               type="submit"
-                disabled={replying || !replyBody.trim()}
-                className="shrink-0"
-              >
-                {replying ? "…" : "Reply"}
-              </Button>
+              disabled={replying || !replyBody.trim()}
+              className="shrink-0"
+            >
+              {replying ? "…" : "Reply"}
+            </Button>
           </form>
         )}
         {replyTo === c.id && replyError && (

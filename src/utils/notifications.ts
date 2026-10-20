@@ -288,7 +288,18 @@ export function isTaggedCollaborator(app: AppItem, user: User, profiles: Profile
 }
 
 export function buildNotifications(input: NotificationInput): NotificationItem[] {
-  const { user, apps, threads, milestones, voters, voterBaseline, voteCycles, likers, likeBaseline, likeCycles } = input;
+  const {
+    user,
+    apps,
+    threads,
+    milestones,
+    voters,
+    voterBaseline,
+    voteCycles,
+    likers,
+    likeBaseline,
+    likeCycles,
+  } = input;
   const nowMs = input.nowMs ?? Date.now();
   const items: NotificationItem[] = [];
 

@@ -15,6 +15,7 @@ import {
   Heart,
   Images,
   Info,
+  House,
   LinkSimple,
   LockKey,
   MagnifyingGlass,
@@ -30,12 +31,15 @@ import {
   UsersThree,
   Wrench,
   X,
+  ArrowSquareOut,
+  ArrowSquareUpRight,
 } from "@phosphor-icons/react";
 import { useAuth } from "../auth/AuthProvider";
 import Brand from "../components/Brand";
 import AppCard from "../components/AppCard";
 import ErrorBoundary from "../components/ErrorBoundary";
 import NotificationBell from "../components/NotificationBell";
+import NoticeBanner from "../components/NoticeBanner";
 import {
   NOTIF_SCAN_APP_LIMIT,
   arrivalKeyOf,
@@ -57,7 +61,7 @@ import ProfileView from "../components/ProfileView";
 import ProjectView from "../components/ProjectView";
 import SettingsView from "../components/SettingsView";
 import { Button, ButtonLabel, ButtonLink } from "../components/Button";
-import Input, { getInputClassName } from "../components/Input";
+import Input, { Select, Textarea, FileInput, Checkbox } from "../components/Input";
 import { getAppRepo, getAuthRepo, getProfileRepo } from "../data/factory";
 import { indexProfiles } from "../data/profileLinks";
 import { fileToThumbnailDataUrl } from "../utils/images";
@@ -96,6 +100,7 @@ import {
   appDetailsPath,
   developerProfilePath,
   normalizePathname,
+  navigateInternalLink,
 } from "./routes";
 
 const categories: { label: CategoryFilter; Icon: typeof SquaresFour }[] = [
@@ -139,39 +144,32 @@ function parsePath(path: string): {
   return { view: "discover", profileId: null, appId: null };
 }
 
-const copyForView: Record<StoreView, { stamp: string; title: string; description: string }> = {
+const copyForView: Record<StoreView, { title: string; description: string }> = {
   discover: {
-    stamp: "Student project catalog",
-    title: "Explore student-built software.",
-    description: "Search projects by name, category, or developer.",
+    title: "Student projects",
+    description: "Explore software built by the SPECS community.",
   },
   builders: {
-    stamp: "SPECS contributors",
-    title: "Meet the developers.",
+    title: "Developers",
     description: "Open a profile to see their projects and feedback.",
   },
   feed: {
-    stamp: "SPECS community",
-    title: "Build in public.",
+    title: "The Feed",
     description: "Follow project updates, give feedback, and find your people.",
   },
   leaderboard: {
-    stamp: "Top contributors",
-    title: "Developer leaderboard.",
-    description: "Rank points are the sum of upvotes across every project a developer shared.",
+    title: "Leaderboard",
+    description: "Celebrate the community's top developers and projects.",
   },
   settings: {
-    stamp: "Your preferences",
     title: "Settings.",
     description: "Sounds and demo data live on this device.",
   },
   profile: {
-    stamp: "Developer profile",
     title: "Projects and feedback.",
     description: "See what they built and what the community is saying.",
   },
   project: {
-    stamp: "Project showcase",
     title: "Details, screenshots, and docs.",
     description: "Explore the build, meet the developer, and leave feedback.",
   },
@@ -183,6 +181,11 @@ export default function Store() {
   const [appsLoading, setAppsLoading] = useState(true);
   const [appsError, setAppsError] = useState<string | null>(null);
   const [fullApps, setFullApps] = useState<AppItem[]>([]);
+  const hasSubmittedProject = fullApps.some((app) =>
+    app.creatorId
+      ? app.creatorId === user?.id
+      : app.creator.toLowerCase() === user?.name.toLowerCase(),
+  );
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [myProfile, setMyProfile] = useState<Profile | null>(null);
   const [profileTick, setProfileTick] = useState(0);
@@ -664,7 +667,21 @@ export default function Store() {
       profiles,
       arrivalAt: seenAt,
     });
-  }, [user, fullApps, threads, milestones, votersByApp, voterBase, voteCycles, likersByComment, likeBase, likeCycles, collabBaseline, profiles, seenAt]);
+  }, [
+    user,
+    fullApps,
+    threads,
+    milestones,
+    votersByApp,
+    voterBase,
+    voteCycles,
+    likersByComment,
+    likeBase,
+    likeCycles,
+    collabBaseline,
+    profiles,
+    seenAt,
+  ]);
 
   // Single snapshot-sync writer (one effect = no lost updates between
   // competing saves). Converges — reruns are no-ops. It:
@@ -700,7 +717,12 @@ export default function Store() {
     // Renewed same-content items (re-tag, revived vote) would otherwise keep
     // their original stamp and sink — refresh to now so the list orders by
     // when news actually arrived.
-    nextSeen = restampRearrived(notifications, prevNotifIds.current, nextSeen, new Date().toISOString());
+    nextSeen = restampRearrived(
+      notifications,
+      prevNotifIds.current,
+      nextSeen,
+      new Date().toISOString(),
+    );
     prevNotifIds.current = new Set(notifications.map((n) => n.id));
     const current = new Set(taggedKey ? taggedKey.split(",") : []);
     const votesById = new Map(fullApps.map((a) => [a.id, a.votes]));
@@ -717,7 +739,9 @@ export default function Store() {
     const ownedIds = new Set(
       fullApps
         .filter((a) =>
-          a.creatorId ? a.creatorId === user.id : a.creator.toLowerCase() === user.name.toLowerCase(),
+          a.creatorId
+            ? a.creatorId === user.id
+            : a.creator.toLowerCase() === user.name.toLowerCase(),
         )
         .map((a) => a.id),
     );
@@ -753,7 +777,8 @@ export default function Store() {
     }
     const nextLikeCycles: Record<string, Record<string, number>> = {};
     for (const [id, counts] of Object.entries(likeCycles)) {
-      if (liveCommentIds.has(id) && Object.keys(counts).length > 0) nextLikeCycles[id] = { ...counts };
+      if (liveCommentIds.has(id) && Object.keys(counts).length > 0)
+        nextLikeCycles[id] = { ...counts };
     }
     for (const [id, ids] of Object.entries(likeBaseline)) {
       if (!liveCommentIds.has(id)) continue;
@@ -880,7 +905,19 @@ export default function Store() {
     setVoteBaseline(next.voteBaseline);
     setCollabBaseline(next.collabBaseline);
     saveNotificationState(user.id, next);
-  }, [user, readIds, notifications, fullApps, currentlyTagged, dismissedIds, seenAt, voterBaseline, voteCycles, likeBaseline, likeCycles]);
+  }, [
+    user,
+    readIds,
+    notifications,
+    fullApps,
+    currentlyTagged,
+    dismissedIds,
+    seenAt,
+    voterBaseline,
+    voteCycles,
+    likeBaseline,
+    likeCycles,
+  ]);
 
   const markNotificationRead = useCallback(
     (id: string) => {
@@ -900,7 +937,18 @@ export default function Store() {
       setReadIds(next.readIds);
       saveNotificationState(user.id, next);
     },
-    [user, readIds, voteBaseline, voterBaseline, voteCycles, likeBaseline, likeCycles, collabBaseline, dismissedIds, seenAt],
+    [
+      user,
+      readIds,
+      voteBaseline,
+      voterBaseline,
+      voteCycles,
+      likeBaseline,
+      likeCycles,
+      collabBaseline,
+      dismissedIds,
+      seenAt,
+    ],
   );
 
   // Delete all: hide every visible item and snapshot the state-kind
@@ -925,7 +973,19 @@ export default function Store() {
     setCollabBaseline(next.collabBaseline);
     setDismissedIds(next.dismissedIds);
     saveNotificationState(user.id, next);
-  }, [user, readIds, visibleItems, fullApps, currentlyTagged, dismissedIds, seenAt, voterBaseline, voteCycles, likeBaseline, likeCycles]);
+  }, [
+    user,
+    readIds,
+    visibleItems,
+    fullApps,
+    currentlyTagged,
+    dismissedIds,
+    seenAt,
+    voterBaseline,
+    voteCycles,
+    likeBaseline,
+    likeCycles,
+  ]);
 
   const openFeed = useCallback(() => {
     window.history.pushState({}, "", ROUTES.feed);
@@ -1003,10 +1063,7 @@ export default function Store() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const openProfile = useCallback((profileId: string) => {
-    const path =
-      profileId === "__me__"
-        ? ROUTES.profile
-        : developerProfilePath(profileId);
+    const path = profileId === "__me__" ? ROUTES.profile : developerProfilePath(profileId);
     window.history.pushState({}, "", path);
     setSelectedProfileId(profileId);
     setSelectedAppId(null);
@@ -1042,7 +1099,7 @@ export default function Store() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
   const navClass = (item: Exclude<StoreView, "profile" | "project">) =>
-    `flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-0 text-center text-xs font-black leading-tight lg:w-full lg:flex-row lg:justify-start lg:gap-3 lg:px-4 lg:py-3 lg:text-left lg:text-base ${view === item ? "border-2 border-ink bg-yellow text-ink shadow-[2px_2px_0_var(--color-ink)]" : "hover:bg-surface/15"}`;
+    `flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-0 text-center text-xs font-black leading-tight lg:w-full lg:flex-row lg:justify-start lg:gap-3 lg:px-4 lg:py-3 lg:text-left lg:text-base ${view === item ? "border-2 border-outline bg-yellow text-ink shadow-[2px_2px_0_var(--color-outline)]" : "hover:bg-surface/15"}`;
 
   const goPath = (path: string, nextView: StoreView) => {
     window.history.pushState({}, "", path);
@@ -1125,10 +1182,7 @@ export default function Store() {
           const secs = await getAppRepo()
             .getVoteTimeoutSeconds()
             .catch(() => 0);
-          const left = Math.max(
-            secs,
-            Math.ceil((votePausedUntil.current - Date.now()) / 1000),
-          );
+          const left = Math.max(secs, Math.ceil((votePausedUntil.current - Date.now()) / 1000));
           flashVoteNotice(`Voting is paused — ${formatCountdown(left)} left.`);
           return;
         }
@@ -1175,9 +1229,7 @@ export default function Store() {
             .catch(() => 0);
           const windowMs = secs > 0 ? secs * 1000 : 5 * 60_000;
           votePausedUntil.current = Date.now() + windowMs;
-          flashVoteNotice(
-            secs > 0 ? `Voting is paused — ${formatCountdown(secs)} left.` : message,
-          );
+          flashVoteNotice(secs > 0 ? `Voting is paused — ${formatCountdown(secs)} left.` : message);
         } else {
           flashVoteNotice(message);
         }
@@ -1375,67 +1427,86 @@ export default function Store() {
 
   return (
     <div className="min-h-screen overflow-x-clip">
-      <aside className="fixed inset-x-0 top-0 z-40 h-21.25 border-b-[3px] border-ink bg-purple p-5 text-surface lg:inset-y-0 lg:left-0 lg:right-auto lg:flex lg:h-screen lg:w-70 lg:flex-col lg:border-b-0 lg:border-r-[3px] lg:p-7">
-        <div className="flex items-center justify-between">
-          <Brand light />
+      <aside className="fixed inset-x-0 top-0 z-40 h-21.25 border-b-[3px] border-outline bg-purple px-3 py-5 text-surface sm:px-5 lg:inset-y-0 lg:left-0 lg:right-auto lg:flex lg:h-screen lg:w-70 lg:flex-col lg:border-b-0 lg:border-r-[3px] lg:p-7">
+        <div className="min-w-0 flex items-center justify-between [&>*]:min-w-0 max-w-full">
+          <Brand light className="max-lg:max-w-[55%]" />
         </div>
         <nav
-          className="fixed inset-x-0 bottom-0 z-50 grid h-18 grid-cols-3 gap-1 border-t-2 border-ink bg-purple p-2 sm:gap-2 lg:static lg:mt-12 lg:flex lg:h-auto lg:flex-col lg:gap-2 lg:border-0 lg:bg-transparent lg:p-0 lg:pr-1"
+          className="min-w-0 fixed inset-x-0 bottom-0 z-50 grid [&>*]:min-w-0 h-18 grid-cols-3 gap-1 border-t-2 border-outline bg-purple p-2 sm:gap-2 lg:static lg:mt-12 lg:flex lg:h-auto lg:flex-col lg:gap-2 lg:border-0 lg:bg-transparent lg:p-0 lg:pr-1 max-w-full"
           aria-label="Main navigation"
         >
-          <a
+          <ButtonLink
+            variant="plain"
             href={ROUTES.feed}
             onClick={(event) => goTab(event, "feed")}
             className={`${navClass("feed")} lg:order-3`}
           >
             <Newspaper size={22} weight="duotone" />
             <span>Feed</span>
-          </a>
-          <a
+          </ButtonLink>
+          <ButtonLink
+            variant="plain"
             href={ROUTES.discover}
             onClick={(event) => goTab(event, "discover")}
             className={`${navClass("discover")} lg:order-1`}
           >
             <MagnifyingGlass size={21} weight="duotone" />
             Discover
-          </a>
-          <a
+          </ButtonLink>
+          <ButtonLink
+            variant="plain"
             href={ROUTES.developers}
             onClick={(event) => goTab(event, "builders")}
             className={`${navClass("builders")} hidden lg:flex lg:order-2`}
           >
             <UsersThree size={22} weight="duotone" />
             Developers
-          </a>
-          <a
+          </ButtonLink>
+          <ButtonLink
+            variant="plain"
             href={ROUTES.leaderboard}
             onClick={(event) => goTab(event, "leaderboard")}
             className={`${navClass("leaderboard")} hidden lg:flex lg:order-4`}
           >
             <Trophy size={22} weight="duotone" />
             Leaderboard
-          </a>
-          <a
-            href={ROUTES.about}
-            className="hidden min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-0 text-center text-xs font-black leading-tight hover:bg-surface/15 lg:order-5 lg:flex lg:w-full lg:flex-row lg:justify-start lg:gap-3 lg:px-4 lg:py-3 lg:text-left lg:text-base"
-          >
-            <Info size={22} weight="duotone" />
-            About
-          </a>
-          <a
+          </ButtonLink>
+          <ButtonLink
+            variant="plain"
             href={ROUTES.settings}
             onClick={(event) => goTab(event, "settings")}
             className={`${navClass("settings")} lg:order-6`}
           >
             <Gear size={22} weight="duotone" />
             Settings
-          </a>
+          </ButtonLink>
+        </nav>
+        <nav
+          aria-label="Website"
+          className="mt-6 hidden border-t-2 border-surface/30 pt-4 lg:block"
+        >
+          <ButtonLink
+            variant="plain"
+            href={ROUTES.landing}
+            onClick={navigateInternalLink}
+            className="flex w-full items-center justify-start gap-3 rounded-lg px-4 py-2 text-sm hover:bg-surface/15"
+          >
+            Landing <ArrowSquareUpRight size={20} />
+          </ButtonLink>
+          <ButtonLink
+            variant="plain"
+            href={ROUTES.about}
+            onClick={navigateInternalLink}
+            className="flex w-full items-center justify-start gap-3 rounded-lg px-4 py-2 text-sm hover:bg-surface/15"
+          >
+            <span>About</span> <ArrowSquareUpRight size={20} />
+          </ButtonLink>
         </nav>
         <div
           ref={accountMenuRef}
-          className="fixed right-4 top-4 z-60 lg:relative lg:right-auto lg:top-auto lg:z-auto lg:mt-auto"
+          className="fixed right-3 top-4 max-w-[45%] sm:right-4 lg:max-w-none z-60 lg:relative lg:right-auto lg:top-auto lg:z-auto lg:mt-auto"
         >
-          <div className="lg:hidden -translate-y-1 relative flex gap-2 items-center">
+          <div className="min-w-0 lg:hidden -translate-y-1 relative flex gap-2 items-center [&>*]:min-w-0 max-w-full">
             <Button
               type="button"
               variant="secondary"
@@ -1448,7 +1519,7 @@ export default function Store() {
                 setNotificationsOpen(false);
                 setAccountMenuOpen((open) => !open);
               }}
-              className="flex"
+              className="min-w-0 flex [&>*]:min-w-0 max-w-full"
             >
               {myProfile ? (
                 <Avatar
@@ -1456,14 +1527,14 @@ export default function Store() {
                   color={myProfile.color}
                   imageUrl={myProfile.imageUrl}
                   size="sm"
-                  className="border-ink! text-ink"
+                  className="border-outline! text-ink"
                 />
               ) : (
-                <span className="grid h-9 w-9 place-items-center rounded-full border-2 border-ink bg-cream">
+                <span className="min-w-0 grid [&>*]:min-w-0 h-9 w-9 place-items-center rounded-full border-2 border-outline bg-cream max-w-full">
                   <UserIcon size={19} weight="bold" />
                 </span>
               )}
-              <span className="hidden min-w-0 flex-1 truncate text-sm font-black sm:block">
+              <span className="hidden min-w-0 max-w-24 flex-1 truncate text-sm font-black md:block">
                 {myProfile?.name ?? "Account"}
               </span>
             </Button>
@@ -1472,67 +1543,84 @@ export default function Store() {
                 id="account-menu"
                 role="group"
                 aria-label="Profile and site menu"
-                className="toon-card absolute right-0 top-full z-10 mt-2 max-h-[calc(100dvh-6rem)] w-56 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl p-2 text-sm text-ink lg:bottom-full lg:left-0 lg:right-auto lg:top-auto lg:mb-2 lg:mt-0 lg:w-full"
+                className="toon-card bg-surface absolute right-0 top-full z-10 mt-2 max-h-[calc(100dvh-6rem)] w-56 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl p-2 text-sm text-ink lg:bottom-full lg:left-0 lg:right-auto lg:top-auto lg:mb-2 lg:mt-0 lg:w-full"
               >
                 {myProfile && (
-                  <button
+                  <Button
+                    variant="menu"
                     type="button"
                     onClick={() => openMyProfile()}
                     aria-current={view === "profile" ? "page" : undefined}
-                    className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left font-black hover:bg-cream"
+                    className="gap-3"
                   >
                     <Avatar
                       name={myProfile.name}
                       color={myProfile.color}
                       imageUrl={myProfile.imageUrl}
                       size="sm"
-                      className="border-ink!"
+                      className="border-outline!"
                     />
                     <span className="min-w-0 truncate">My profile</span>
-                  </button>
+                  </Button>
                 )}
-                <button
+                <Button
+                  variant="menu"
                   type="button"
                   onClick={() => {
                     setAccountMenuOpen(false);
                     goPath(ROUTES.developers, "builders");
                   }}
-                  className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left font-black hover:bg-cream"
+                  className="gap-3"
                 >
                   <UsersThree size={20} weight="duotone" />
                   Developers
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="menu"
                   type="button"
                   onClick={() => {
                     setAccountMenuOpen(false);
                     goPath(ROUTES.leaderboard, "leaderboard");
                   }}
-                  className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left font-black hover:bg-cream"
+                  className="gap-3"
                 >
                   <Trophy size={20} weight="duotone" />
                   Leaderboard
-                </button>
-                <a
+                </Button>
+                <div className="my-1 border-t-2 border-dashed border-muted" />
+                <ButtonLink
+                  variant="menu"
+                  href={ROUTES.landing}
+                  onClick={navigateInternalLink}
+                  className="gap-3"
+                >
+                  <House size={20} weight="duotone" /> Landing page
+                </ButtonLink>
+                <ButtonLink
+                  variant="menu"
                   href={ROUTES.about}
-                  onClick={() => setAccountMenuOpen(false)}
-                  className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left font-black hover:bg-cream"
+                  onClick={(event) => {
+                    setAccountMenuOpen(false);
+                    navigateInternalLink(event);
+                  }}
+                  className="gap-3"
                 >
                   <Info size={20} weight="duotone" />
                   About
-                </a>
+                </ButtonLink>
                 <div className="my-1 border-t-2 border-dashed border-muted" />
-                <button
+                <Button
+                  variant="menu"
                   type="button"
                   onClick={() => {
                     setAccountMenuOpen(false);
                     setConfirmSignOut(true);
                   }}
-                  className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left font-black text-red-700 hover:bg-cream"
+                  className="gap-3 text-alert"
                 >
                   <SignOut size={20} weight="bold" />
                   Sign out
-                </button>
+                </Button>
               </div>
             )}
             {user && (
@@ -1566,7 +1654,7 @@ export default function Store() {
                   color={myProfile.color}
                   imageUrl={myProfile.imageUrl}
                   size="sm"
-                  className="border-ink!"
+                  className="border-outline!"
                 />
                 <span className="min-w-0 truncate">My profile</span>
               </Button>
@@ -1595,7 +1683,7 @@ export default function Store() {
             aria-modal="true"
             aria-label="Confirm sign out"
             onClick={() => setConfirmSignOut(false)}
-            className="fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-ink/80 p-4"
+            className="min-w-0 fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-ink/80 p-4 [&>*]:min-w-0 max-w-full"
           >
             <div
               onClick={(e) => e.stopPropagation()}
@@ -1603,8 +1691,10 @@ export default function Store() {
             >
               <SignOut size={28} weight="duotone" className="mx-auto" />
               <h2 className="mt-3 text-xl font-black">Sign out?</h2>
-              <p className="mt-1 text-sm font-bold text-muted">Are you sure you want to sign out?</p>
-              <div className="mt-5 flex justify-center gap-3">
+              <p className="mt-1 text-sm font-bold text-muted">
+                Are you sure you want to sign out?
+              </p>
+              <div className="min-w-0 mt-5 flex flex-wrap justify-center gap-3 [&>*]:min-w-0 max-w-full">
                 <Button
                   variant="surface"
                   size="small"
@@ -1636,7 +1726,7 @@ export default function Store() {
             aria-modal="true"
             aria-label="Project published"
             onClick={() => setPublishBonus(null)}
-            className="fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-ink/80 p-4"
+            className="min-w-0 fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-ink/80 p-4 [&>*]:min-w-0 max-w-full"
           >
             <div
               onClick={(e) => e.stopPropagation()}
@@ -1647,7 +1737,7 @@ export default function Store() {
               <p className="mt-1 text-sm font-bold text-muted">
                 {publishBonus.title} is live — plus 20 pts on the developer leaderboard.
               </p>
-              <div className="mt-5 flex justify-center gap-3">
+              <div className="min-w-0 mt-5 flex justify-center gap-3 [&>*]:min-w-0 max-w-full">
                 <Button
                   variant="surface"
                   size="small"
@@ -1676,7 +1766,7 @@ export default function Store() {
         createPortal(
           <div
             role="alert"
-            className="pointer-events-none fixed inset-x-0 bottom-24 z-100 flex justify-center px-4"
+            className="min-w-0 pointer-events-none fixed inset-x-0 bottom-24 z-100 flex justify-center px-4 [&>*]:min-w-0 max-w-full"
           >
             <p className="toon-card rounded-xl bg-surface px-5 py-3 text-center text-sm font-black">
               {voteNotice}
@@ -1688,11 +1778,14 @@ export default function Store() {
       <div className="min-w-0">
         <nav
           aria-label="Breadcrumb"
-          className="top-0 z-30 ml-70 border-b-[3px] border-ink bg-paper px-3 py-2 text-sm hidden md:flex md:justify-between sticky"
+          className="sticky top-0 z-30 hidden min-w-0 items-center justify-between gap-4 border-b-[3px] border-outline bg-paper px-3 py-2 text-sm lg:ml-70 lg:flex"
         >
-          <ol className="flex min-w-max items-center gap-2">
+          <ol className="flex min-w-0 flex-1 flex-wrap items-center gap-2 [&>*]:min-w-0 max-w-full">
             {crumbs.map((c, i) => (
-              <li key={`${c.label}-${i}`} className="flex min-w-0 items-center gap-3">
+              <li
+                key={`${c.label}-${i}`}
+                className="flex min-w-0 items-center gap-3 [&>*]:min-w-0 max-w-full"
+              >
                 {i > 0 && (
                   <span aria-hidden="true" className="font-black">
                     \
@@ -1702,19 +1795,14 @@ export default function Store() {
                   <span
                     aria-current={c.current ? "page" : undefined}
                     title={c.label}
-                    className={`px-2 py-0.5 font-black ${c.current ? "rounded-md border-2 border-ink bg-yellow" : ""}`}
+                    className={`min-w-0 max-w-full wrap-anywhere px-2 py-0.5 font-black ${c.current ? "rounded-md border-2 border-outline bg-yellow" : ""}`}
                   >
                     {c.label}
                   </span>
                 ) : (
-                  <ButtonLabel
-                    variant="ghost"
-                    onClick={c.go}
-                    title={`Go to ${c.label}`}
-                    className=""
-                  >
+                  <Button variant="ghost" onClick={c.go} title={`Go to ${c.label}`} className="">
                     {c.label}
-                  </ButtonLabel>
+                  </Button>
                 )}
               </li>
             ))}
@@ -1737,49 +1825,57 @@ export default function Store() {
             </div>
           )}
         </nav>
-        <div className="px-5 pb-23 pt-26.25 sm:px-8 sm:pb-25 sm:pt-29.25 lg:ml-70 lg:p-10">
+        <div className="min-w-0 max-w-full px-4 pb-23 pt-26.25 sm:px-8 sm:pb-25 sm:pt-29.25 lg:ml-70 lg:p-10">
           <header id="discover" className="mx-auto max-w-6xl scroll-mt-5">
-            <div className="flex flex-wrap items-start justify-between gap-5">
-              <div>
-                <p className="ink-stamp bg-surface">{copyForView[view].stamp}</p>
-                <h1 className="mt-4 text-3xl font-black sm:text-4xl">{copyForView[view].title}</h1>
-                <p className="mt-3 max-w-2xl text-muted">{copyForView[view].description}</p>
-              </div>
-              <div className="flex shrink-0 items-center gap-3">
-                {view !== "profile" && view !== "project" && view !== "settings" && (
-                  <Button variant="secondary" onClick={() => setShowForm((open) => !open)}>
-                    {showForm ? <X size={20} weight="bold" /> : <Plus size={20} weight="bold" />}
-                    {showForm ? "Close" : "Submit a project"}
-                  </Button>
-                )}
+            <div className="min-w-0 flex flex-wrap items-center justify-between gap-3 [&>*]:min-w-0 max-w-full">
+              <div className="flex-1">
+                <h1 className="text-2xl font-black sm:text-3xl">{copyForView[view].title}</h1>
+                <p className="mt-2 hidden max-w-2xl text-muted sm:block">
+                  {copyForView[view].description}
+                </p>
               </div>
             </div>
-            {view === "discover" && (
-              <label className="relative mt-8 block">
-                <span className="sr-only">Search student projects</span>
-                <MagnifyingGlass
-                  size={23}
-                  weight="bold"
-                  className="absolute left-5 top-1/2 -translate-y-1/2"
-                />
-                <Input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  variant="search"
-                  placeholder="Search projects, descriptions, or developers"
-                />
-              </label>
-            )}
           </header>
           <ErrorBoundary name={view} key={view}>
-            <div className="mx-auto mt-9 max-w-6xl">
-              {showForm && view !== "profile" && view !== "project" && view !== "settings" && (
+            <div className="@container/content mx-auto mt-5 min-w-0 max-w-6xl wrap-anywhere sm:mt-6">
+              {view === "discover" && user && !appsLoading && !appsError && (
+                <NoticeBanner
+                  icon={RocketLaunch}
+                  title={
+                    hasSubmittedProject ? "Share your next build" : "No projects submitted yet"
+                  }
+                  description={
+                    hasSubmittedProject
+                      ? "Have something new? Share it with the SPECS community."
+                      : "Your first project starts here. Share what you built and get feedback from the community."
+                  }
+                  tone={hasSubmittedProject ? "mint" : "yellow"}
+                  className="mb-6"
+                >
+                  <Button
+                    variant={hasSubmittedProject ? "surface" : "primary"}
+                    size="small"
+                    onClick={() => setShowForm((open) => !open)}
+                    aria-expanded={showForm}
+                    aria-controls="submit-project"
+                  >
+                    {showForm ? <X size={20} weight="bold" /> : <Plus size={20} weight="bold" />}
+                    {showForm
+                      ? "Close form"
+                      : hasSubmittedProject
+                        ? "Submit project"
+                        : "Submit your first project"}
+                  </Button>
+                </NoticeBanner>
+              )}
+              {showForm && view === "discover" && (
                 <form
+                  id="submit-project"
                   ref={submitFormRef}
                   onSubmit={(e) => void submit(e)}
-                  className="toon-card paper-note mb-10 grid scroll-mt-28 gap-5 rounded-lg bg-sky p-6 pt-10 sm:grid-cols-2"
+                  className="min-w-0 toon-card toon-paper mb-10 grid [&>*]:min-w-0 scroll-mt-28 gap-5 rounded-lg bg-sky p-6 pt-10 @min-[36rem]/content:grid-cols-2 max-w-full"
                 >
-                  <div className="sm:col-span-2">
+                  <div className="@min-[36rem]/content:col-span-2">
                     <RocketLaunch size={32} weight="duotone" />
                     <h2 className="mt-2 text-2xl font-black">Submit a project</h2>
                     <p className="text-body">
@@ -1787,7 +1883,7 @@ export default function Store() {
                     </p>
                   </div>
                   <label>
-                    <span className="toon-label">Project name</span>
+                    <span className="mb-2 block text-xs font-black uppercase">Project name</span>
                     <Input
                       value={title}
                       onChange={(event) => setTitle(event.target.value)}
@@ -1796,7 +1892,7 @@ export default function Store() {
                     />
                   </label>
                   <label>
-                    <span className="toon-label">
+                    <span className="mb-2 block text-xs font-black uppercase">
                       What does it do? (type @ to mention developers)
                     </span>
                     <MentionInput
@@ -1807,8 +1903,10 @@ export default function Store() {
                       placeholder="One clear sentence — @ a collaborator"
                     />
                   </label>
-                  <div className="sm:col-span-2">
-                    <span className="toon-label">Collaborators (optional)</span>
+                  <div className="@min-[36rem]/content:col-span-2">
+                    <span className="mb-2 block text-xs font-black uppercase">
+                      Collaborators (optional)
+                    </span>
                     <CollaboratorPicker
                       profiles={profiles}
                       selected={collabIds}
@@ -1816,9 +1914,8 @@ export default function Store() {
                     />
                   </div>
                   <label>
-                    <span className="toon-label">Category</span>
-                    <select
-                      className={getInputClassName()}
+                    <span className="mb-2 block text-xs font-black uppercase">Category</span>
+                    <Select
                       value={categoryInput}
                       onChange={(event) => setCategoryInput(event.target.value as Category)}
                     >
@@ -1826,10 +1923,10 @@ export default function Store() {
                       <option value="Productivity">Productivity</option>
                       <option value="Games">Games</option>
                       <option value="Creative">Creative</option>
-                    </select>
+                    </Select>
                   </label>
                   <label>
-                    <span className="toon-label">App link</span>
+                    <span className="mb-2 block text-xs font-black uppercase">App link</span>
                     <span className="relative block">
                       <LinkSimple
                         size={21}
@@ -1854,7 +1951,9 @@ export default function Store() {
                     </span>
                   </label>
                   <label>
-                    <span className="toon-label">GitHub project repo link (optional)</span>
+                    <span className="mb-2 block text-xs font-black uppercase">
+                      GitHub project repo link (optional)
+                    </span>
                     <span className="relative block">
                       <LinkSimple
                         size={21}
@@ -1877,8 +1976,10 @@ export default function Store() {
                       Only used to import documentation. Never shown on the Open app button.
                     </span>
                   </label>
-                  <div className="sm:col-span-2">
-                    <span className="toon-label">Thumbnails (up to 3, first is the cover)</span>
+                  <div className="@min-[36rem]/content:col-span-2">
+                    <span className="mb-2 block text-xs font-black uppercase">
+                      Thumbnails (up to 3, first is the cover)
+                    </span>
                     <ButtonLabel variant="surface" size="small" className="cursor-pointer">
                       <Images size={20} weight="duotone" />
                       {imageBusy
@@ -1886,11 +1987,9 @@ export default function Store() {
                         : screenshots.length
                           ? "Add more"
                           : "Choose from gallery"}
-                      <input
-                        type="file"
+                      <FileInput
                         accept="image/*"
                         multiple
-                        className="sr-only"
                         disabled={imageBusy || screenshots.length >= 3}
                         onChange={(e) => {
                           void pickImages(e.target.files);
@@ -1904,29 +2003,31 @@ export default function Store() {
                       </p>
                     )}
                     {screenshots.length > 0 && (
-                      <div className="mt-3 grid grid-cols-3 gap-3">
+                      <div className="min-w-0 mt-3 grid [&>*]:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-3 max-w-full">
                         {screenshots.map((src, i) => (
                           <div key={src.slice(0, 32) + i} className="relative">
                             <img
                               src={src}
                               alt={`Upload preview ${i + 1}`}
-                              className="h-24 w-full rounded-xl border-[3px] border-ink object-cover"
+                              className="h-24 w-full rounded-xl border-[3px] border-outline object-cover"
                             />
                             {i === 0 && (
-                              <span className="absolute left-2 top-2 rounded-full border-2 border-ink bg-yellow px-2 py-0.5 text-[10px] font-black">
+                              <span className="absolute left-2 top-2 rounded-full border-2 border-outline bg-yellow px-2 py-0.5 text-[10px] font-black">
                                 COVER
                               </span>
                             )}
-                            <button
+                            <Button
+                              variant="icon"
+                              size="compact"
                               type="button"
                               onClick={() =>
                                 setScreenshots((prev) => prev.filter((_, j) => j !== i))
                               }
                               aria-label={`Remove image ${i + 1}`}
-                              className="absolute right-2 top-2 rounded-full border-2 border-ink bg-surface p-1"
+                              className="absolute right-2 top-2"
                             >
                               <X size={14} weight="bold" />
-                            </button>
+                            </Button>
                           </div>
                         ))}
                       </div>
@@ -1936,8 +2037,8 @@ export default function Store() {
                       on-device. First image becomes the card cover.
                     </span>
                   </div>
-                  <div className="sm:col-span-2">
-                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <div className="@min-[36rem]/content:col-span-2">
+                    <div className="min-w-0 mb-3 flex flex-wrap items-center gap-2 [&>*]:min-w-0 max-w-full">
                       {(["write", "upload", "repository"] as const).map((tab) => (
                         <Button
                           key={tab}
@@ -2000,10 +2101,8 @@ export default function Store() {
                         <ButtonLabel variant="surface" size="small" className="cursor-pointer">
                           <BookOpenText size={20} weight="duotone" />
                           Choose README.md
-                          <input
-                            type="file"
+                          <FileInput
                             accept=".md,.markdown,.txt,text/markdown,text/plain"
-                            className="sr-only"
                             onChange={(e) => {
                               void readMdFile(e.target.files?.[0]);
                               e.target.value = "";
@@ -2018,20 +2117,21 @@ export default function Store() {
                             <p className="text-sm font-black">✓ {docsFile} loaded</p>
                             <p className="mt-1 text-sm font-bold text-muted">
                               {docs.length} chars —{" "}
-                              <button
+                              <Button
+                                variant="text"
                                 type="button"
                                 onClick={() => setDocsTab("preview")}
                                 className="underline decoration-2 underline-offset-4"
                               >
                                 see the finished doc
-                              </button>
+                              </Button>
                             </p>
                           </div>
                         )}
                       </div>
                     )}
                     {docsTab === "repository" && (
-                      <div className="rounded-xl border-2 border-ink bg-surface p-4">
+                      <div className="rounded-xl border-2 border-outline bg-surface p-4">
                         {!isGitHubRepositoryUrl(docsRepoUrl) ? (
                           <p role="status" className="text-sm font-bold text-body">
                             Provide your GitHub project repo link first — paste it in the repo link
@@ -2062,14 +2162,13 @@ export default function Store() {
                             )}
                             {repositoryFiles.length > 0 && (
                               <>
-                                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                                <div className="min-w-0 mt-4 flex flex-wrap items-center justify-between gap-3 [&>*]:min-w-0 max-w-full">
                                   <p className="text-sm font-black">
                                     {selectedRepositoryFiles.length} of {repositoryFiles.length}{" "}
                                     selected
                                   </p>
-                                  <label className="flex items-center gap-2 text-sm font-black">
-                                    <input
-                                      type="checkbox"
+                                  <label className="min-w-0 flex items-center gap-2 text-sm font-black [&>*]:min-w-0 max-w-full">
+                                    <Checkbox
                                       checked={
                                         selectedRepositoryFiles.length === repositoryFiles.length
                                       }
@@ -2086,10 +2185,9 @@ export default function Store() {
                                   {repositoryFiles.map((path) => (
                                     <label
                                       key={path}
-                                      className="flex items-start gap-2 rounded-md px-2 py-1.5 text-sm font-bold hover:bg-cream"
+                                      className="min-w-0 flex items-start gap-2 rounded-md px-2 py-1.5 text-sm font-bold hover:bg-cream [&>*]:min-w-0 max-w-full"
                                     >
-                                      <input
-                                        type="checkbox"
+                                      <Checkbox
                                         checked={selectedRepositoryFiles.includes(path)}
                                         onChange={(event) =>
                                           setSelectedRepositoryFiles((selected) =>
@@ -2128,7 +2226,7 @@ export default function Store() {
                       </div>
                     )}
                     {docsTab === "preview" && (
-                      <div className="rounded-2xl border-[3px] border-ink bg-surface p-4">
+                      <div className="rounded-2xl border-[3px] border-outline bg-surface p-4">
                         {docsFile && docs.trim() && (
                           <p className="mb-3 text-xs font-black uppercase text-muted">
                             Preview of {docsFile}
@@ -2137,7 +2235,7 @@ export default function Store() {
                         {docs.length > 50000 && (
                           <div
                             role="status"
-                            className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border-2 border-ink bg-yellow/40 p-3"
+                            className="min-w-0 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border-2 border-outline bg-yellow/40 p-3 [&>*]:min-w-0 max-w-full"
                           >
                             <p className="text-sm font-bold">
                               This document is {docs.length.toLocaleString()} characters. It exceeds
@@ -2166,7 +2264,10 @@ export default function Store() {
                     )}
                   </div>
                   {submitError && (
-                    <p role="alert" className="sm:col-span-2 text-sm font-bold text-ink">
+                    <p
+                      role="alert"
+                      className="@min-[36rem]/content:col-span-2 text-sm font-bold text-ink"
+                    >
                       {submitError}
                     </p>
                   )}
@@ -2175,7 +2276,7 @@ export default function Store() {
                     disabled={
                       submitting || imageBusy || repositoryFilesLoading || repositoryFilesImporting
                     }
-                    className="sm:col-span-2 sm:justify-self-start"
+                    className="@min-[36rem]/content:col-span-2 @min-[36rem]/content:justify-self-start"
                   >
                     {submitting
                       ? "Publishing…"
@@ -2247,6 +2348,12 @@ export default function Store() {
                     }}
                     onOpenApp={openAppFromProfile}
                     onOpenProfile={openProfile}
+                    onSubmitProject={() => {
+                      window.history.pushState({}, "", ROUTES.discover);
+                      setView("discover");
+                      setSelectedProfileId(null);
+                      setShowForm(true);
+                    }}
                     onProfileUpdated={() => setProfileTick((t) => t + 1)}
                   />
                 </section>
@@ -2254,67 +2361,57 @@ export default function Store() {
 
               {view === "discover" && (
                 <section id="apps" className="mt-2 scroll-mt-6">
-                  {user &&
-                    !fullApps.some((a) =>
-                      a.creatorId ? a.creatorId === user.id : a.creator === user.name,
-                    ) && (
-                      <div className="toon-card paper-note mb-6 flex flex-wrap items-center gap-4 rounded-lg bg-mint p-6">
-                        <RocketLaunch size={32} weight="duotone" className="shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <h3 className="text-xl font-black">You have not shared anything yet</h3>
-                          <p className="mt-1 text-sm font-bold text-body">
-                            Publish your first project to appear on the leaderboard.
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setShowForm(true);
-                            window.scrollTo({ top: 0, behavior: "smooth" });
-                          }}
-                          className="toon-button shrink-0 rounded-2xl bg-purple px-5 py-2.5 text-sm text-surface"
-                        >
-                          <Plus size={18} weight="bold" /> Submit your first project
-                        </button>
-                      </div>
-                    )}
                   {user && hasPassword === false && !pwSnoozed && (
-                    <div className="toon-card paper-note mb-6 flex flex-wrap items-center gap-4 rounded-lg bg-yellow p-6">
-                      <LockKey size={32} weight="duotone" className="shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-xl font-black">Unlock email sign-in</h3>
-                        <p className="mt-1 text-sm font-bold text-body">
-                          You joined with Google, so no password is set. Add one to
-                          sign in with email too.
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 flex-wrap gap-2">
-                        <Button
-                          variant="surface"
-                          size="small"
-                          type="button"
-                          onClick={snoozePasswordNudge}
-                        >
-                          Later
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="small"
-                          type="button"
-                          onClick={goPasswordSettings}
-                        >
-                          Add password
-                        </Button>
-                      </div>
-                    </div>
+                    <NoticeBanner
+                      icon={LockKey}
+                      title="Unlock email sign-in"
+                      description="You joined with Google, so no password is set. Add one to sign in with email too."
+                      tone="yellow"
+                      className="mb-6"
+                    >
+                      <Button
+                        variant="surface"
+                        size="small"
+                        type="button"
+                        onClick={snoozePasswordNudge}
+                      >
+                        Later
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="small"
+                        type="button"
+                        onClick={goPasswordSettings}
+                      >
+                        Add password
+                      </Button>
+                    </NoticeBanner>
                   )}
-                  <div className="mb-5 border-t-2 border-dashed border-divider pt-6">
-                    <p className="text-xs font-black uppercase text-purple">Catalog</p>
-                    <h2 className="mt-1 text-2xl font-black">Student projects</h2>
-                  </div>
-                  <div className="mb-6 flex flex-wrap gap-2">
+                  <label className="relative mb-4 block">
+                    <span className="sr-only">Search student projects</span>
+                    <MagnifyingGlass
+                      size={20}
+                      weight="bold"
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted"
+                    />
+                    <Input
+                      type="search"
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      className="py-3 pl-11"
+                      placeholder="Search projects or developers"
+                    />
+                  </label>
+                  <div
+                    className="min-w-0 mb-5 flex flex-wrap gap-2 [&>*]:min-w-0 max-w-full"
+                    role="group"
+                    aria-label="Project categories"
+                  >
                     {categories.map(({ label, Icon }) => (
                       <Button
                         variant="outline-flat"
+                        size="small"
                         key={label}
                         onClick={() => setCategory(label)}
                         aria-pressed={category === label}
@@ -2327,7 +2424,7 @@ export default function Store() {
                   {appsLoading ? (
                     <p className="font-bold text-muted">Loading projects…</p>
                   ) : appsError ? (
-                    <div className="toon-card paper-note rounded-lg p-10 text-center">
+                    <div className="toon-card toon-paper bg-paper rounded-lg p-10 text-center">
                       <h3 className="mt-3 text-xl font-black">Could not load projects</h3>
                       <p className="font-bold text-muted">{appsError}</p>
                       <Button variant="secondary" onClick={() => void loadApps()} className="mt-5">
@@ -2335,7 +2432,7 @@ export default function Store() {
                       </Button>
                     </div>
                   ) : apps.length ? (
-                    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="min-w-0 grid [&>*]:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-6 max-w-full">
                       {apps.map((app) => (
                         <AppCard
                           key={app.id}
@@ -2363,7 +2460,7 @@ export default function Store() {
                       ))}
                     </div>
                   ) : (
-                    <div className="toon-card paper-note rounded-lg p-10 text-center">
+                    <div className="toon-card toon-paper bg-paper rounded-lg p-10 text-center">
                       <MagnifyingGlass size={36} className="mx-auto" />
                       <h3 className="mt-3 text-xl font-black">No projects found</h3>
                       <p className="font-bold text-muted">Adjust your search or category filter.</p>
@@ -2375,9 +2472,7 @@ export default function Store() {
               {view === "builders" && (
                 <section id="builders" className="mt-2 scroll-mt-6">
                   <div className="mb-6">
-                    <p className="text-xs font-black uppercase text-purple">Student contributors</p>
-                    <h2 className="mt-1 text-2xl font-black">Developer profiles</h2>
-                    <label className="relative mt-4 block max-w-md">
+                    <label className="relative block max-w-md">
                       <span className="sr-only">Search developers</span>
                       <MagnifyingGlass
                         size={20}
@@ -2392,25 +2487,17 @@ export default function Store() {
                       />
                     </label>
                   </div>
-                  <div className="toon-card paper-note grid gap-x-6 gap-y-8 rounded-lg p-6 pt-10 sm:grid-cols-2 sm:p-8 sm:pt-12 lg:grid-cols-3">
+                  <div className="min-w-0 toon-card toon-paper bg-paper grid [&>*]:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-x-6 gap-y-8 rounded-lg p-4 pt-10 sm:p-8 sm:pt-12 max-w-full">
                     {filteredProfiles.map((p) => {
                       const place = trophies.get(p.id);
                       return (
                         <article
                           key={p.id}
-                          className={`min-w-0 ${place !== undefined ? "rounded-lg border-[3px] border-ink p-3" : ""}`}
-                          style={
-                            place === 1
-                              ? { backgroundColor: "#F7DE6B" }
-                              : place === 2
-                                ? { backgroundColor: "#DDE3EA" }
-                                : place === 3
-                                  ? { backgroundColor: "#EAC39E" }
-                                  : undefined
-                          }
+                          className={`min-w-0 ${place !== undefined ? "rounded-lg border-[3px] border-outline p-3" : ""} ${place === 1 ? "bg-podium-gold" : place === 2 ? "bg-podium-silver" : place === 3 ? "bg-podium-bronze" : ""}`}
                         >
-                          <div className="flex items-center gap-3">
-                            <a
+                          <div className="min-w-0 flex items-center gap-3 [&>*]:min-w-0 max-w-full">
+                            <ButtonLink
+                              variant="plain"
                               href={developerProfilePath(p.id)}
                               onClick={(e) => {
                                 e.preventDefault();
@@ -2425,9 +2512,10 @@ export default function Store() {
                                 imageUrl={p.imageUrl}
                                 size="md"
                               />
-                            </a>
+                            </ButtonLink>
                             <h3 className="min-w-0 flex-1 wrap-break-word text-lg font-black">
-                              <a
+                              <ButtonLink
+                                variant="plain"
                                 href={developerProfilePath(p.id)}
                                 onClick={(e) => {
                                   e.preventDefault();
@@ -2436,7 +2524,7 @@ export default function Store() {
                                 className="underline-offset-4 hover:underline"
                               >
                                 {p.name}
-                              </a>
+                              </ButtonLink>
                               {trophies.get(p.id) !== undefined && (
                                 <TrophyMark place={trophies.get(p.id) as 1 | 2 | 3} />
                               )}
@@ -2450,7 +2538,7 @@ export default function Store() {
                       );
                     })}
                     {filteredProfiles.length === 0 && (
-                      <p className="font-bold text-muted sm:col-span-2 lg:col-span-3">
+                      <p className="font-bold text-muted col-span-full">
                         No developers match “{devQuery.trim()}”.
                       </p>
                     )}
@@ -2460,38 +2548,28 @@ export default function Store() {
 
               {view === "feed" && (
                 <section id="feed" className="mx-auto mt-2 max-w-3xl scroll-mt-6">
-                  <div className="mb-6">
-                    <p className="flex items-center gap-2 text-xs font-black uppercase text-purple">
-                      <Newspaper size={18} weight="duotone" />
-                      SPECS community
-                    </p>
-                    <h2 className="mt-1 text-3xl font-black">The Feed</h2>
-                    <p className="mt-2 font-bold text-muted">
-                      What builders are making, learning, and talking about.
-                    </p>
-                  </div>
                   <div className="min-w-0">
                     <form
                       onSubmit={(e) => void postMilestone(e)}
-                      className="toon-card paper-note rounded-lg bg-surface p-4 pt-10 sm:p-5 sm:pt-12"
+                      className="toon-card toon-paper rounded-lg bg-surface p-4 pt-10 sm:p-5 sm:pt-12"
                     >
-                      <h3 className="flex items-center gap-2 text-lg font-black">
+                      <h3 className="min-w-0 flex items-center gap-2 text-lg font-black [&>*]:min-w-0 max-w-full">
                         <Newspaper size={22} weight="duotone" className="text-purple" />
                         Share with the community
                       </h3>
                       <label className="mt-3 block">
                         <span className="sr-only">What did you ship or learn?</span>
-                        <textarea
+                        <Textarea
                           value={mBody}
                           onChange={(e) => setMBody(e.target.value)}
                           maxLength={280}
                           required
                           placeholder="What did you ship or learn?…"
                           rows={3}
-                          className="toon-input min-h-24 resize-y leading-7"
+                          className="min-h-24 resize-y leading-7"
                         />
                       </label>
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <div className="min-w-0 mt-3 flex flex-wrap items-center gap-2 [&>*]:min-w-0 max-w-full">
                         <div className="min-w-0 flex-1">
                           <Dropdown
                             label="Attach one of your projects (optional)"
@@ -2539,10 +2617,11 @@ export default function Store() {
                         weight="bold"
                         className="absolute left-4 top-1/2 -translate-y-1/2 text-muted"
                       />
-                      <input
+                      <Input
+                        type="search"
                         value={msQuery}
                         onChange={(event) => setMsQuery(event.target.value)}
-                        className="toon-input py-2.5 pl-11 text-sm"
+                        className="py-2.5 pl-11 text-sm"
                         placeholder="Search posts or builders…"
                       />
                     </label>
@@ -2550,10 +2629,14 @@ export default function Store() {
                     {milestonesLoading ? (
                       <p className="mt-6 font-bold text-muted">Loading feed…</p>
                     ) : milestonesError ? (
-                      <div className="toon-card mt-4 rounded-lg p-8 text-center">
+                      <div className="toon-card bg-surface mt-4 rounded-lg p-8 text-center">
                         <h3 className="text-xl font-black">Could not load the feed</h3>
                         <p className="font-bold text-muted">{milestonesError}</p>
-                        <Button variant="secondary" onClick={() => void loadMilestones()} className="mt-5">
+                        <Button
+                          variant="secondary"
+                          onClick={() => void loadMilestones()}
+                          className="mt-5"
+                        >
                           Retry
                         </Button>
                       </div>
@@ -2566,9 +2649,10 @@ export default function Store() {
                             : undefined;
                           return (
                             <li key={m.id} className="toon-card rounded-lg bg-surface p-4 sm:p-5">
-                              <div className="flex items-center gap-3">
+                              <div className="min-w-0 flex items-center gap-3 [&>*]:min-w-0 max-w-full">
                                 {p ? (
-                                  <button
+                                  <Button
+                                    variant="plain"
                                     onClick={() => openProfile(p.id)}
                                     aria-label={`View ${p.name}'s profile`}
                                     className="shrink-0"
@@ -2579,19 +2663,20 @@ export default function Store() {
                                       imageUrl={p.imageUrl}
                                       size="sm"
                                     />
-                                  </button>
+                                  </Button>
                                 ) : (
                                   <Avatar name={m.authorName} color="sky" size="sm" />
                                 )}
                                 <div className="min-w-0">
                                   <p className="truncate text-sm font-black">
                                     {p ? (
-                                      <button
+                                      <Button
+                                        variant="text"
                                         onClick={() => openProfile(p.id)}
                                         className="underline decoration-2 underline-offset-4"
                                       >
                                         {m.authorName}
-                                      </button>
+                                      </Button>
                                     ) : (
                                       m.authorName
                                     )}
@@ -2608,11 +2693,12 @@ export default function Store() {
                                 </div>
                               </div>
                               <p className="mt-3 leading-7">{m.body}</p>
-                              <div className="mt-3 flex flex-wrap items-center gap-3">
+                              <div className="min-w-0 mt-3 flex flex-wrap items-center gap-3 [&>*]:min-w-0 max-w-full">
                                 {linked && (
-                                  <button
+                                  <Button
+                                    variant="plain"
                                     onClick={() => openApp(linked.id)}
-                                    className="rounded-md border-2 border-ink bg-cream px-2.5 py-1 text-xs font-black hover:bg-yellow"
+                                    className="rounded-md border-2 border-outline bg-cream px-2.5 py-1 text-xs font-black hover:bg-yellow"
                                   >
                                     {linked.title}
                                     {projectTrophies.get(linked.id) !== undefined && (
@@ -2621,7 +2707,7 @@ export default function Store() {
                                         size={14}
                                       />
                                     )}
-                                  </button>
+                                  </Button>
                                 )}
                                 <Button
                                   variant="vote"
@@ -2639,14 +2725,15 @@ export default function Store() {
                                     {m.viewerHasCheered ? "Uncheer" : "Cheer this on"}
                                   </span>
                                 </Button>
-                                <button
+                                <Button
+                                  variant="plain"
                                   onClick={() => toggleThread(m.id)}
                                   aria-expanded={openThreads.has(m.id)}
-                                  className="flex items-center gap-1 text-sm font-black text-muted"
+                                  className="min-w-0 flex items-center gap-1 text-sm font-black text-muted [&>*]:min-w-0 max-w-full"
                                 >
                                   <ChatCircleDots size={18} weight="duotone" />
                                   {openThreads.has(m.id) ? "Hide comments" : "Comment"}
-                                </button>
+                                </Button>
                               </div>
                               {openThreads.has(m.id) && (
                                 <div className="mt-3 border-t-2 border-dashed border-divider pt-4">
@@ -2665,7 +2752,7 @@ export default function Store() {
                         })}
                       </ul>
                     ) : (
-                      <div className="toon-card paper-note mt-6 rounded-lg p-10 text-center">
+                      <div className="toon-card toon-paper bg-paper mt-6 rounded-lg p-10 text-center">
                         <h3 className="text-xl font-black">
                           {milestones.length ? "No matching posts" : "Your feed starts here"}
                         </h3>
@@ -2683,29 +2770,30 @@ export default function Store() {
               {view === "leaderboard" && (
                 <section className="mt-2">
                   <div className="mb-6">
-                      <p className="text-xs font-black uppercase text-purple">
-                        {boardTab === "developers"
-                          ? "Rank points = upvotes + 20 per published project"
-                          : "Ranked by project upvotes"}
+                    <p className="text-xs font-black uppercase text-purple">
+                      {boardTab === "developers"
+                        ? "Rank points = upvotes + 20 per published project"
+                        : "Ranked by project upvotes"}
                     </p>
                     <h2 className="mt-1 text-2xl font-black">
                       {boardTab === "developers" ? "Top developers" : "Top projects"}
                     </h2>
                     <div
-                      className="mt-4 flex flex-wrap gap-2"
+                      className="min-w-0 mt-4 flex flex-wrap gap-2 [&>*]:min-w-0 max-w-full"
                       role="tablist"
                       aria-label="Leaderboard view"
                     >
                       {(["developers", "projects"] as const).map((tab) => (
-                        <button
+                        <Button
+                          variant="filter"
                           key={tab}
                           role="tab"
                           aria-selected={boardTab === tab}
                           onClick={() => setBoardTab(tab)}
-                          className={`flex min-w-max items-center gap-2 rounded-md border-2 border-ink px-3 py-2 text-sm font-black capitalize ${boardTab === tab ? "bg-purple text-surface" : "bg-surface"}`}
+                          className="capitalize"
                         >
                           {tab}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   </div>
@@ -2715,24 +2803,16 @@ export default function Store() {
                         {rankedDevelopers.map(({ profile: p, projects, points }, i) => (
                           <li
                             key={p.id}
-                            className="toon-card flex items-center gap-4 rounded-lg bg-surface p-4 sm:p-5"
-                            style={
-                              i === 0
-                                ? { backgroundColor: "#F7DE6B" }
-                                : i === 1
-                                  ? { backgroundColor: "#DDE3EA" }
-                                  : i === 2
-                                    ? { backgroundColor: "#EAC39E" }
-                                    : undefined
-                            }
+                            className={`min-w-0 toon-card flex flex-wrap items-center gap-3 rounded-lg p-4 sm:flex-nowrap sm:gap-4 sm:p-5 ${i + 1 === 1 ? "bg-podium-gold" : i + 1 === 2 ? "bg-podium-silver" : i + 1 === 3 ? "bg-podium-bronze" : "bg-surface"} [&>*]:min-w-0 max-w-full`}
                           >
                             <span
                               aria-label={`Rank ${i + 1}`}
-                              className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border-[3px] border-ink text-base font-black ${i === 0 ? "bg-yellow" : i === 1 ? "bg-mint" : i === 2 ? "bg-pink" : "bg-cream"}`}
+                              className={`min-w-0 grid [&>*]:min-w-0 h-10 w-10 shrink-0 place-items-center rounded-full border-[3px] border-outline text-base font-black ${i === 0 ? "bg-yellow" : i === 1 ? "bg-mint" : i === 2 ? "bg-pink" : "bg-cream"} max-w-full`}
                             >
                               {i + 1}
                             </span>
-                            <button
+                            <Button
+                              variant="plain"
                               onClick={() => openProfile(p.id)}
                               aria-label={`View ${p.name}'s profile`}
                               className="shrink-0"
@@ -2743,15 +2823,16 @@ export default function Store() {
                                 imageUrl={p.imageUrl}
                                 size="md"
                               />
-                            </button>
+                            </Button>
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-lg font-black">
-                                <button
+                                <Button
+                                  variant="text"
                                   onClick={() => openProfile(p.id)}
                                   className="underline-offset-4 hover:underline"
                                 >
                                   {p.name}
-                                </button>
+                                </Button>
                                 {trophies.get(p.id) !== undefined && (
                                   <TrophyMark place={trophies.get(p.id) as 1 | 2 | 3} />
                                 )}
@@ -2760,7 +2841,7 @@ export default function Store() {
                                 {projects} {projects === 1 ? "project" : "projects"}
                               </p>
                             </div>
-                            <p className="flex shrink-0 items-center gap-1.5 text-base font-black">
+                            <p className="min-w-0 flex shrink-0 items-center gap-1.5 text-base font-black [&>*]:min-w-0 max-w-full">
                               <Trophy
                                 size={20}
                                 weight="duotone"
@@ -2775,7 +2856,7 @@ export default function Store() {
                         ))}
                       </ol>
                     ) : (
-                      <div className="toon-card paper-note rounded-lg p-10 text-center">
+                      <div className="toon-card toon-paper bg-paper rounded-lg p-10 text-center">
                         <h3 className="text-xl font-black">No developers yet</h3>
                         <p className="font-bold text-muted">Check back once builders join.</p>
                       </div>
@@ -2791,24 +2872,16 @@ export default function Store() {
                         return (
                           <li
                             key={app.id}
-                            className="toon-card flex items-center gap-4 rounded-lg bg-surface p-4 sm:p-5"
-                            style={
-                              i === 0
-                                ? { backgroundColor: "#F7DE6B" }
-                                : i === 1
-                                  ? { backgroundColor: "#DDE3EA" }
-                                  : i === 2
-                                    ? { backgroundColor: "#EAC39E" }
-                                    : undefined
-                            }
+                            className={`min-w-0 toon-card flex flex-wrap items-center gap-3 rounded-lg p-4 sm:flex-nowrap sm:gap-4 sm:p-5 ${i + 1 === 1 ? "bg-podium-gold" : i + 1 === 2 ? "bg-podium-silver" : i + 1 === 3 ? "bg-podium-bronze" : "bg-surface"} [&>*]:min-w-0 max-w-full`}
                           >
                             <span
                               aria-label={`Rank ${i + 1}`}
-                              className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border-[3px] border-ink text-base font-black ${i === 0 ? "bg-yellow" : i === 1 ? "bg-mint" : i === 2 ? "bg-pink" : "bg-cream"}`}
+                              className={`min-w-0 grid [&>*]:min-w-0 h-10 w-10 shrink-0 place-items-center rounded-full border-[3px] border-outline text-base font-black ${i === 0 ? "bg-yellow" : i === 1 ? "bg-mint" : i === 2 ? "bg-pink" : "bg-cream"} max-w-full`}
                             >
                               {i + 1}
                             </span>
-                            <button
+                            <Button
+                              variant="text"
                               onClick={() => openApp(app.id)}
                               aria-label={`Open ${app.title} details`}
                               className="min-w-0 flex-1 text-left"
@@ -2822,8 +2895,8 @@ export default function Store() {
                               <span className="block truncate text-sm font-bold text-muted">
                                 by {creator ? creator.name : app.creator}
                               </span>
-                            </button>
-                            <p className="flex shrink-0 items-center gap-1.5 text-base font-black">
+                            </Button>
+                            <p className="min-w-0 flex shrink-0 items-center gap-1.5 text-base font-black [&>*]:min-w-0 max-w-full">
                               <Heart
                                 size={20}
                                 weight="duotone"
@@ -2839,7 +2912,7 @@ export default function Store() {
                       })}
                     </ol>
                   ) : (
-                    <div className="toon-card paper-note rounded-lg p-10 text-center">
+                    <div className="toon-card toon-paper bg-paper rounded-lg p-10 text-center">
                       <h3 className="text-xl font-black">No projects yet</h3>
                       <p className="font-bold text-muted">Check back once builders share work.</p>
                     </div>
@@ -2849,25 +2922,26 @@ export default function Store() {
 
               {view === "settings" && (
                 <section className="mt-2">
-                    <SettingsView
-                      profile={myProfile}
-                      onChanged={() => setProfileTick((t) => t + 1)}
-                      hasPassword={hasPassword}
-                      onPasswordUpdated={() => {
-                        setHasPassword(true);
-                        setPwSnoozed(false);
-                        try {
-                          if (user) localStorage.removeItem(`cc.pw_nudge.v1:${user.id}`);
-                        } catch {
-                          // Ignore.
-                        }
-                      }}
-                    />
+                  <SettingsView
+                    profile={myProfile}
+                    onChanged={() => setProfileTick((t) => t + 1)}
+                    hasPassword={hasPassword}
+                    onPasswordUpdated={() => {
+                      setHasPassword(true);
+                      setPwSnoozed(false);
+                      try {
+                        if (user) localStorage.removeItem(`cc.pw_nudge.v1:${user.id}`);
+                      } catch {
+                        // Ignore.
+                      }
+                    }}
+                  />
                 </section>
               )}
 
               <footer className="mb-8 mt-12 border-t-2 border-dashed border-muted py-7 text-center text-sm font-bold text-muted">
-                CodeCanvas is built together by the SPECS community.
+                CodeCanvas · Est. 2026 · Society of Programmers and Enthusiasts in Computer Science
+                (SPECS)
               </footer>
             </div>
           </ErrorBoundary>

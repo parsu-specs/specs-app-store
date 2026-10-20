@@ -27,11 +27,12 @@ export default function PagedMarkdown({
   collapsedPx = 320,
   stepPx = 600,
   limit = 1000,
-  fadeTo = "var(--color-paper)",
+  fadeTo = "var(--color-surface)",
 }: PagedMarkdownProps) {
   const long = text.length > limit;
   const [height, setHeight] = useState<number>(collapsedPx);
-  const [hasMore, setHasMore] = useState(false);
+  const [contentHeight, setContentHeight] = useState(0);
+  const hasMore = contentHeight > height;
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,15 +42,15 @@ export default function PagedMarkdown({
   useEffect(() => {
     const el = contentRef.current;
     if (!el || !long) {
-      setHasMore(false);
+      setContentHeight(0);
       return;
     }
-    const check = () => setHasMore(el.scrollHeight > height + 24);
+    const check = () => setContentHeight(el.scrollHeight);
     check();
     const ro = new ResizeObserver(check);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [text, height, long]);
+  }, [text, long]);
 
   if (!long) {
     return <Markdown text={text} />;
@@ -61,8 +62,10 @@ export default function PagedMarkdown({
 
   return (
     <div>
-      <div ref={contentRef} style={{ maxHeight: height }} className="relative overflow-hidden">
-        <Markdown text={text} />
+      <div style={{ maxHeight: height }} className="relative min-w-0 max-w-full overflow-hidden">
+        <div ref={contentRef} className="flow-root min-w-0 max-w-full">
+          <Markdown text={text} />
+        </div>
         {hasMore && (
           <div
             aria-hidden="true"
@@ -71,7 +74,7 @@ export default function PagedMarkdown({
           />
         )}
       </div>
-      <div className="mt-4 flex flex-wrap items-center gap-3">
+      <div className="min-w-0 mt-4 flex flex-wrap items-center gap-3 [&>*]:min-w-0 max-w-full">
         {hasMore && (
           <Button
             variant="secondary"

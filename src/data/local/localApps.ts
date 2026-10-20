@@ -205,12 +205,14 @@ export function createLocalAppRepo(): AppRepo {
       const repoUrl = input.repoUrl?.trim();
       const docs = input.docs?.trim();
       if (!title || !description) throw new Error("Title and description are required.");
-      if (url && !/^https?:\/\//i.test(url)) throw new Error("App link must start with http(s)://.");
+      if (url && !/^https?:\/\//i.test(url))
+        throw new Error("App link must start with http(s)://.");
       if (repoUrl && !/^https?:\/\//i.test(repoUrl))
         throw new Error("Repo link must start with http(s)://.");
       if (title.length > 80) throw new Error("Keep the project name under 80 characters.");
       if (description.length > 280) throw new Error("Keep the description under 280 characters.");
-      if (docs && docs.length > 50000) throw new Error("Keep documentation under 50000 characters.");
+      if (docs && docs.length > 50000)
+        throw new Error("Keep documentation under 50000 characters.");
       const screenshots = (input.screenshots ?? []).filter(Boolean).slice(0, 3);
       const collaborators = (input.collaborators ?? []).filter(Boolean).slice(0, 10);
       for (const src of screenshots) {
@@ -265,7 +267,8 @@ export function createLocalAppRepo(): AppRepo {
       if (title.length > 80) throw new Error("Keep the project name under 80 characters.");
       if (description.length > 280) throw new Error("Keep the description under 280 characters.");
       if (docs.length > 50000) throw new Error("Keep documentation under 50000 characters.");
-      if (url && !/^https?:\/\//i.test(url)) throw new Error("App link must start with http(s)://.");
+      if (url && !/^https?:\/\//i.test(url))
+        throw new Error("App link must start with http(s)://.");
       const screenshots =
         patch.screenshots !== undefined
           ? patch.screenshots.filter(Boolean).slice(0, 3)
@@ -377,7 +380,12 @@ export function createLocalAppRepo(): AppRepo {
         }));
     },
 
-    async addComment(appId: string, author: User, body: string, parentId?: string): Promise<Comment> {
+    async addComment(
+      appId: string,
+      author: User,
+      body: string,
+      parentId?: string,
+    ): Promise<Comment> {
       await delay(120);
       const text = body.trim();
       if (!text) throw new Error("Comment cannot be empty.");
@@ -465,11 +473,7 @@ export function createLocalAppRepo(): AppRepo {
       return { ...updated, viewerHasCheered: cheered.has(userId) };
     },
 
-    async deleteComment(
-      appId: string,
-      commentId: string,
-      requester: User,
-    ): Promise<void> {
+    async deleteComment(appId: string, commentId: string, requester: User): Promise<void> {
       await delay(100);
       const store = loadComments();
       const thread = (store[appId] ?? []).map(normalizeComment);

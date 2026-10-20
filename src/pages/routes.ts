@@ -1,3 +1,5 @@
+import type { MouseEvent } from "react";
+
 export const ROUTES = {
   root: "/",
   landing: "/landing",
@@ -42,4 +44,21 @@ export function isProtectedRoute(pathname: string) {
     clean.startsWith(`${ROUTES.discover}/`) ||
     clean.startsWith(`${ROUTES.apps}/`)
   );
+}
+/** Navigate between standalone pages and the app without reloading the session. */
+export function navigateInternalLink(event: MouseEvent<HTMLAnchorElement>) {
+  if (
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey ||
+    event.currentTarget.target === "_blank"
+  )
+    return;
+  event.preventDefault();
+  window.history.pushState({}, "", event.currentTarget.href);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo({ top: 0 });
 }

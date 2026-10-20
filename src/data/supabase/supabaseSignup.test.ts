@@ -5,7 +5,10 @@ import { getSupabase } from "./client";
 vi.mock("./client", () => ({ getSupabase: vi.fn() }));
 
 type SignUpResult = {
-  data: { user: { id: string; email: string; identities: unknown[] } | null; session: object | null };
+  data: {
+    user: { id: string; email: string; identities: unknown[] } | null;
+    session: object | null;
+  };
   error: { message: string } | null;
 };
 

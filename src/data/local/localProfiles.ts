@@ -97,7 +97,8 @@ export function createLocalProfileRepo(): ProfileRepo {
         // stored name wins and the clash is left for the user to rename.
         if (existing.name !== user.name) {
           const clash = profiles.some(
-            (p) => p.id !== user.id && p.name.trim().toLowerCase() === user.name.trim().toLowerCase(),
+            (p) =>
+              p.id !== user.id && p.name.trim().toLowerCase() === user.name.trim().toLowerCase(),
           );
           if (!clash) {
             const next = profiles.map((p) => (p.id === user.id ? { ...p, name: user.name } : p));
@@ -107,11 +108,7 @@ export function createLocalProfileRepo(): ProfileRepo {
         }
         return existing;
       }
-      if (
-        profiles.some(
-          (p) => p.name.trim().toLowerCase() === user.name.trim().toLowerCase(),
-        )
-      ) {
+      if (profiles.some((p) => p.name.trim().toLowerCase() === user.name.trim().toLowerCase())) {
         throw new Error("That display name is already taken. Try signing in instead.");
       }
       const created: Profile = {

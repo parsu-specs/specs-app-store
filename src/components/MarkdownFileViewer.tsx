@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { BookOpenText, FileText, UploadSimple, X } from "@phosphor-icons/react";
 import { Button, ButtonLabel } from "./Button";
 import Markdown from "./Markdown";
+import { FileInput } from "./Input";
 import { readMarkdownFile } from "../utils/readMarkdownFile";
 
 type MarkdownFileViewerProps = {
@@ -63,11 +64,7 @@ export default function MarkdownFileViewer({
 
   return (
     <>
-      <Button
-        variant="surface"
-        type="button"
-        onClick={() => setOpen(true)}
-      >
+      <Button variant="surface" type="button" onClick={() => setOpen(true)}>
         <BookOpenText size={20} weight="duotone" />
         {buttonLabel}
       </Button>
@@ -78,14 +75,14 @@ export default function MarkdownFileViewer({
             aria-modal="true"
             aria-labelledby={`${inputId}-title`}
             onClick={() => setOpen(false)}
-            className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-ink/80 p-3 sm:p-6"
+            className="min-w-0 fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-ink/80 p-3 sm:p-6 [&>*]:min-w-0 max-w-full"
           >
             <section
               onClick={(event) => event.stopPropagation()}
-              className="toon-card paper-note my-auto flex max-h-[90vh] min-h-[min(28rem,80vh)] w-full max-w-4xl flex-col overflow-hidden rounded-lg bg-paper"
+              className="min-w-0 toon-card toon-paper my-auto flex max-h-[90vh] min-h-[min(28rem,80vh)] w-full max-w-4xl flex-col overflow-hidden rounded-lg bg-paper [&>*]:min-w-0"
             >
-              <header className="flex shrink-0 items-center justify-between gap-4 border-b-[3px] border-ink bg-surface px-4 py-3 sm:px-6">
-                <div className="flex min-w-0 items-center gap-3">
+              <header className="min-w-0 flex shrink-0 items-center justify-between gap-4 border-b-[3px] border-outline bg-surface px-4 py-3 sm:px-6 [&>*]:min-w-0 max-w-full">
+                <div className="flex min-w-0 items-center gap-3 [&>*]:min-w-0 max-w-full">
                   <BookOpenText size={26} weight="duotone" aria-hidden="true" />
                   <div className="min-w-0">
                     <h2 id={`${inputId}-title`} className="text-lg font-black sm:text-xl">
@@ -98,25 +95,26 @@ export default function MarkdownFileViewer({
                     )}
                   </div>
                 </div>
-                <button
+                <Button
+                  variant="icon"
+                  size="default"
                   ref={closeButtonRef}
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label="Close Markdown file viewer"
-                  className="shrink-0 rounded-full border-2 border-ink bg-surface p-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-yellow"
+                  className=""
                 >
                   <X size={18} weight="bold" />
-                </button>
+                </Button>
               </header>
 
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-7">
-                <div className="mb-5 flex flex-wrap items-center gap-3">
-                  <input
+                <div className="min-w-0 mb-5 flex flex-wrap items-center gap-3 [&>*]:min-w-0 max-w-full">
+                  <FileInput
                     id={inputId}
-                    type="file"
                     accept=".md,.markdown,.txt,text/markdown,text/plain"
                     disabled={loading}
-                    className="peer sr-only"
+                    className="peer"
                     onChange={(event) => {
                       void loadFile(event.currentTarget.files?.[0]);
                       event.currentTarget.value = "";
@@ -138,22 +136,22 @@ export default function MarkdownFileViewer({
                 {error && (
                   <p
                     role="alert"
-                    className="mb-4 rounded-lg border-2 border-ink bg-pink/30 p-3 font-bold"
+                    className="mb-4 rounded-lg border-2 border-outline bg-pink/30 p-3 font-bold"
                   >
                     {error}
                   </p>
                 )}
 
                 {text ? (
-                  <article className="rounded-lg border-2 border-ink bg-surface p-4 sm:p-6">
-                    <div className="mb-4 flex items-center gap-2 border-b-2 border-dashed border-divider pb-3 text-sm font-black uppercase text-muted">
+                  <article className="rounded-lg border-2 border-outline bg-surface p-4 sm:p-6">
+                    <div className="min-w-0 mb-4 flex items-center gap-2 border-b-2 border-dashed border-divider pb-3 text-sm font-black uppercase text-muted [&>*]:min-w-0 max-w-full">
                       <FileText size={19} weight="duotone" aria-hidden="true" />
                       Document
                     </div>
-                    <Markdown text={text} className="md-doc--viewer" />
+                    <Markdown text={text} fullWidth />
                   </article>
                 ) : (
-                  <div className="flex min-h-56 flex-col items-center justify-center rounded-lg border-2 border-dashed border-divider bg-surface/70 px-5 py-10 text-center">
+                  <div className="min-w-0 flex min-h-56 flex-col items-center justify-center rounded-lg border-2 border-dashed border-divider bg-surface/70 px-5 py-10 text-center [&>*]:min-w-0 max-w-full">
                     <BookOpenText size={40} weight="duotone" aria-hidden="true" />
                     <h3 className="mt-3 text-xl font-black">
                       {loading ? "Reading your file…" : "Your document will appear here"}

@@ -76,7 +76,7 @@ export default function Turnstile({
   }, [siteKey]);
 
   return (
-    <div className="flex justify-center">
+    <div className="min-w-0 flex justify-center [&>*]:min-w-0 max-w-full">
       <div ref={boxRef} />
     </div>
   );

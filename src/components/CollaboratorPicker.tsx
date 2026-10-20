@@ -1,7 +1,8 @@
+import { Button } from "./Button";
 import React, { useMemo, useState } from "react";
 import { MagnifyingGlass, X } from "@phosphor-icons/react";
 import Avatar from "./Avatar";
-import Input from "./Input";
+import Input, { Checkbox } from "./Input";
 import type { Profile } from "../data/types";
 
 type CollaboratorPickerProps = {
@@ -46,24 +47,25 @@ export default function CollaboratorPicker({
     .filter((p): p is Profile => Boolean(p));
 
   return (
-    <div className="rounded-2xl border-[3px] border-ink bg-surface p-3">
+    <div className="rounded-2xl border-[3px] border-outline bg-surface p-3">
       {selectedProfiles.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-2">
+        <div className="min-w-0 mb-2 flex flex-wrap gap-2 [&>*]:min-w-0 max-w-full">
           {selectedProfiles.map((p) => (
             <span
               key={p.id}
-              className="inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-yellow py-0.5 pl-0.5 pr-1.5 text-xs font-black"
+              className="min-w-0 inline-flex items-center gap-1.5 rounded-full border-2 border-outline bg-yellow py-0.5 pl-0.5 pr-1.5 text-xs font-black [&>*]:min-w-0 max-w-full"
             >
               <Avatar name={p.name} color={p.color} imageUrl={p.imageUrl} size="sm" />
-              {p.name}
-              <button
+              <span className="min-w-0 wrap-anywhere">{p.name}</span>
+              <Button
+                variant="plain"
                 type="button"
                 onClick={() => toggle(p.id)}
                 aria-label={`Remove ${p.name} as collaborator`}
-                className="rounded-full border border-ink bg-surface p-0.5"
+                className="rounded-full border border-outline bg-surface p-0.5"
               >
                 <X size={12} weight="bold" />
-              </button>
+              </Button>
             </span>
           ))}
         </div>
@@ -89,13 +91,8 @@ export default function CollaboratorPicker({
           const checked = selectedSet.has(p.id);
           return (
             <li key={p.id}>
-              <label className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-black hover:bg-cream">
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggle(p.id)}
-                  className="h-4 w-4 shrink-0 accent-purple"
-                />
+              <label className="min-w-0 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-black hover:bg-cream [&>*]:min-w-0 max-w-full">
+                <Checkbox checked={checked} onChange={() => toggle(p.id)} />
                 <Avatar name={p.name} color={p.color} imageUrl={p.imageUrl} size="sm" />
                 <span className="min-w-0">
                   <span className="block truncate">{p.name}</span>

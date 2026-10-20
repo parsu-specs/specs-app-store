@@ -1,8 +1,11 @@
+import { ButtonLink } from "./Button";
 import Brand from "./Brand";
+import { useAuth } from "../auth/AuthProvider";
 import { CONTACT_EMAIL } from "../data/team";
-import { ROUTES } from "../pages/routes";
+import { ROUTES, isProtectedRoute, navigateInternalLink } from "../pages/routes";
 
 const exploreLinks = [
+  { label: "Home", href: ROUTES.landing },
   { label: "Discover", href: ROUTES.discover },
   { label: "Developers", href: ROUTES.developers },
   { label: "Feed", href: ROUTES.feed },
@@ -11,9 +14,15 @@ const exploreLinks = [
 ];
 
 export default function Footer() {
+  const { user } = useAuth();
+  const visibleLinks = [
+    ...exploreLinks.filter((link) => user || !isProtectedRoute(link.href)),
+    ...(!user ? [{ label: "Sign in", href: ROUTES.signin }] : []),
+  ];
+
   return (
-    <footer className="mt-16 border-t-[3px] border-ink bg-purple text-surface">
-      <div className="mx-auto grid max-w-7xl gap-10 px-5 py-12 sm:px-8 md:grid-cols-[1.2fr_.8fr_1fr] lg:px-10">
+    <footer className="mt-16 border-t-[3px] border-outline bg-purple text-surface">
+      <div className="min-w-0 mx-auto grid [&>*]:min-w-0 max-w-7xl gap-10 px-5 py-12 sm:px-8 md:grid-cols-[minmax(0,1.2fr)_minmax(0,.8fr)_minmax(0,1fr)] lg:px-10">
         <div>
           <Brand light />
           <p className="mt-4 max-w-sm text-sm font-bold leading-6 opacity-90">
@@ -24,14 +33,16 @@ export default function Footer() {
         <nav aria-label="Footer">
           <p className="text-xs font-black uppercase opacity-80">Explore</p>
           <ul className="mt-3 space-y-2">
-            {exploreLinks.map((link) => (
+            {visibleLinks.map((link) => (
               <li key={link.href}>
-                <a
+                <ButtonLink
+                  variant="plain"
                   href={link.href}
+                  onClick={navigateInternalLink}
                   className="text-sm font-black underline-offset-4 hover:underline"
                 >
                   {link.label}
-                </a>
+                </ButtonLink>
               </li>
             ))}
           </ul>
@@ -41,17 +52,21 @@ export default function Footer() {
           <p className="mt-3 text-sm font-bold leading-6 opacity-90">
             Suggestions, concerns, or bug reports — we read everything.
           </p>
-          <a
+          <ButtonLink
+            variant="plain"
             href={`mailto:${CONTACT_EMAIL}`}
             className="mt-2 inline-block break-all text-sm font-black underline decoration-2 underline-offset-4"
           >
             {CONTACT_EMAIL}
-          </a>
+          </ButtonLink>
         </div>
       </div>
       <div className="border-t-2 border-surface/30">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-5 py-5 text-xs font-bold opacity-90 sm:px-8 lg:px-10">
-          <span>© {new Date().getFullYear()} Specs App Store</span>
+        <div className="min-w-0 mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-5 py-5 text-xs font-bold opacity-90 sm:px-8 lg:px-10 [&>*]:min-w-0">
+          <span>
+            CodeCanvas · Est. 2026 · Society of Programmers and Enthusiasts in Computer Science
+            (SPECS)
+          </span>
           <span>Built together by the SPECS community.</span>
         </div>
       </div>

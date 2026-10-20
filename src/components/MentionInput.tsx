@@ -1,3 +1,4 @@
+import { Button } from "./Button";
 import React, { useMemo, useRef, useState } from "react";
 import Avatar from "./Avatar";
 import Input from "./Input";
@@ -123,25 +124,26 @@ export default function MentionInput({
         <ul
           role="listbox"
           aria-label="Developer suggestions"
-          className="absolute inset-x-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-xl border-[3px] border-ink bg-surface p-1.5 shadow-[4px_4px_0_var(--color-ink)]"
+          className="absolute inset-x-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-xl border-[3px] border-outline bg-surface p-1.5 shadow-[4px_4px_0_var(--color-outline)]"
         >
           {suggestions.map((p, i) => (
             <li key={p.id} role="option" aria-selected={i === activeIndex}>
-              <button
+              <Button
+                variant="plain"
                 type="button"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   complete(p.name);
                 }}
                 onMouseEnter={() => setHighlight(i)}
-                className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm font-black ${i === activeIndex ? "bg-yellow" : ""}`}
+                className={`min-w-0 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm font-black ${i === activeIndex ? "bg-yellow" : ""} [&>*]:min-w-0 max-w-full`}
               >
                 <Avatar name={p.name} color={p.color} imageUrl={p.imageUrl} size="sm" />
                 <span className="min-w-0">
                   <span className="block truncate">{p.name}</span>
                   <span className="block truncate text-xs font-bold text-muted">{p.role}</span>
                 </span>
-              </button>
+              </Button>
             </li>
           ))}
         </ul>

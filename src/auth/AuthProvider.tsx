@@ -7,7 +7,12 @@ type AuthContext = {
   user: User | null;
   loading: boolean;
   signin: (email: string, password: string, captchaToken?: string) => Promise<boolean>;
-  signup: (name: string, email: string, password: string, captchaToken?: string) => Promise<string | null>;
+  signup: (
+    name: string,
+    email: string,
+    password: string,
+    captchaToken?: string,
+  ) => Promise<string | null>;
   signinWithGoogleAccount: (
     account: GoogleAccount,
   ) => Promise<{ ok: boolean; user?: User; picture?: string; error?: string }>;
@@ -67,7 +72,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session);
       return { ok: true as const, user: session, picture };
     } catch (e) {
-      return { ok: false as const, error: e instanceof Error ? e.message : "Google sign-in failed." };
+      return {
+        ok: false as const,
+        error: e instanceof Error ? e.message : "Google sign-in failed.",
+      };
     }
   };
 

@@ -1,11 +1,12 @@
+import { ButtonLink, Button } from "../components/Button";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, EnvelopeSimple, Sparkle, X } from "@phosphor-icons/react";
+import { EnvelopeSimple, Sparkle, X } from "@phosphor-icons/react";
 import Avatar from "../components/Avatar";
 import Brand from "../components/Brand";
 import Footer from "../components/Footer";
+import SiteHeader from "../components/SiteHeader";
 import { APP_INFO, CONTACT_EMAIL, TEAM } from "../data/team";
-import { ROUTES } from "./routes";
 
 export default function About() {
   const [lightbox, setLightbox] = useState<{ src: string; name: string } | null>(null);
@@ -24,18 +25,13 @@ export default function About() {
   }, [lightbox]);
   return (
     <div className="min-h-screen">
-      <div className="px-5 pt-6 sm:px-8 lg:px-10">
-        <a
-          href={ROUTES.root}
-          className="inline-flex items-center gap-2 text-sm font-black underline-offset-4 hover:underline"
-        >
-          <ArrowLeft size={18} weight="bold" /> Back to home
-        </a>
-      </div>
+      <SiteHeader page="about" />
 
       <header className="mx-auto max-w-6xl px-5 pb-4 pt-10 text-center sm:px-8">
-        <Brand className="mb-6 inline-flex" />
-        <p className="ink-stamp mx-auto bg-surface">About the app</p>
+        <Brand className="min-w-0 mb-6 inline-flex [&>*]:min-w-0 max-w-full" />
+        <p className="min-w-0 inline-flex -rotate-2 items-center gap-2 border-2 border-dashed border-purple px-3 py-1 text-xs font-black uppercase text-purple mx-auto bg-surface [&>*]:min-w-0 max-w-full">
+          About the app
+        </p>
         <h1 className="mx-auto mt-4 max-w-3xl text-4xl font-black sm:text-5xl">{APP_INFO.name}</h1>
         <p className="mx-auto mt-3 max-w-2xl text-lg font-bold text-muted">{APP_INFO.tagline}</p>
         <p className="mx-auto mt-5 max-w-3xl leading-8 text-body">{APP_INFO.description}</p>
@@ -46,11 +42,11 @@ export default function About() {
           <p className="text-xs font-black uppercase text-purple">What you can do here</p>
           <h2 className="mt-1 text-2xl font-black">Everything in one place.</h2>
         </div>
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="min-w-0 grid [&>*]:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-6 max-w-full">
           {APP_INFO.features.map((f, i) => (
             <article
               key={f.title}
-              className={`toon-card paper-note rounded-lg p-6 pt-10 ${i % 3 === 0 ? "rotate-[-1deg]" : i % 3 === 1 ? "rotate-1" : "rotate-[-.5deg]"}`}
+              className={`toon-card toon-paper bg-paper rounded-lg p-6 pt-10 ${i % 3 === 0 ? "rotate-[-1deg]" : i % 3 === 1 ? "rotate-1" : "rotate-[-.5deg]"}`}
             >
               <h3 className="text-xl font-black">{f.title}</h3>
               <p className="mt-2 leading-7 text-body">{f.body}</p>
@@ -64,14 +60,17 @@ export default function About() {
           <p className="text-xs font-black uppercase text-purple">The builders</p>
           <h2 className="mt-1 text-2xl font-black">Developers of the Specs App Store.</h2>
         </div>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="min-w-0 grid [&>*]:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-6 max-w-full">
           {TEAM.map((member) => (
             <article key={member.name} className="toon-card rounded-lg bg-surface p-6 text-center">
-              <div className="flex justify-center">
+              <div className="min-w-0 flex justify-center [&>*]:min-w-0 max-w-full">
                 {member.imageUrl ? (
-                  <button
+                  <Button
+                    variant="plain"
                     type="button"
-                    onClick={() => setLightbox({ src: member.imageUrl as string, name: member.name })}
+                    onClick={() =>
+                      setLightbox({ src: member.imageUrl as string, name: member.name })
+                    }
                     aria-label={`View ${member.name}'s photo full size`}
                     title="View full size"
                     className="rounded-full transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-purple"
@@ -82,7 +81,7 @@ export default function About() {
                       imageUrl={member.imageUrl}
                       size="xl"
                     />
-                  </button>
+                  </Button>
                 ) : (
                   <Avatar
                     name={member.name}
@@ -104,23 +103,25 @@ export default function About() {
         <div className="mb-6 text-center">
           <p className="text-xs font-black uppercase text-purple">Contact</p>
           <h2 className="mt-1 text-2xl font-black">Suggestions, concerns, or bug reports.</h2>
-          <p className="mt-2 font-bold text-muted">
-            Reach us directly — we read everything.
-          </p>
+          <p className="mt-2 font-bold text-muted">Reach us directly — we read everything.</p>
         </div>
-        <div className="toon-card paper-note rounded-lg bg-sky p-6 pt-10 text-center sm:p-8 sm:pt-12">
+        <div className="toon-card toon-paper rounded-lg bg-sky p-6 pt-10 text-center sm:p-8 sm:pt-12">
           <EnvelopeSimple size={40} weight="duotone" className="mx-auto text-purple" />
           <p className="mt-4 font-bold text-body">Email us anytime at</p>
-          <a
+          <ButtonLink
+            variant="plain"
             href={`mailto:${CONTACT_EMAIL}`}
             className="mt-1 inline-block break-all text-xl font-black text-purple underline decoration-2 underline-offset-4 sm:text-2xl"
           >
             {CONTACT_EMAIL}
-          </a>
+          </ButtonLink>
         </div>
       </section>
 
-      <div className="pointer-events-none flex justify-center" aria-hidden="true">
+      <div
+        className="min-w-0 pointer-events-none flex justify-center [&>*]:min-w-0 max-w-full"
+        aria-hidden="true"
+      >
         <Sparkle size={40} weight="duotone" className="text-pink" />
       </div>
 
@@ -131,7 +132,7 @@ export default function About() {
             aria-modal="true"
             aria-label={`${lightbox.name}'s photo full size`}
             onClick={() => setLightbox(null)}
-            className="fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-ink/80 p-4"
+            className="min-w-0 fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-ink/80 p-4 [&>*]:min-w-0 max-w-full"
           >
             <div
               onClick={(e) => e.stopPropagation()}
@@ -142,15 +143,17 @@ export default function About() {
                 alt={`${lightbox.name}'s photo full size`}
                 className="max-h-[85vh] w-full object-contain"
               />
-              <button
+              <Button
+                variant="icon"
+                size="default"
                 type="button"
                 onClick={() => setLightbox(null)}
                 aria-label="Close full size image"
                 autoFocus
-                className="absolute right-3 top-3 rounded-full border-2 border-ink bg-surface p-2"
+                className="absolute right-3 top-3"
               >
                 <X size={18} weight="bold" />
-              </button>
+              </Button>
             </div>
           </div>,
           document.body,

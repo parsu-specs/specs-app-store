@@ -78,7 +78,12 @@ export function createSupabaseAuthRepo(): AuthRepo {
       return sessionUser(data.user.id, data.user.email, data.user.user_metadata?.["name"]);
     },
 
-    async signup(name: string, email: string, password: string, captchaToken?: string): Promise<User> {
+    async signup(
+      name: string,
+      email: string,
+      password: string,
+      captchaToken?: string,
+    ): Promise<User> {
       const cleanName = name.trim().slice(0, 40);
       if (!cleanName) throw new Error("Name is required.");
       const { data, error } = await getSupabase().auth.signUp({

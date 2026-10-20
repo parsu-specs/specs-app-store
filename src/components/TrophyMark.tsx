@@ -4,27 +4,27 @@ type Place = 1 | 2 | 3;
 
 const TIERS: Record<
   Place,
-  { light: string; mid: string; dark: string; glow: string; label: string }
+  { light: string; mid: string; dark: string; glowClassName: string; label: string }
 > = {
   1: {
-    light: "#FFF7C2",
-    mid: "#F5C518",
-    dark: "#8A6100",
-    glow: "rgba(245, 197, 24, 0.6)",
+    light: "var(--color-gold-light)",
+    mid: "var(--color-gold-mid)",
+    dark: "var(--color-gold-dark)",
+    glowClassName: "drop-shadow-[0_0_3px_var(--color-gold-glow)]",
     label: "Ranked #1",
   },
   2: {
-    light: "#FFFFFF",
-    mid: "#C3CAD6",
-    dark: "#59616F",
-    glow: "rgba(195, 202, 214, 0.6)",
+    light: "var(--color-metal-highlight)",
+    mid: "var(--color-silver-mid)",
+    dark: "var(--color-silver-dark)",
+    glowClassName: "drop-shadow-[0_0_3px_var(--color-silver-glow)]",
     label: "Ranked #2",
   },
   3: {
-    light: "#F9D3A6",
-    mid: "#D08A4A",
-    dark: "#6E3F1D",
-    glow: "rgba(208, 138, 74, 0.55)",
+    light: "var(--color-bronze-light)",
+    mid: "var(--color-bronze-mid)",
+    dark: "var(--color-bronze-dark)",
+    glowClassName: "drop-shadow-[0_0_3px_var(--color-bronze-glow)]",
     label: "Ranked #3",
   },
 };
@@ -38,8 +38,7 @@ export default function TrophyMark({ place, size = 24 }: { place: Place; size?: 
       role="img"
       aria-label={tier.label}
       title={tier.label}
-      className="ml-1 inline-flex shrink-0 items-center align-middle transition-transform duration-150 hover:scale-125"
-      style={{ filter: `drop-shadow(0 0 3px ${tier.glow})` }}
+      className={`min-w-0 ml-1 inline-flex shrink-0 items-center align-middle transition-transform duration-150 hover:scale-125 ${tier.glowClassName} [&>*]:min-w-0 max-w-full`}
     >
       <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
         <defs>
@@ -76,7 +75,7 @@ export default function TrophyMark({ place, size = 24 }: { place: Place; size?: 
         <path
           d="M10.2 6.5 C10.2 9.8 11.4 12.3 13.4 13.8"
           fill="none"
-          stroke="#FFFFFF"
+          stroke="var(--color-metal-highlight)"
           strokeWidth="1.8"
           strokeLinecap="round"
           opacity="0.65"

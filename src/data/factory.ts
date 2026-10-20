@@ -2,11 +2,7 @@ import type { AppRepo, AuthRepo, ProfileRepo } from "./repositories";
 import { createLocalAppRepo } from "./local/localApps";
 import { createLocalAuthRepo } from "./local/localAuth";
 import { createLocalProfileRepo } from "./local/localProfiles";
-import {
-  createHttpAppRepo,
-  createHttpAuthRepo,
-  createHttpProfileRepo,
-} from "./http/httpRepos";
+import { createHttpAppRepo, createHttpAuthRepo, createHttpProfileRepo } from "./http/httpRepos";
 import {
   createSupabaseAppRepo,
   createSupabaseAuthRepo,
@@ -15,7 +11,7 @@ import {
 
 // VITE_DATA_SOURCE=local (default, browser localStorage) | supabase | http.
 // UI must only depend on these interfaces, never on localStorage/fetch directly.
-// Switching sources needs no UI edits; see BACKEND_READINESS.md for what each
+// Switching sources needs no UI edits; see docs/backends.md for what each
 // source requires.
 const source = import.meta.env.VITE_DATA_SOURCE ?? "local";
 

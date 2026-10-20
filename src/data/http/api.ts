@@ -5,7 +5,7 @@
 export class BackendNotConfiguredError extends Error {
   constructor() {
     super(
-      "Backend not configured. Set VITE_API_URL (and VITE_DATA_SOURCE=http) per BACKEND_READINESS.md.",
+      "Backend not configured. Set VITE_API_URL (and VITE_DATA_SOURCE=http) per docs/backends.md.",
     );
     this.name = "BackendNotConfiguredError";
   }

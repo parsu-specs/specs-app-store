@@ -1,3 +1,4 @@
+import { Button } from "./Button";
 import React from "react";
 import type { Profile } from "../data/types";
 
@@ -26,7 +27,8 @@ export default function MentionText({ text, profiles, onOpenProfile }: MentionTe
         const hit = part.startsWith("@") ? byLower.get(part.slice(1).toLowerCase()) : undefined;
         if (!hit) return <React.Fragment key={i}>{part}</React.Fragment>;
         return (
-          <button
+          <Button
+            variant="text"
             key={i}
             type="button"
             onClick={() => onOpenProfile(hit.id)}
@@ -34,7 +36,7 @@ export default function MentionText({ text, profiles, onOpenProfile }: MentionTe
             className="font-black text-purple underline decoration-2 underline-offset-4"
           >
             @{hit.name}
-          </button>
+          </Button>
         );
       })}
     </>

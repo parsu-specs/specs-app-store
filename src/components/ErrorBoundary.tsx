@@ -33,7 +33,7 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, E
   render(): React.ReactNode {
     if (this.state.error) {
       return (
-        <div role="alert" className="toon-card paper-note rounded-lg p-10 text-center">
+        <div role="alert" className="toon-card toon-paper bg-paper rounded-lg p-10 text-center">
           <WarningCircle size={36} weight="duotone" className="mx-auto text-alert" />
           <h3 className="mt-3 text-xl font-black">This {this.props.name} section crashed</h3>
           <p className="mt-1 font-bold text-muted">Your work is safe — try loading it again.</p>

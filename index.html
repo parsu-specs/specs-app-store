@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="min-h-full w-full max-w-full scroll-smooth [scrollbar-gutter:stable]">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,10 +10,24 @@
     />
     <title>CodeCanvas · The app store for developers</title>
   </head>
-  <body>
-    <div id="root">
-      <div class="font-loader" role="status" aria-label="Loading CodeCanvas">
-        <span></span><span></span><span></span>
+  <body
+    class="relative isolate m-0 min-h-full w-full min-w-0 max-w-full bg-transparent font-sans text-ink"
+  >
+    <div id="root" class="min-h-full w-full min-w-0 max-w-full overflow-x-clip">
+      <div
+        class="flex min-h-screen items-center justify-center gap-2"
+        role="status"
+        aria-label="Loading CodeCanvas"
+      >
+        <span
+          class="size-3 animate-loader-bounce rounded-full border-2 border-outline bg-yellow motion-reduce:animate-none"
+        ></span>
+        <span
+          class="size-3 animate-loader-bounce rounded-full border-2 border-outline bg-pink [animation-delay:120ms] motion-reduce:animate-none"
+        ></span>
+        <span
+          class="size-3 animate-loader-bounce rounded-full border-2 border-outline bg-mint [animation-delay:240ms] motion-reduce:animate-none"
+        ></span>
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
