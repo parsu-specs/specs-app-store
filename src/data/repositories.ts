@@ -40,13 +40,24 @@ export type AuthRepo = {
   hasPassword(): Promise<boolean>;
 };
 
+/** toggleVote result: the refreshed app, plus spam-guard signalling. */
+export type VoteResult = AppItem & {
+  /**
+   * True when this click tripped the spam guard: the vote was rejected and a
+   * server-side pause started (it survives refreshes and other devices).
+   */
+  pauseStarted?: boolean;
+  /** Pause length in whole seconds; present when pauseStarted is true. */
+  pausedSeconds?: number;
+};
+
 export type AppRepo = {
   listApps(params?: ListAppsParams): Promise<AppItem[]>;
   getApp(id: string, userId?: string): Promise<AppItem>;
   createApp(input: AppInput, author: User): Promise<AppItem>;
   updateApp(appId: string, author: User, patch: AppUpdate): Promise<AppItem>;
   deleteApp(appId: string, author: User): Promise<void>;
-  toggleVote(appId: string, userId: string): Promise<AppItem>;
+  toggleVote(appId: string, userId: string): Promise<VoteResult>;
   /** Remaining vote pause for the caller, in whole seconds (0 = not paused). */
   getVoteTimeoutSeconds(): Promise<number>;
   /**

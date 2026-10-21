@@ -1127,7 +1127,19 @@ export default function useStoreController() {
         const updated = await getAppRepo().toggleVote(id, me.id);
         setApps((items) => items.map((app) => (app.id === id ? updated : app)));
         setFullApps((items) => items.map((app) => (app.id === id ? updated : app)));
-        playVoteSound();
+        if (updated.pauseStarted) {
+          // This click tripped the server's spam guard: the vote was rejected
+          // and a server-side pause started. Mirror it locally so queued
+          // clicks show the countdown — the server enforces it across
+          // refreshes and devices either way.
+          const secs = updated.pausedSeconds ?? 0;
+          votePausedUntil.current = Date.now() + (secs > 0 ? secs * 1000 : 5 * 60_000);
+          flashVoteNotice(
+            `Spamming detected — voting is paused for ${formatCountdown(secs > 0 ? secs : 300)}.`,
+          );
+        } else {
+          playVoteSound();
+        }
       } catch (e) {
         // Reconcile with the server instead of a stale snapshot: queued
         // toggles or polls may have moved state since this click started.
@@ -1170,6 +1182,28 @@ export default function useStoreController() {
       }
     });
   };
+
+  // Restore a server-side vote pause after a page refresh: the pause lives
+  // in the database (vote_timeouts), so it must reappear without waiting for
+  // the next rejected click.
+  useEffect(() => {
+    if (!user) {
+      votePausedUntil.current = 0;
+      return;
+    }
+    let cancelled = false;
+    void getAppRepo()
+      .getVoteTimeoutSeconds()
+      .then((secs) => {
+        if (!cancelled && secs > 0) votePausedUntil.current = Date.now() + secs * 1000;
+      })
+      .catch(() => {
+        // Enforcement stays server-side even if this prefetch fails.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();

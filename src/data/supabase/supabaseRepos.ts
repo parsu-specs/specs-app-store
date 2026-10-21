@@ -12,6 +12,7 @@ import {
   type GoogleSignInResult,
   type ProfilePatch,
   type ProfileRepo,
+  type VoteResult,
 } from "../repositories";
 import { isSafeImageUrl } from "../../utils/urls";
 import {
@@ -125,16 +126,39 @@ export function createSupabaseAuthRepo(): AuthRepo {
 
     async updatePassword(newPassword: string): Promise<void> {
       if (newPassword.length < 6) throw new Error("Password must be at least 6 characters.");
-      const { error } = await getSupabase().auth.updateUser({ password: newPassword });
+      const supabase = getSupabase();
+      // GoTrue never adds an "email" identity when an OAuth (Google) user
+      // sets a password — it only stores the hash — so hasPassword() has no
+      // identity to find afterwards. Stash a metadata flag in the same
+      // atomic update as a durable, server-side signal. updateUser merges
+      // user_metadata, so the name written by updateName() survives.
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+        data: { has_password: true },
+      });
       if (error) throw new Error(error.message);
+      // Refresh session so the next getUser() re-reads server-side metadata.
+      await supabase.auth.refreshSession();
     },
 
-    // Email identities mean a password exists; Google-only accounts have none.
-    // getUser() validates the JWT server-side, so this can't be forged.
+    // Email identities mean a password exists for email-signup accounts.
+    // Google-origin accounts never gain an email identity when a password
+    // is added (GoTrue only sets the hash), so updatePassword() also writes
+    // a user_metadata flag that we honor here. getUser() validates the JWT
+    // server-side, so these signals can't come from a forged local session.
     async hasPassword(): Promise<boolean> {
-      const { data } = await getSupabase().auth.getUser();
-      const identities = (data.user?.identities ?? []) as { provider?: string }[];
-      return identities.some((identity) => identity.provider === "email");
+      const supabase = getSupabase();
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) {
+        // Unknown is not "no password": throw so callers keep their last
+        // known state instead of caching a false nudge on a flaky request.
+        throw new Error(error?.message ?? "Could not check sign-in methods.");
+      }
+      const identities = (data.user.identities ?? []) as { provider?: string }[];
+      if (identities.some((identity) => identity.provider === "email")) return true;
+      const providers = (data.user.app_metadata?.["providers"] ?? []) as unknown[];
+      if (providers.includes("email")) return true;
+      return data.user.user_metadata?.["has_password"] === true;
     },
     async signinWithGoogleAccount(_account: GoogleAccount): Promise<GoogleSignInResult> {
       await getSupabase().auth.signInWithOAuth({
@@ -405,14 +429,32 @@ export function createSupabaseAppRepo(): AppRepo {
       if (error) throw new Error(error.message);
     },
 
-    async toggleVote(appId: string, userId: string) {
+    async toggleVote(appId: string, userId: string): Promise<VoteResult> {
       const { data, error } = await getSupabase().rpc("toggle_app_vote", { p_app_id: appId });
       if (error) throw new Error(error.message);
-      const payload = data as { row: Record<string, unknown>; liked: boolean };
+      const payload = data as {
+        row: Record<string, unknown>;
+        liked: boolean;
+        pause_started?: boolean;
+        paused_seconds?: number;
+      } | null;
       if (!payload?.row) throw new NotFoundError("Project not found.");
-      const app = toApp(toAppRow(payload.row));
+      const row = toApp(toAppRow(payload.row));
       const refreshed = await this.getApp(appId, userId);
-      return { ...app, comments: refreshed.comments, viewerHasLiked: Boolean(payload.liked) };
+      return {
+        // getApp recomputes comments (and viewer state) from the database;
+        // the rpc row stays authoritative for the counter, and `liked` is
+        // the post-toggle viewer state (unchanged when a pause rejected it).
+        ...refreshed,
+        votes: row.votes,
+        viewerHasVoted: Boolean(payload.liked),
+        ...(payload.pause_started
+          ? {
+              pauseStarted: true,
+              pausedSeconds: Math.max(0, Math.ceil(Number(payload.paused_seconds) || 0)),
+            }
+          : {}),
+      };
     },
 
     async getVoteTimeoutSeconds(): Promise<number> {

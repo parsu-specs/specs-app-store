@@ -189,9 +189,18 @@ export function createLocalAuthRepo(): AuthRepo {
         throw new Error("You are not signed in.");
       }
       const users = loadLocalUsers();
-      const account = users.find((u) => u.id === session.id);
+      let account = users.find((u) => u.id === session.id);
       if (!account) {
-        throw new Error("This account signs in with Google — no password to change.");
+        // Google-only account — add it to LOCAL_USERS_KEY so a password can be set
+        // and email sign-in can be unlocked alongside Google.
+        account = {
+          id: session.id,
+          email: session.email,
+          name: session.name,
+          salt: randomSalt(),
+          passwordHash: "",
+        };
+        users.push(account);
       }
       const salt = randomSalt();
       const passwordHash = await hashPassword(newPassword, salt);

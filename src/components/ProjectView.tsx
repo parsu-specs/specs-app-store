@@ -213,6 +213,28 @@ export default function ProjectView({
   const editFormRef = useRef<HTMLFormElement>(null);
   useScrollToForm(editing, editFormRef);
 
+  // Restore a server-side vote pause after a page refresh: the pause lives
+  // in the database (vote_timeouts), so it must reappear without waiting for
+  // the next rejected click. The server enforces it regardless.
+  useEffect(() => {
+    if (!currentUser) {
+      votePausedUntil.current = 0;
+      return;
+    }
+    let cancelled = false;
+    void getAppRepo()
+      .getVoteTimeoutSeconds()
+      .then((secs) => {
+        if (!cancelled && secs > 0) votePausedUntil.current = Date.now() + secs * 1000;
+      })
+      .catch(() => {
+        // Enforcement stays server-side even if this prefetch fails.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser?.id]);
+
   const vote = () => {
     if (!app || !currentUser) return;
     const me = currentUser;
@@ -242,7 +264,17 @@ export default function ProjectView({
         const updated = await getAppRepo().toggleVote(targetId, me.id);
         setApp(updated);
         onChanged();
-        playVoteSound();
+        if (updated.pauseStarted) {
+          // Tripped the server's spam guard: vote rejected, server-side pause
+          // started (survives refreshes; mirrored here for the countdown).
+          const secs = updated.pausedSeconds ?? 0;
+          votePausedUntil.current = Date.now() + (secs > 0 ? secs * 1000 : 5 * 60_000);
+          flashVoteNotice(
+            `Spamming detected — voting is paused for ${formatCountdown(secs > 0 ? secs : 300)}.`,
+          );
+        } else {
+          playVoteSound();
+        }
       } catch (e) {
         // Reconcile with the server (see Store vote): never a stale snapshot.
         try {

@@ -8,6 +8,14 @@
 --     pauses break the chain and exempt).
 -- Either tripwire pauses voting for 5 minutes. Normal browsing never trips:
 -- humans don't click 5x in 10s or chain 10 votes back-to-back.
+--
+-- TRANSACTION RULE (the bug this file must never reintroduce): a pause row
+-- only survives if the call that writes it COMMITS. RAISE EXCEPTION aborts
+-- the whole RPC transaction and rolls the insert back — the original version
+-- raised right after inserting vote_timeouts, so the pause vanished on page
+-- refresh (it only ever lived in the browser). Now the tripping call returns
+-- normally, the pause commits, and every later call bounces off it.
+--
 -- Run in the Supabase SQL editor (main project). Re-runnable.
 -- Companion: toggle_app_vote below is mirrored in migration_counters.sql
 -- for fresh installs (same check_vote_spam line).
@@ -19,8 +27,11 @@ create table if not exists vote_timeouts (
 );
 alter table vote_timeouts enable row level security;
 
+-- 'ok' = vote may proceed; 'tripped' = this call started a pause (the vote
+-- that carried it is rejected by toggle_app_vote, but the transaction must
+-- still commit so the pause row survives).
 create or replace function check_vote_spam()
-returns void
+returns text
 language plpgsql
 security definer
 set search_path = public
@@ -38,7 +49,10 @@ begin
   if v_uid is null then
     raise exception 'Sign in to vote.';
   end if;
-  -- Already paused: report remaining time, no new logging.
+  -- Hygiene: drop expired pauses so the table stays tiny.
+  delete from vote_timeouts where until <= now();
+  -- Already paused: report remaining time, no new logging. This path writes
+  -- nothing, so raising here is rollback-safe.
   select until into v_until from vote_timeouts where actor_id = v_uid;
   if found and v_until > now() then
     v_secs := ceil(extract(epoch from (v_until - now())))::int;
@@ -71,19 +85,26 @@ begin
       v_run := v_run + 1;
     end loop;
     if v_run < 10 then
-      return;
+      return 'ok';
     end if;
   end if;
+  -- Tripwire fired: persist the pause, then return WITHOUT raising so the
+  -- enclosing transaction commits and the row survives the page refresh.
   insert into vote_timeouts (actor_id, until)
     values (v_uid, now() + interval '5 minutes')
     on conflict (actor_id) do update set until = excluded.until;
-  raise exception 'Spamming detected — voting is paused for 5 minutes.';
+  return 'tripped';
 end;
 $$;
 
 -- Same toggle as migration_counters.sql, with the spam gate instead of the
 -- flat 30/min check. CREATE OR REPLACE so existing databases pick it up
 -- from this file alone.
+--
+-- Spam-guard contract: when check_vote_spam() returns 'tripped' the vote is
+-- rejected (no counter change) but the call SUCCEEDS so the pause row
+-- commits; the payload then carries pause_started/paused_seconds for the UI.
+-- Raising instead would roll the pause back — see the TRANSACTION RULE above.
 create or replace function toggle_app_vote(p_app_id text)
 returns jsonb
 language plpgsql
@@ -94,11 +115,28 @@ declare
   v_uid text := auth.uid()::text;
   v_row apps%rowtype;
   v_liked boolean;
+  v_secs int;
 begin
   if v_uid is null then
     raise exception 'Sign in to vote.';
   end if;
-  perform check_vote_spam();
+  if check_vote_spam() = 'tripped' then
+    -- Vote rejected, pause committed with this transaction. Report the
+    -- unchanged row plus the pause so clients can announce it immediately.
+    select * into v_row from apps where id = p_app_id;
+    if v_row.id is null then
+      raise exception 'Project not found.';
+    end if;
+    v_liked := exists (select 1 from app_votes where app_id = p_app_id and user_id = v_uid);
+    select ceil(extract(epoch from (until - now())))::int into v_secs
+      from vote_timeouts where actor_id = v_uid;
+    return jsonb_build_object(
+      'row', to_jsonb(v_row),
+      'liked', v_liked,
+      'pause_started', true,
+      'paused_seconds', greatest(v_secs, 0)
+    );
+  end if;
   -- Permit the guarded counter write below for this transaction only
   -- (see the apps_votes_guard trigger in migration_votes_guard.sql).
   perform set_config('app.votes_rpc', 'on', true);
@@ -114,7 +152,12 @@ begin
   if v_row.id is null then
     raise exception 'Project not found.';
   end if;
-  return jsonb_build_object('row', to_jsonb(v_row), 'liked', v_liked);
+  return jsonb_build_object(
+    'row', to_jsonb(v_row),
+    'liked', v_liked,
+    'pause_started', false,
+    'paused_seconds', 0
+  );
 end;
 $$;
 
@@ -122,7 +165,8 @@ grant execute on function check_vote_spam() to authenticated;
 grant execute on function toggle_app_vote(text) to authenticated;
 
 -- Remaining pause for the caller, in whole seconds (0 = not paused).
--- Lets the UI answer "how much longer?" without attempting a toggle.
+-- Lets the UI answer "how much longer?" without attempting a toggle — and
+-- lets it restore the countdown right after a page refresh.
 create or replace function vote_timeout_seconds()
 returns int
 language plpgsql

@@ -18,9 +18,30 @@ function mockSignUp(result: SignUpResult) {
   } as never);
 }
 
-function mockGetUser(identities: { provider?: string }[]) {
+type MockUser = {
+  identities?: { provider?: string }[];
+  appMetadata?: Record<string, unknown>;
+  userMetadata?: Record<string, unknown>;
+};
+
+function mockGetUser(user: MockUser | null, message = "Lookup failed") {
   vi.mocked(getSupabase).mockReturnValue({
-    auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { identities } } }) },
+    auth: {
+      getUser: vi.fn().mockResolvedValue(
+        user
+          ? {
+              data: {
+                user: {
+                  identities: user.identities ?? [],
+                  app_metadata: user.appMetadata ?? {},
+                  user_metadata: user.userMetadata ?? {},
+                },
+              },
+              error: null,
+            }
+          : { data: { user: null }, error: { message } },
+      ),
+    },
   } as never);
 }
 
@@ -69,11 +90,62 @@ describe("supabase signup duplicate detection", () => {
 describe("supabase hasPassword", () => {
   it("is true with an email identity, false for Google-only", async () => {
     const auth = createSupabaseAuthRepo();
-    mockGetUser([{ provider: "email" }, { provider: "google" }]);
+    mockGetUser({ identities: [{ provider: "email" }, { provider: "google" }] });
     await expect(auth.hasPassword()).resolves.toBe(true);
-    mockGetUser([{ provider: "google" }]);
+    mockGetUser({ identities: [{ provider: "google" }] });
     await expect(auth.hasPassword()).resolves.toBe(false);
-    mockGetUser([]);
+    mockGetUser({ identities: [] });
     await expect(auth.hasPassword()).resolves.toBe(false);
+  });
+
+  it("honors the metadata flag for Google accounts that added a password", async () => {
+    // GoTrue never creates an email identity when an OAuth user sets a
+    // password, so updatePassword() writes user_metadata.has_password as the
+    // durable signal — the banner must not resurface after a hard refresh.
+    const auth = createSupabaseAuthRepo();
+    mockGetUser({
+      identities: [{ provider: "google" }],
+      userMetadata: { has_password: true },
+    });
+    await expect(auth.hasPassword()).resolves.toBe(true);
+    mockGetUser({ identities: [{ provider: "google" }], userMetadata: { name: "Ann" } });
+    await expect(auth.hasPassword()).resolves.toBe(false);
+  });
+
+  it("treats a failed lookup as unknown, not as 'no password'", async () => {
+    const auth = createSupabaseAuthRepo();
+    mockGetUser(null, "Network unreachable");
+    await expect(auth.hasPassword()).rejects.toThrow("Network unreachable");
+  });
+});
+
+describe("supabase updatePassword", () => {
+  it("stores the password and the has_password flag together", async () => {
+    const updateUser = vi.fn().mockResolvedValue({ data: { user: {} }, error: null });
+    const refreshSession = vi.fn().mockResolvedValue({});
+    vi.mocked(getSupabase).mockReturnValue({ auth: { updateUser, refreshSession } } as never);
+    await createSupabaseAuthRepo().updatePassword("secret1");
+    expect(updateUser).toHaveBeenCalledWith({
+      password: "secret1",
+      data: { has_password: true },
+    });
+    expect(refreshSession).toHaveBeenCalled();
+  });
+
+  it("surfaces Supabase errors", async () => {
+    const updateUser = vi
+      .fn()
+      .mockResolvedValue({ data: { user: null }, error: { message: "Weak password" } });
+    vi.mocked(getSupabase).mockReturnValue({ auth: { updateUser } } as never);
+    await expect(createSupabaseAuthRepo().updatePassword("secret1")).rejects.toThrow(
+      "Weak password",
+    );
+  });
+
+  it("rejects short passwords without touching Supabase", async () => {
+    const updateUser = vi.fn();
+    vi.mocked(getSupabase).mockReturnValue({ auth: { updateUser } } as never);
+    await expect(createSupabaseAuthRepo().updatePassword("short")).rejects.toThrow("at least 6");
+    expect(updateUser).not.toHaveBeenCalled();
   });
 });
