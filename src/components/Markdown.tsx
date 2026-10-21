@@ -24,7 +24,7 @@ export function sanitizeMarkdownUrl(url: string | undefined): string {
   return "#";
 }
 
-const headingClassName = "mt-[1.25em] mb-[.5em] font-black leading-[1.3] text-ink";
+const headingClassName = "mt-[1.25em] mb-[.5em] font-black leading-[1.3] text-foreground";
 
 // Each rendered element owns its utilities, including GFM tables and task lists.
 // The only child selectors live on this component's own wrapper/list/code block.
@@ -47,7 +47,7 @@ const components: Components = {
   a: ({ node: _node, ...props }) => (
     <a
       {...props}
-      className="font-extrabold text-purple underline decoration-2 underline-offset-[3px]"
+      className="font-extrabold text-primary underline decoration-2 underline-offset-[3px]"
     />
   ),
   ul: ({ node: _node, className = "", ...props }) => (
@@ -59,23 +59,23 @@ const components: Components = {
   li: ({ node: _node, className = "", ...props }) => (
     <li {...props} className={`my-[.3em] [&>ul]:my-[.3em] [&>ol]:my-[.3em] ${className}`} />
   ),
-  input: ({ node: _node, ...props }) => <input {...props} className="mr-[.4rem] accent-purple" />,
+  input: ({ node: _node, ...props }) => <input {...props} className="mr-[.4rem] accent-primary" />,
   blockquote: ({ node: _node, ...props }) => (
     <blockquote
       {...props}
-      className="my-[1em] rounded-r-xl border-l-4 border-purple bg-surface px-[1em] py-[.5em]"
+      className="my-[1em] rounded-r-xl border-l-4 border-primary bg-surface px-[1em] py-[.5em]"
     />
   ),
   code: ({ node: _node, className = "", ...props }) => (
     <code
       {...props}
-      className={`rounded-[.4rem] bg-ink px-[.4em] py-[.15em] text-[.85em] text-surface ${className}`}
+      className={`rounded-[.4rem] bg-inverse px-[.4em] py-[.15em] text-[.85em] text-inverse-foreground ${className}`}
     />
   ),
   pre: ({ node: _node, ...props }) => (
     <pre
       {...props}
-      className="my-[1em] min-w-0 max-w-full whitespace-pre overflow-x-auto rounded-xl border-[3px] border-outline bg-ink p-[1em] shadow-[3px_3px_0_var(--color-ink-shadow)] [&>code]:bg-transparent [&>code]:p-0"
+      className="my-[1em] min-w-0 max-w-full whitespace-pre overflow-x-auto rounded-xl border-[3px] border-outline bg-inverse p-[1em] shadow-[3px_3px_0_var(--color-ink-shadow)] [&>code]:bg-transparent [&>code]:p-0"
     />
   ),
   table: ({ node: _node, ...props }) => (
@@ -87,7 +87,7 @@ const components: Components = {
   th: ({ node: _node, ...props }) => (
     <th
       {...props}
-      className="border-2 border-divider bg-surface px-[.75em] py-[.5em] text-left font-black text-ink"
+      className="border-2 border-divider bg-surface px-[.75em] py-[.5em] text-left font-black text-foreground"
     />
   ),
   td: ({ node: _node, ...props }) => (

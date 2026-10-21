@@ -6,6 +6,17 @@ import "@fontsource/nunito/latin-700.css";
 import "@fontsource/nunito/latin-900.css";
 import App from "./App";
 import "./styles/style.css";
+import { initializeAppearance } from "./utils/appearance";
+import { initializePinchZoom } from "./utils/pinchZoom";
+import { initializePalette } from "./utils/palette";
+import { viewerSettingKey } from "./utils/viewerCache";
+
+initializePalette();
+initializeAppearance();
+initializePinchZoom();
+window.addEventListener("storage", (event) => {
+  if (event.key === viewerSettingKey("cc.palette.v1") || event.key === null) initializePalette();
+});
 
 const fontRequests = [
   document.fonts.load('700 1em "Fredoka"'),

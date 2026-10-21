@@ -90,7 +90,7 @@ function GoogleContinueButton({
       type="button"
       onClick={() => login()}
       disabled={disabled}
-      className="min-w-0 flex w-full items-center justify-center gap-3 rounded-xl bg-google-button px-5 py-3.5 text-base font-semibold text-metal-highlight transition hover:bg-black disabled:opacity-60 [&>*]:min-w-0 max-w-full"
+      className="min-w-0 flex w-full items-center justify-center gap-3 rounded-xl bg-google-button px-5 py-3.5 text-base font-semibold text-metal-highlight transition hover:bg-black disabled:opacity-60 *:min-w-0 max-w-full"
     >
       <GoogleMark />
       {disabled ? "Connecting…" : "Continue with Google"}
@@ -274,11 +274,11 @@ export default function Login() {
   };
 
   return (
-    <div className="min-w-0 relative grid [&>*]:min-w-0 min-h-screen place-items-center px-5 py-14 max-w-full">
+    <div className="min-w-0 relative grid *:min-w-0 min-h-screen place-items-center px-5 py-14 max-w-full">
       <ButtonLink
         variant="plain"
         href={ROUTES.root}
-        className="min-w-0 absolute left-5 top-6 flex items-center gap-2 font-black sm:left-10 [&>*]:min-w-0 max-w-full"
+        className="min-w-0 absolute left-5 top-6 flex items-center gap-2 font-black sm:left-10 *:min-w-0 max-w-full"
       >
         <ArrowLeft size={20} weight="bold" />
         Home
@@ -286,7 +286,7 @@ export default function Login() {
       <Sparkle
         size={90}
         weight="duotone"
-        className="absolute -right-5 top-16 rotate-12 text-pink"
+        className="absolute -right-5 top-16 rotate-12 text-accent"
         aria-hidden="true"
       />
       <div className="w-full max-w-md">
@@ -296,14 +296,14 @@ export default function Login() {
           <p className="mt-2 text-muted">Access projects shared by the SPECS community.</p>
         </div>
         <div className="toon-card toon-paper rounded-lg bg-surface p-4 pt-10 sm:p-7 sm:p-9 sm:pt-11">
-          <div className="min-w-0 mb-6 flex items-center justify-between [&>*]:min-w-0 max-w-full">
+          <div className="min-w-0 mb-6 flex items-center justify-between *:min-w-0 max-w-full">
             <h2 className="text-2xl font-black">
               {mode === "signup" ? "Create account" : "Sign in"}
             </h2>
-            <LockKey size={25} weight="duotone" className="text-purple" />
+            <LockKey size={25} weight="duotone" className="text-primary" />
           </div>
           <div
-            className="min-w-0 mb-5 flex flex-wrap gap-2 [&>*]:min-w-0 max-w-full"
+            className="min-w-0 mb-5 flex flex-wrap gap-2 *:min-w-0 max-w-full"
             role="tablist"
             aria-label="Sign in or create account"
           >
@@ -369,7 +369,7 @@ export default function Login() {
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   aria-pressed={showPassword}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-foreground"
                 >
                   {showPassword ? (
                     <EyeSlash size={21} weight="bold" />
@@ -397,7 +397,7 @@ export default function Login() {
             {error && (
               <p
                 role="alert"
-                className="rounded-xl border-[3px] border-outline bg-pink/50 px-4 py-3 text-sm font-bold"
+                className="rounded-xl border-[3px] border-outline bg-accent/50 px-4 py-3 text-sm font-bold"
               >
                 {error}
               </p>
@@ -409,13 +409,13 @@ export default function Login() {
           </form>
           <div className="mt-4">
             {isSupabaseMode ? (
-              <div className="min-w-0 flex flex-col gap-2 [&>*]:min-w-0 max-w-full">
+              <div className="min-w-0 flex flex-col gap-2 *:min-w-0 max-w-full">
                 <Button
                   variant="plain"
                   type="button"
                   onClick={() => void supabaseGoogle()}
                   disabled={googleBusy}
-                  className="min-w-0 flex w-full items-center justify-center gap-3 rounded-xl bg-google-button px-5 py-3.5 text-base font-semibold text-metal-highlight transition hover:bg-black disabled:opacity-60 [&>*]:min-w-0 max-w-full"
+                  className="min-w-0 flex w-full items-center justify-center gap-3 rounded-xl bg-google-button px-5 py-3.5 text-base font-semibold text-metal-highlight transition hover:bg-black disabled:opacity-60 *:min-w-0 max-w-full"
                 >
                   <GoogleMark />
                   {googleBusy ? "Connecting…" : "Continue with Google"}
@@ -423,14 +423,14 @@ export default function Login() {
                 {googleError && (
                   <p
                     role="alert"
-                    className="w-full rounded-xl border-[3px] border-outline bg-pink/50 px-4 py-3 text-sm font-bold"
+                    className="w-full rounded-xl border-[3px] border-outline bg-accent/50 px-4 py-3 text-sm font-bold"
                   >
                     {googleError}
                   </p>
                 )}
               </div>
             ) : googleClientId ? (
-              <div className="min-w-0 flex flex-col gap-2 [&>*]:min-w-0 max-w-full">
+              <div className="min-w-0 flex flex-col gap-2 *:min-w-0 max-w-full">
                 <GoogleOAuthProvider clientId={googleClientId}>
                   <GoogleContinueButton
                     disabled={googleBusy}
@@ -441,21 +441,24 @@ export default function Login() {
                 {googleError && (
                   <p
                     role="alert"
-                    className="w-full rounded-xl border-[3px] border-outline bg-pink/50 px-4 py-3 text-sm font-bold"
+                    className="w-full rounded-xl border-[3px] border-outline bg-accent/50 px-4 py-3 text-sm font-bold"
                   >
                     {googleError}
                   </p>
                 )}
               </div>
             ) : (
-              <div className="rounded-2xl border-2 border-dashed border-outline bg-cream p-4 text-sm leading-6">
+              <div className="rounded-2xl border-2 border-dashed border-outline bg-background p-4 text-sm leading-6">
                 <span className="font-black">Google sign-in not configured.</span> To enable it,
                 create a Web OAuth client ID in Google Cloud Console, add it as{" "}
-                <code className="rounded bg-ink px-1.5 py-0.5 text-xs text-surface">
+                <code className="rounded bg-inverse px-1.5 py-0.5 text-xs text-inverse-foreground">
                   VITE_GOOGLE_CLIENT_ID
                 </code>{" "}
-                in <code className="rounded bg-ink px-1.5 py-0.5 text-xs text-surface">.env</code>,
-                then restart the dev server. See .env.example.
+                in{" "}
+                <code className="rounded bg-inverse px-1.5 py-0.5 text-xs text-inverse-foreground">
+                  .env
+                </code>
+                , then restart the dev server. See .env.example.
               </div>
             )}
           </div>
@@ -469,7 +472,7 @@ export default function Login() {
                   setResetSent(false);
                   setResetError(null);
                 }}
-                className="text-sm font-black text-purple underline decoration-2 underline-offset-4"
+                className="text-sm font-black text-primary underline decoration-2 underline-offset-4"
               >
                 Forgot password?
               </Button>
@@ -499,7 +502,7 @@ export default function Login() {
                   {resetError && (
                     <p
                       role="alert"
-                      className="rounded-xl border-[3px] border-outline bg-pink/50 px-4 py-3 text-sm font-bold"
+                      className="rounded-xl border-[3px] border-outline bg-accent/50 px-4 py-3 text-sm font-bold"
                     >
                       {resetError}
                     </p>
@@ -547,12 +550,12 @@ export default function Login() {
                   {resetError && (
                     <p
                       role="alert"
-                      className="rounded-xl border-[3px] border-outline bg-pink/50 px-4 py-3 text-sm font-bold"
+                      className="rounded-xl border-[3px] border-outline bg-accent/50 px-4 py-3 text-sm font-bold"
                     >
                       {resetError}
                     </p>
                   )}
-                  <div className="min-w-0 flex flex-wrap gap-3 [&>*]:min-w-0 max-w-full">
+                  <div className="min-w-0 flex flex-wrap gap-3 *:min-w-0 max-w-full">
                     <Button variant="surface" size="small" type="button" onClick={closeRecovery}>
                       Back
                     </Button>

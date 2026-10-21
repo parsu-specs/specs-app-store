@@ -20,7 +20,12 @@ export default function MentionText({ text, profiles, onOpenProfile }: MentionTe
     .sort((a, b) => b.length - a.length);
   if (!names.length || !text.includes("@")) return <>{text}</>;
   const byLower = new Map(profiles.map((p) => [p.name.toLowerCase(), p]));
-  const parts = text.split(new RegExp(`(@(?:${names.map(escapeRegExp).join("|")}))`, "gi"));
+  const parts = text.split(
+    new RegExp(
+      `(?<![\\p{L}\\p{N}_@])(@(?:${names.map(escapeRegExp).join("|")}))(?![\\p{L}\\p{N}_])`,
+      "giu",
+    ),
+  );
   return (
     <>
       {parts.map((part, i) => {
@@ -28,12 +33,12 @@ export default function MentionText({ text, profiles, onOpenProfile }: MentionTe
         if (!hit) return <React.Fragment key={i}>{part}</React.Fragment>;
         return (
           <Button
-            variant="text"
+            variant="plain"
             key={i}
             type="button"
             onClick={() => onOpenProfile(hit.id)}
             title={`View ${hit.name}'s profile`}
-            className="font-black text-purple underline decoration-2 underline-offset-4"
+            className="inline cursor-pointer border-0 bg-transparent p-0 font-bold text-primary hover:opacity-80"
           >
             @{hit.name}
           </Button>

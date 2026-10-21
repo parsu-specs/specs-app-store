@@ -28,7 +28,7 @@ Navigation/action links use `ButtonLink`, preserving anchor semantics and destin
 - The breadcrumb appears with the desktop sidebar at `lg`; its trail wraps. It no longer reserves a sidebar margin on tablets while the sidebar is absent.
 - Footer and landing split tracks use `minmax(0, ...)` to permit shrinking. Landing navigation wraps; leaderboard rows can wrap on mobile.
 - Theme medal/trophy colors are centralized in the CSS theme. Form controls share Input sizing and styling through the shared primitives. Component styles live in Tailwind classes; global CSS is limited to theme tokens and document/browser defaults.
-- Dropdown wraps a styled native select. The browser owns popup placement, touch interaction, keyboard selection, and focus, without measured coordinates or a portal.
+- Dropdown uses the restored styled portal popup, positioned above or below the trigger and constrained to the viewport. Shared Button controls provide the trigger/options; the checkbox variant uses the shared native Checkbox. Escape, outside pointer interaction, external scrolling, and resize dismiss the popup; selection and Escape return focus. Arrow keys and Home/End navigate options; native checkboxes support Space and Tab.
 - Flex/grid containers and direct children have local shrinking constraints; controls and rows have maximum widths and wrap long text/actions. Nested submission, project-edit, and profile-edit forms use the named `content` container at 36rem, including matching column spans.
 - Paper surfaces retain the restored clipped upper-right polygon, tape, and shadows through component-owned Tailwind utilities. Keep controls and focus indicators clear of the cut corner. Discovery cards do not rotate into adjacent tracks.
 - MarkdownTextarea uses native `field-sizing: content` where supported. Its legacy fallback resizes after value or width changes; both paths cap height at `min(60dvh,32rem)` before scrolling internally.
@@ -53,7 +53,22 @@ Use 320px, 375px, 768px, 1024px, and 1440px viewports. Browser validation is sep
 2. Check one-column mobile cards, container-based column changes, long project/profile names and URLs, and wrapped actions without clipped controls.
 3. Open project submission/editing, add screenshots, and inspect Markdown previews and two-column form transitions.
 4. Confirm mobile top/bottom bars clear content; confirm sidebar/breadcrumb alignment at 1024px.
-5. Open native dropdowns with keyboard and pointer; verify option labels, arrow/Enter selection, Escape, and focus return.
+5. Open each Dropdown variant with keyboard and pointer; verify icons, single selection/checkmarks, multiple checkbox toggles without dismissal, arrow/Home/End navigation, Enter/Space selection, Escape, outside dismissal, focus return, and placement inside clipped cards. Also verify native Select form fields.
 6. Check palette selection, password visibility, comments, notifications, and dialog closing with visible keyboard focus.
 
 Live Supabase policy/auth/provider behavior and external admin applications require their own environment checks. This UI/documentation pass does not migrate databases or change backend contracts.
+
+## Dropdown variants
+
+The original checked single-select remains the default for existing callers. Use `variant="default"` for plain rows, `variant="icons"` with Phosphor elements in each option's `icon`, or `variant="check"` for the selected checkmark. These variants accept a string `value` and `(value: string) => void` callback.
+
+```tsx
+<Dropdown label="Project" variant="icons" value={project} onChange={setProject}
+  options={[{ value: "app", label: "App", icon: <Code size={18} weight="duotone" /> }]} />
+<Dropdown label="Status" variant="check" value={status} onChange={setStatus}
+  options={statusOptions} />
+<Dropdown label="Categories" variant="checkbox" value={categories} onChange={setCategories}
+  options={categoryOptions} />
+```
+
+The checkbox variant accepts a string array and `(value: string[]) => void` callback. Toggling a checkbox keeps the popup open; the trigger summarizes selected labels. All variants support `placeholder` and `disabled`. The earlier native-select browser checks above describe the previous implementation; the restored popup needs the variant checks listed in the checklist.

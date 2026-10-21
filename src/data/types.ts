@@ -127,6 +127,7 @@ export type Profile = {
 };
 
 export type Comment = {
+  isDeleted?: boolean;
   id: string;
   appId: string;
   authorId: string;

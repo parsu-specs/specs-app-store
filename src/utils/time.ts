@@ -2,6 +2,30 @@ const MINUTE_MS = 60_000;
 const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
 
+/** Elapsed time for feed posts; months and years use 30 and 365 days. */
+export function formatMilestoneAge(iso: string, nowMs: number = Date.now()): string | null {
+  const timestamp = Date.parse(iso);
+  if (!Number.isFinite(timestamp)) return null;
+  const age = Math.max(0, nowMs - timestamp);
+  if (age < MINUTE_MS) return "Just now";
+
+  const units = [
+    [365 * DAY_MS, "year"],
+    [30 * DAY_MS, "month"],
+    [7 * DAY_MS, "week"],
+    [DAY_MS, "day"],
+    [HOUR_MS, "hour"],
+    [MINUTE_MS, "minute"],
+  ] as const;
+  for (const [duration, unit] of units) {
+    if (age >= duration) {
+      const count = Math.floor(age / duration);
+      return `${count} ${unit}${count === 1 ? "" : "s"} ago`;
+    }
+  }
+  return "Just now";
+}
+
 export type UploadStamp = {
   /** Visible label: relative (<24h) or calendar date (>=24h). */
   text: string;

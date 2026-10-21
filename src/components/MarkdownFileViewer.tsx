@@ -75,14 +75,14 @@ export default function MarkdownFileViewer({
             aria-modal="true"
             aria-labelledby={`${inputId}-title`}
             onClick={() => setOpen(false)}
-            className="min-w-0 fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-ink/80 p-3 sm:p-6 [&>*]:min-w-0 max-w-full"
+            className="min-w-0 fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-inverse/80 p-3 sm:p-6 max-w-full"
           >
             <section
               onClick={(event) => event.stopPropagation()}
-              className="min-w-0 toon-card toon-paper my-auto flex max-h-[90vh] min-h-[min(28rem,80vh)] w-full max-w-4xl flex-col overflow-hidden rounded-lg bg-paper [&>*]:min-w-0"
+              className="min-w-0 toon-card toon-paper my-auto flex max-h-[90vh] min-h-[min(28rem,80vh)] w-full max-w-4xl flex-col overflow-hidden rounded-lg bg-panel *:min-w-0"
             >
-              <header className="min-w-0 flex shrink-0 items-center justify-between gap-4 border-b-[3px] border-outline bg-surface px-4 py-3 sm:px-6 [&>*]:min-w-0 max-w-full">
-                <div className="flex min-w-0 items-center gap-3 [&>*]:min-w-0 max-w-full">
+              <header className="min-w-0 flex shrink-0 items-center justify-between gap-4 border-b-[3px] border-outline bg-surface px-4 py-3 sm:px-6 *:min-w-0 max-w-full">
+                <div className="flex min-w-0 items-center gap-3 *:min-w-0 max-w-full">
                   <BookOpenText size={26} weight="duotone" aria-hidden="true" />
                   <div className="min-w-0">
                     <h2 id={`${inputId}-title`} className="text-lg font-black sm:text-xl">
@@ -109,7 +109,7 @@ export default function MarkdownFileViewer({
               </header>
 
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-7">
-                <div className="min-w-0 mb-5 flex flex-wrap items-center gap-3 [&>*]:min-w-0 max-w-full">
+                <div className="min-w-0 mb-5 flex flex-wrap items-center gap-3 *:min-w-0 max-w-full">
                   <FileInput
                     id={inputId}
                     accept=".md,.markdown,.txt,text/markdown,text/plain"
@@ -123,7 +123,7 @@ export default function MarkdownFileViewer({
                   <ButtonLabel
                     variant="secondary"
                     htmlFor={inputId}
-                    className="cursor-pointer text-sm peer-focus-visible:outline-none peer-focus-visible:ring-4 peer-focus-visible:ring-yellow"
+                    className="cursor-pointer text-sm peer-focus-visible:outline-none peer-focus-visible:ring-4 peer-focus-visible:ring-secondary"
                   >
                     <UploadSimple size={19} weight="bold" aria-hidden="true" />
                     {loading ? "Opening…" : fileName ? "Open another file" : "Choose a file"}
@@ -136,7 +136,7 @@ export default function MarkdownFileViewer({
                 {error && (
                   <p
                     role="alert"
-                    className="mb-4 rounded-lg border-2 border-outline bg-pink/30 p-3 font-bold"
+                    className="mb-4 rounded-lg border-2 border-outline bg-accent/30 p-3 font-bold"
                   >
                     {error}
                   </p>
@@ -144,14 +144,14 @@ export default function MarkdownFileViewer({
 
                 {text ? (
                   <article className="rounded-lg border-2 border-outline bg-surface p-4 sm:p-6">
-                    <div className="min-w-0 mb-4 flex items-center gap-2 border-b-2 border-dashed border-divider pb-3 text-sm font-black uppercase text-muted [&>*]:min-w-0 max-w-full">
+                    <div className="min-w-0 mb-4 flex items-center gap-2 border-b-2 border-dashed border-divider pb-3 text-sm font-black uppercase text-muted *:min-w-0 max-w-full">
                       <FileText size={19} weight="duotone" aria-hidden="true" />
                       Document
                     </div>
                     <Markdown text={text} fullWidth />
                   </article>
                 ) : (
-                  <div className="min-w-0 flex min-h-56 flex-col items-center justify-center rounded-lg border-2 border-dashed border-divider bg-surface/70 px-5 py-10 text-center [&>*]:min-w-0 max-w-full">
+                  <div className="min-w-0 flex min-h-56 flex-col items-center justify-center rounded-lg border-2 border-dashed border-divider bg-surface/70 px-5 py-10 text-center *:min-w-0 max-w-full">
                     <BookOpenText size={40} weight="duotone" aria-hidden="true" />
                     <h3 className="mt-3 text-xl font-black">
                       {loading ? "Reading your file…" : "Your document will appear here"}

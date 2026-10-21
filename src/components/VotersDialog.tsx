@@ -14,9 +14,8 @@ type VotersDialogProps = {
 };
 
 /**
- * Underlined "Voters" trigger above the vote button + floating box with
- * every voter's avatar and name. Both avatar and name open that voter's
- * profile. The list is fetched lazily on open so cards stay cheap.
+ * Upvote count trigger and dialog with one profile button per voter.
+ * The list is fetched lazily on open so cards stay cheap.
  */
 export default function VotersDialog({
   appId,
@@ -82,9 +81,9 @@ export default function VotersDialog({
             ? "See who upvoted (1 upvote)"
             : `See who upvoted (${totalVotes} upvotes)`
         }
-        className="text-xs font-bold text-muted underline decoration-2 underline-offset-4 hover:text-ink"
+        className="text-sm"
       >
-        Voters
+        {totalVotes} upvotes
       </Button>
 
       {open &&
@@ -94,14 +93,14 @@ export default function VotersDialog({
             aria-modal="true"
             aria-label={`Voters for ${appTitle}`}
             onClick={() => setOpen(false)}
-            className="min-w-0 fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-ink/80 p-4 [&>*]:min-w-0 max-w-full"
+            className="min-w-0 fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-inverse/80 p-4 max-w-full"
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="min-w-0 toon-card my-auto flex max-h-[85vh] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-lg bg-surface [&>*]:min-w-0"
+              className="min-w-0 toon-card my-auto flex max-h-[85vh] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-lg bg-surface *:min-w-0"
             >
-              <div className="min-w-0 flex shrink-0 items-center justify-between gap-3 border-b-[3px] border-outline p-4 [&>*]:min-w-0 max-w-full">
-                <h4 className="flex min-w-0 items-center gap-2 truncate text-lg font-black [&>*]:min-w-0 max-w-full">
+              <div className="min-w-0 flex shrink-0 items-center justify-between gap-3 border-b-[3px] border-outline p-4 *:min-w-0 max-w-full">
+                <h4 className="flex min-w-0 items-center gap-2 truncate text-lg font-black *:min-w-0 max-w-full">
                   <Heart size={20} weight="duotone" aria-hidden="true" />
                   <span className="truncate">
                     Upvoted by{voters !== null && ` (${voters.length})`}
@@ -131,7 +130,7 @@ export default function VotersDialog({
                       variant="text"
                       type="button"
                       onClick={() => setAttempt((n) => n + 1)}
-                      className="mt-3 text-sm font-black underline decoration-2 underline-offset-4"
+                      className="mt-3 text-sm font-black"
                     >
                       Try again
                     </Button>
@@ -141,30 +140,18 @@ export default function VotersDialog({
                     <ul className="space-y-1">
                       {voters.map((v) => (
                         <li key={v.id}>
-                          <span className="min-w-0 flex w-full items-center gap-3 rounded-xl border-2 border-transparent p-2 hover:border-outline hover:bg-cream [&>*]:min-w-0 max-w-full">
-                            <Button
-                              variant="plain"
-                              type="button"
-                              onClick={() => goProfile(v.id)}
-                              aria-label={`View ${v.name}'s profile`}
-                              className="shrink-0 rounded-full"
-                            >
-                              <Avatar
-                                name={v.name}
-                                color={v.color}
-                                imageUrl={v.imageUrl}
-                                size="sm"
-                              />
-                            </Button>
-                            <Button
-                              variant="text"
-                              type="button"
-                              onClick={() => goProfile(v.id)}
-                              className="min-w-0 flex-1 truncate text-left text-sm font-black underline decoration-2 underline-offset-4"
-                            >
+                          <Button
+                            variant="plain"
+                            type="button"
+                            onClick={() => goProfile(v.id)}
+                            aria-label={`View ${v.name}'s profile`}
+                            className="flex items-center w-full justify-start gap-3 rounded-xl border-2 border-transparent p-2 text-left transition-colors group hover:border-outline hover:bg-background focus-visible:border-outline focus-visible:bg-background"
+                          >
+                            <Avatar name={v.name} color={v.color} imageUrl={v.imageUrl} size="sm" />
+                            <span className="min-w-0 flex-1 truncate text-sm font-black group-hover:text-primary transition-colors">
                               {v.name}
-                            </Button>
-                          </span>
+                            </span>
+                          </Button>
                         </li>
                       ))}
                     </ul>

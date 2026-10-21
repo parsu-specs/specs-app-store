@@ -2,7 +2,7 @@ import { Button } from "./Button";
 import React, { useMemo, useState } from "react";
 import { MagnifyingGlass, X } from "@phosphor-icons/react";
 import Avatar from "./Avatar";
-import Input, { Checkbox } from "./Input";
+import Input from "./Input";
 import type { Profile } from "../data/types";
 
 type CollaboratorPickerProps = {
@@ -11,7 +11,7 @@ type CollaboratorPickerProps = {
   onChange: (selected: string[]) => void;
 };
 
-/** Explicit collaborators box: search developers, tick to add, chip to remove. */
+/** Search developers, click to add, and remove selected collaborators using their chips. */
 export default function CollaboratorPicker({
   profiles,
   selected,
@@ -31,7 +31,7 @@ export default function CollaboratorPicker({
 
   const q = filter.trim().toLowerCase();
   const matches = unique
-    .filter((p) => !q || p.name.toLowerCase().includes(q))
+    .filter((p) => !selectedSet.has(p.id) && (!q || p.name.toLowerCase().includes(q)))
     .sort((a, b) => {
       const rank = (p: Profile) => (!q ? 1 : p.name.toLowerCase().startsWith(q) ? 0 : 1);
       return rank(a) - rank(b) || a.name.localeCompare(b.name);
@@ -49,11 +49,11 @@ export default function CollaboratorPicker({
   return (
     <div className="rounded-2xl border-[3px] border-outline bg-surface p-3">
       {selectedProfiles.length > 0 && (
-        <div className="min-w-0 mb-2 flex flex-wrap gap-2 [&>*]:min-w-0 max-w-full">
+        <div className="min-w-0 mb-2 flex flex-wrap gap-2 *:min-w-0 max-w-full">
           {selectedProfiles.map((p) => (
             <span
               key={p.id}
-              className="min-w-0 inline-flex items-center gap-1.5 rounded-full border-2 border-outline bg-yellow py-0.5 pl-0.5 pr-1.5 text-xs font-black [&>*]:min-w-0 max-w-full"
+              className="min-w-0 inline-flex items-center gap-1.5 rounded-full border-2 border-outline bg-secondary py-0.5 pl-0.5 pr-1.5 text-xs font-black *:min-w-0 max-w-full"
             >
               <Avatar name={p.name} color={p.color} imageUrl={p.imageUrl} size="sm" />
               <span className="min-w-0 wrap-anywhere">{p.name}</span>
@@ -86,22 +86,24 @@ export default function CollaboratorPicker({
           variant="ghost"
         />
       </label>
-      <ul className="mt-2 max-h-52 space-y-1 overflow-y-auto">
-        {matches.map((p) => {
-          const checked = selectedSet.has(p.id);
-          return (
-            <li key={p.id}>
-              <label className="min-w-0 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-black hover:bg-cream [&>*]:min-w-0 max-w-full">
-                <Checkbox checked={checked} onChange={() => toggle(p.id)} />
-                <Avatar name={p.name} color={p.color} imageUrl={p.imageUrl} size="sm" />
-                <span className="min-w-0">
-                  <span className="block truncate">{p.name}</span>
-                  <span className="block truncate text-xs font-bold text-muted">{p.role}</span>
-                </span>
-              </label>
-            </li>
-          );
-        })}
+      <ul className="scrollbar-minimal mt-2 max-h-52 space-y-1 overflow-y-auto">
+        {matches.map((p) => (
+          <li key={p.id}>
+            <Button
+              variant="menu"
+              type="button"
+              onClick={() => toggle(p.id)}
+              aria-label={`Add ${p.name} as collaborator`}
+              className="min-h-11 gap-2"
+            >
+              <Avatar name={p.name} color={p.color} imageUrl={p.imageUrl} size="sm" />
+              <span className="min-w-0">
+                <span className="block truncate">{p.name}</span>
+                <span className="block truncate text-xs font-bold text-muted">{p.role}</span>
+              </span>
+            </Button>
+          </li>
+        ))}
         {matches.length === 0 && (
           <li className="px-2 py-1.5 text-sm font-bold text-muted">No developers match.</li>
         )}

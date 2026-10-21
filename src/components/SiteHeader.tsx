@@ -1,6 +1,7 @@
 import { useAuth } from "../auth/AuthProvider";
 import { ROUTES, navigateInternalLink } from "../pages/routes";
 import Brand from "./Brand";
+import AppearanceControl from "./AppearanceControl";
 import { ButtonLink } from "./Button";
 
 export default function SiteHeader({ page }: { page: "landing" | "about" }) {
@@ -16,6 +17,7 @@ export default function SiteHeader({ page }: { page: "landing" | "about" }) {
         <Brand />
       </ButtonLink>
       <nav aria-label="Site navigation" className="flex flex-wrap items-center gap-4 sm:gap-6">
+        <AppearanceControl compact />
         {(
           [
             ["landing", "Home", ROUTES.landing],
@@ -28,7 +30,7 @@ export default function SiteHeader({ page }: { page: "landing" | "about" }) {
             href={href}
             onClick={navigateInternalLink}
             aria-current={page === id ? "page" : undefined}
-            className={`text-sm font-black underline-offset-4 hover:underline ${page === id ? "text-purple underline decoration-2" : ""}`}
+            className={`text-sm font-black underline-offset-4 hover:underline ${page === id ? "text-primary underline decoration-2" : ""}`}
           >
             {label}
           </ButtonLink>

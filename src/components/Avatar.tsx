@@ -48,7 +48,7 @@ export default function Avatar({
     <span
       aria-hidden="true"
       style={{ backgroundColor: `var(--color-${color})` }}
-      className={`min-w-0 grid [&>*]:min-w-0 ${sizes[size]} shrink-0 place-items-center rounded-full border-[3px] border-outline font-black ${className} max-w-full`}
+      className={`min-w-0 grid ${sizes[size]} shrink-0 place-items-center rounded-full border-[3px] border-outline font-black ${className} max-w-full`}
     >
       {initials(name)}
     </span>

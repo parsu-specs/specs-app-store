@@ -12,6 +12,7 @@ import type {
 } from "../types";
 import { seedApps, seedBuilders, seedComments, seedMilestones } from "./seed";
 import { getLocalProfilesByIds } from "./localProfiles";
+import { assertReplyDepth } from "../commentRules";
 
 const APPS_KEY = "cc.apps.v1";
 const VOTES_KEY = "cc.votes.v1";
@@ -392,7 +393,9 @@ export function createLocalAppRepo(): AppRepo {
       if (text.length > 500) throw new Error("Keep comments under 500 characters.");
       const apps = loadApps();
       const target = apps.find((a) => a.id === appId);
-      if (!target) throw new NotFoundError("Project not found.");
+      const isFeedThread =
+        appId.startsWith("ms:") && loadMilestones().some((m) => m.id === appId.slice(3));
+      if (!target && !isFeedThread) throw new NotFoundError("Project not found.");
       const store = loadComments();
       const thread = (store[appId] ?? []).map(normalizeComment);
       let parent: Comment | undefined;
@@ -400,6 +403,7 @@ export function createLocalAppRepo(): AppRepo {
         parent = thread.find((c) => c.id === parentId);
         if (!parent) throw new Error("That comment no longer exists.");
         if (parent.appId !== appId) throw new Error("That comment belongs to another project.");
+        assertReplyDepth(thread, parentId);
       }
       const comment: Comment = {
         id: newId(),
@@ -460,6 +464,18 @@ export function createLocalAppRepo(): AppRepo {
       return milestone;
     },
 
+    async deleteMilestone(milestoneId: string, requester: User): Promise<void> {
+      await delay(80);
+      const milestones = loadMilestones();
+      const target = milestones.find((m) => m.id === milestoneId);
+      if (!target) throw new NotFoundError("Update not found.");
+      if (target.authorId !== requester.id)
+        throw new Error("You can only delete your own updates.");
+      saveMilestones(milestones.filter((m) => m.id !== milestoneId));
+      const { [`ms:${milestoneId}`]: _removed, ...threads } = loadComments();
+      saveComments(threads);
+    },
+
     async toggleMilestoneCheer(milestoneId: string, userId: string): Promise<Milestone> {
       await delay(80);
       const milestones = loadMilestones().map(normalizeMilestone);
@@ -481,19 +497,28 @@ export function createLocalAppRepo(): AppRepo {
       if (!target) throw new NotFoundError("Comment not found.");
       if (target.authorId !== requester.id)
         throw new Error("You can only delete your own comments.");
-      // Remove the comment plus every nested reply beneath it.
-      const doomed = new Set<string>([commentId]);
-      let grew = true;
-      while (grew) {
-        grew = false;
-        for (const c of thread) {
-          if (c.parentId && doomed.has(c.parentId) && !doomed.has(c.id)) {
-            doomed.add(c.id);
-            grew = true;
-          }
-        }
-      }
-      const next = thread.filter((c) => !doomed.has(c.id));
+      const hasReplies = thread.some((c) => c.parentId === commentId);
+      let next = hasReplies
+        ? thread.map((c) =>
+            c.id === commentId
+              ? {
+                  ...c,
+                  body: "Deleted comment",
+                  isDeleted: true,
+                  likes: 0,
+                  likedBy: [],
+                  viewerHasLiked: false,
+                }
+              : c,
+          )
+        : thread.filter((c) => c.id !== commentId);
+      // Remove placeholders once their last reply has gone, including nested ancestors.
+      let previousLength: number;
+      do {
+        previousLength = next.length;
+        const parents = new Set(next.map((c) => c.parentId));
+        next = next.filter((c) => !c.isDeleted || parents.has(c.id));
+      } while (next.length !== previousLength);
       saveComments({ ...store, [appId]: next });
       const apps = loadApps();
       saveApps(apps.map((a) => (a.id === appId ? { ...a, comments: next.length } : a)));
@@ -505,6 +530,7 @@ export function createLocalAppRepo(): AppRepo {
       const thread = (store[appId] ?? []).map(normalizeComment);
       const target = thread.find((c) => c.id === commentId);
       if (!target) throw new NotFoundError("Comment not found.");
+      if (target.isDeleted) throw new Error("This comment has been deleted.");
       const liked = new Set(target.likedBy ?? []);
       if (liked.has(userId)) liked.delete(userId);
       else liked.add(userId);

@@ -35,6 +35,7 @@ export type AppRow = {
 };
 
 export type CommentRow = {
+  is_deleted?: boolean;
   id: string;
   app_id: string;
   author_id: string;
@@ -94,6 +95,7 @@ export function toApp(row: AppRow, commentsCount?: number): AppItem {
 
 export function toComment(row: CommentRow): Comment {
   return {
+    isDeleted: Boolean(row.is_deleted),
     id: row.id,
     appId: row.app_id,
     authorId: row.author_id,

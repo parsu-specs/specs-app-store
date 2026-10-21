@@ -1,10 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { ChatCircleDots, DotsThreeVertical, Heart, Trash } from "@phosphor-icons/react";
+import React, { useEffect, useMemo, useState } from "react";
+import { ChatCircleDots, Heart, PaperPlaneTilt, User as UserIcon } from "@phosphor-icons/react";
 import Avatar from "./Avatar";
+import DeleteMenu from "./DeleteMenu";
 import TrophyMark from "./TrophyMark";
 import { Button } from "./Button";
-import Input from "./Input";
+import MentionInput from "./MentionInput";
+import MentionText from "./MentionText";
+import MilestoneStamp, { MilestoneTimeProvider } from "./MilestoneStamp";
 import { getAppRepo } from "../data/factory";
+import { assertReplyDepth, MAX_COMMENT_LEVELS } from "../data/commentRules";
 import { profileForComment } from "../data/profileLinks";
 import type { Comment, Profile, User } from "../data/types";
 
@@ -22,6 +26,8 @@ type CommentsProps = {
 const REPLY_INITIAL = 1;
 const REPLY_STEP = 3;
 
+const authorName = (c: Comment) => (c.isDeleted ? "User" : c.authorName);
+
 function authorHeader(
   c: Comment,
   profiles: Map<string, Profile>,
@@ -29,12 +35,19 @@ function authorHeader(
   onOpenProfile: (profileId: string) => void,
   avatarSize: "sm" = "sm",
 ) {
-  const p = profileForComment(c, profiles);
-  const displayName = p ? p.name : c.authorName;
-  const place = trophies.get(c.authorId);
+  const p = c.isDeleted ? null : profileForComment(c, profiles);
+  const displayName = p ? p.name : authorName(c);
+  const place = c.isDeleted ? undefined : trophies.get(c.authorId);
   return (
-    <div className="min-w-0 flex items-center gap-2 [&>*]:min-w-0 max-w-full">
-      {p ? (
+    <div className="flex min-w-0 items-center gap-2.5">
+      {c.isDeleted ? (
+        <span
+          aria-hidden="true"
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-full border-[3px] border-outline bg-background text-muted"
+        >
+          <UserIcon size={18} weight="fill" />
+        </span>
+      ) : p ? (
         <Button
           variant="plain"
           onClick={() => onOpenProfile(p.id)}
@@ -46,21 +59,17 @@ function authorHeader(
       ) : (
         <Avatar name={c.authorName} color="sky" size={avatarSize} />
       )}
-      <p className="min-w-0 text-xs font-black">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 text-xs font-black leading-5 wrap-anywhere">
         {p ? (
-          <Button
-            variant="text"
-            onClick={() => onOpenProfile(p.id)}
-            className="underline decoration-2 underline-offset-4"
-          >
+          <Button variant="text" onClick={() => onOpenProfile(p.id)} className="text-left">
             {displayName}
           </Button>
         ) : (
           displayName
         )}
-        {place !== undefined && <TrophyMark place={place} size={16} />}{" "}
-        <span className="font-bold text-muted">· {new Date(c.createdAt).toLocaleString()}</span>
-      </p>
+        {place !== undefined && <TrophyMark place={place} size={16} />}
+        <MilestoneStamp createdAt={c.createdAt} subject="comment" />
+      </div>
     </div>
   );
 }
@@ -87,13 +96,10 @@ export default function Comments({
   const [replyError, setReplyError] = useState<string | null>(null);
   const [likePending, setLikePending] = useState<Set<string>>(new Set());
   const [visibleReplies, setVisibleReplies] = useState<Record<string, number>>({});
-  const [menuFor, setMenuFor] = useState<string | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [deletePending, setDeletePending] = useState<Set<string>>(new Set());
-  const [deleteError, setDeleteError] = useState<{
-    id: string;
-    message: string;
-  } | null>(null);
+  const mentionProfiles = useMemo(
+    () => [...new Map([...profiles.values()].map((p) => [p.id, p])).values()],
+    [profiles],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -115,66 +121,13 @@ export default function Comments({
     };
   }, [appId, currentUser?.id]);
 
-  useEffect(() => {
-    if (!menuFor) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setMenuFor(null);
-        setConfirmDeleteId(null);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [menuFor]);
-
-  const openMenu = (id: string) => {
-    setMenuFor((current) => (current === id ? null : id));
-    setConfirmDeleteId(null);
-    setDeleteError(null);
-  };
-
-  const closeMenu = () => {
-    setMenuFor(null);
-    setConfirmDeleteId(null);
-  };
-
   const removeComment = async (c: Comment) => {
-    if (!currentUser || deletePending.has(c.id)) return;
-    setDeletePending((prev) => new Set(prev).add(c.id));
-    setDeleteError(null);
-    try {
-      await getAppRepo().deleteComment(appId, c.id, currentUser);
-      setComments((items) => {
-        // Mirror the repo: the comment plus every nested reply goes.
-        const doomed = new Set<string>([c.id]);
-        let grew = true;
-        while (grew) {
-          grew = false;
-          for (const x of items) {
-            if (x.parentId && doomed.has(x.parentId) && !doomed.has(x.id)) {
-              doomed.add(x.id);
-              grew = true;
-            }
-          }
-        }
-        const next = items.filter((x) => !doomed.has(x.id));
-        onCommentAdded?.(appId, next.length);
-        return next;
-      });
-      if (replyTo === c.id) setReplyTo(null);
-      closeMenu();
-    } catch (e) {
-      setDeleteError({
-        id: c.id,
-        message: e instanceof Error ? e.message : "Could not delete comment.",
-      });
-    } finally {
-      setDeletePending((prev) => {
-        const next = new Set(prev);
-        next.delete(c.id);
-        return next;
-      });
-    }
+    if (!currentUser || c.authorId !== currentUser.id) return;
+    await getAppRepo().deleteComment(appId, c.id, currentUser);
+    const next = await getAppRepo().listComments(appId, currentUser.id);
+    setComments(next);
+    onCommentAdded?.(appId, next.length);
+    if (replyTo === c.id) setReplyTo(null);
   };
 
   const topLevel = comments
@@ -186,7 +139,7 @@ export default function Comments({
       .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt));
 
   const toggleLike = async (c: Comment) => {
-    if (!currentUser || likePending.has(c.id)) return;
+    if (!currentUser || c.isDeleted || likePending.has(c.id)) return;
     setLikePending((prev) => new Set(prev).add(c.id));
     const wasLiked = Boolean(c.viewerHasLiked);
     setComments((items) =>
@@ -233,9 +186,10 @@ export default function Comments({
     }
   };
 
-  const openReply = (parentId: string) => {
-    setReplyTo(parentId);
-    setReplyBody("");
+  const openReply = (parent: Comment) => {
+    setReplyTo(parent.id);
+    const target = profileForComment(parent, profiles);
+    setReplyBody(parent.isDeleted ? "" : `@${target?.name ?? parent.authorName} `);
     setReplyError(null);
   };
 
@@ -245,6 +199,7 @@ export default function Comments({
     setReplying(true);
     setReplyError(null);
     try {
+      assertReplyDepth(comments, parentId);
       const created = await getAppRepo().addComment(appId, currentUser, replyBody.trim(), parentId);
       setComments((items) => {
         const next = [...items, created];
@@ -272,7 +227,7 @@ export default function Comments({
       onClick={() => void toggleLike(c)}
       aria-pressed={Boolean(c.viewerHasLiked)}
       aria-label={c.viewerHasLiked ? "Unlike this comment" : "Like this comment"}
-      disabled={!currentUser || likePending.has(c.id)}
+      disabled={!currentUser || c.isDeleted || likePending.has(c.id)}
       title={currentUser ? undefined : "Sign in to like"}
       className={c.viewerHasLiked ? "" : "text-muted"}
     >
@@ -286,18 +241,20 @@ export default function Comments({
       {currentUser ? (
         <form
           onSubmit={(e) => void postTop(e)}
-          className="min-w-0 flex flex-wrap items-start gap-2 [&>*]:min-w-0 max-w-full"
+          className="flex min-w-0 flex-wrap items-center gap-3"
         >
-          <label className="min-w-0 basis-48 flex-1">
-            <span className="sr-only">Add feedback for {appTitle}</span>
-            <Input
+          <div className="block min-w-0 flex-1 basis-40 pb-1">
+            <MentionInput
               value={body}
-              onChange={(e) => setBody(e.target.value)}
+              onChange={setBody}
+              profiles={mentionProfiles}
+              ariaLabel={`Add feedback for ${appTitle}`}
+              suggestionsPlacement={stickyForm ? "above" : "below"}
               maxLength={500}
               placeholder="Share useful feedback…"
               className="py-2 text-sm"
             />
-          </label>
+          </div>
           <Button
             variant="secondary"
             size="small"
@@ -324,42 +281,40 @@ export default function Comments({
     const visible = Math.min(visibleReplies[c.id] ?? REPLY_INITIAL, Math.max(kids.length, 1));
     const shown = kids.slice(0, visible);
     const hidden = kids.length - shown.length;
-    const parent = c.parentId ? comments.find((x) => x.id === c.parentId) : undefined;
     const replyTarget = replyTo === c.id ? comments.find((x) => x.id === c.id) : undefined;
     const childListClass =
-      depth < 2 ? "mt-3 space-y-2 border-l-2 border-divider pl-3" : "mt-3 space-y-2";
+      depth < 2 ? "mt-3 space-y-3 border-l-2 border-divider pl-2 sm:pl-3" : "mt-3 space-y-3";
     return (
       <li
         key={c.id}
         className={
           depth === 0
             ? "rounded-xl border-2 border-dashed border-divider p-3"
-            : "rounded-lg bg-cream/60 p-2.5"
+            : "rounded-lg py-3 pl-3"
         }
       >
         {authorHeader(c, profiles, trophies, onOpenProfile)}
-        <p className="mt-1.5 wrap-anywhere text-sm leading-6">
-          {depth >= 2 && parent && (
-            <span
-              title={`Replying to ${parent.authorName}`}
-              className="mr-1.5 rounded-md bg-purple/15 px-1.5 py-0.5 text-xs font-black text-purple"
-            >
-              @{parent.authorName}
-            </span>
+        <p className="mt-3 wrap-anywhere text-sm leading-6">
+          {c.isDeleted ? (
+            <span className="italic text-muted">Deleted comment</span>
+          ) : (
+            <MentionText text={c.body} profiles={mentionProfiles} onOpenProfile={onOpenProfile} />
           )}
-          {c.body}
         </p>
-        <div className="min-w-0 mt-1.5 flex flex-wrap items-center gap-4 [&>*]:min-w-0 max-w-full">
-          {likeButton(c, depth > 0)}
-          {currentUser ? (
+        <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+          {!c.isDeleted && likeButton(c, depth > 0)}
+          {currentUser && depth < MAX_COMMENT_LEVELS - 1 ? (
             <Button
               variant="plain"
               type="button"
-              onClick={() => (replyTo === c.id ? setReplyTo(null) : openReply(c.id))}
-              className="min-w-0 flex items-center gap-1 text-xs font-black text-muted [&>*]:min-w-0 max-w-full"
+              onClick={() => {
+                if (replyTo !== c.id) openReply(c);
+              }}
+              aria-expanded={replyTo === c.id}
+              className="min-w-0 flex items-center gap-1 text-xs font-black text-muted transition-colors hover:text-primary *:min-w-0 max-w-full"
             >
               <ChatCircleDots size={15} weight="duotone" />
-              {replyTo === c.id ? "Cancel" : "Reply"}
+              Reply
               {kids.length > 0 && ` (${kids.length})`}
             </Button>
           ) : (
@@ -369,83 +324,13 @@ export default function Comments({
               </span>
             )
           )}
-          {currentUser && c.authorId === currentUser.id && (
-            <span className="relative ml-auto">
-              <Button
-                variant="plain"
-                type="button"
-                onClick={() => openMenu(c.id)}
-                aria-haspopup="menu"
-                aria-expanded={menuFor === c.id}
-                aria-label={`Options for your ${c.parentId ? "reply" : "comment"}`}
-                className="rounded-full p-1 text-muted hover:bg-cream hover:text-ink"
-              >
-                <DotsThreeVertical size={18} weight="bold" aria-hidden="true" />
-              </Button>
-              {menuFor === c.id && (
-                <>
-                  <Button
-                    variant="plain"
-                    type="button"
-                    aria-label="Close options"
-                    onClick={closeMenu}
-                    className="fixed inset-0 z-40 cursor-default bg-transparent"
-                  />
-                  <span
-                    role="menu"
-                    aria-label="Comment options"
-                    className="absolute right-0 z-50 mt-1 w-48 max-w-[calc(100vw-2rem)] rounded-xl border-2 border-outline bg-surface p-1.5 shadow-[3px_3px_0_var(--color-outline)]"
-                  >
-                    {confirmDeleteId === c.id ? (
-                      <span className="block p-1">
-                        <span className="block text-xs font-black">
-                          Delete this {c.parentId ? "reply" : "comment"}
-                          {kids.length > 0 &&
-                            ` and its ${kids.length} ${kids.length === 1 ? "reply" : "replies"}`}
-                          ?
-                        </span>
-                        {deleteError?.id === c.id && (
-                          <span role="alert" className="mt-1 block text-xs font-bold">
-                            {deleteError.message}
-                          </span>
-                        )}
-                        <span className="min-w-0 mt-2 flex gap-2 [&>*]:min-w-0 max-w-full">
-                          <Button
-                            variant="danger"
-                            size="compact"
-                            type="button"
-                            onClick={() => void removeComment(c)}
-                            disabled={deletePending.has(c.id)}
-                          >
-                            <Trash size={14} weight="bold" aria-hidden="true" />
-                            {deletePending.has(c.id) ? "…" : "Delete"}
-                          </Button>
-                          <Button
-                            variant="surface"
-                            size="compact"
-                            type="button"
-                            onClick={closeMenu}
-                          >
-                            Keep
-                          </Button>
-                        </span>
-                      </span>
-                    ) : (
-                      <Button
-                        variant="plain"
-                        type="button"
-                        role="menuitem"
-                        onClick={() => setConfirmDeleteId(c.id)}
-                        className="min-w-0 flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-black text-alert hover:bg-cream [&>*]:min-w-0 max-w-full"
-                      >
-                        <Trash size={16} weight="bold" aria-hidden="true" />
-                        Delete
-                      </Button>
-                    )}
-                  </span>
-                </>
-              )}
-            </span>
+          {!c.isDeleted && currentUser && c.authorId === currentUser.id && (
+            <div className="ml-auto">
+              <DeleteMenu
+                label={`Options for your ${c.parentId ? "reply" : "comment"}`}
+                onDelete={() => removeComment(c)}
+              />
+            </div>
           )}
         </div>
 
@@ -454,7 +339,7 @@ export default function Comments({
         )}
 
         {kids.length > REPLY_INITIAL && (
-          <div className="min-w-0 mt-2 flex flex-wrap items-center gap-2 [&>*]:min-w-0 max-w-full">
+          <div className="min-w-0 mt-2 flex flex-wrap items-center gap-2 *:min-w-0 max-w-full">
             {hidden > 0 && (
               <Button
                 variant="surface"
@@ -509,32 +394,49 @@ export default function Comments({
           </div>
         )}
 
-        {replyTo === c.id && currentUser && (
+        {replyTo === c.id && currentUser && depth < MAX_COMMENT_LEVELS - 1 && (
           <form
             onSubmit={(e) => void postReply(e, c.id)}
-            className="min-w-0 mt-3 flex flex-wrap items-start gap-2 [&>*]:min-w-0 max-w-full"
+            className="mt-3 flex min-w-0 items-center gap-3"
           >
-            <label className="min-w-0 basis-48 flex-1">
-              <span className="sr-only">
-                Reply to {replyTarget ? replyTarget.authorName : "comment"}
-              </span>
-              <Input
+            <div className="min-w-0 flex-1 basis-40">
+              <MentionInput
                 value={replyBody}
-                onChange={(e) => setReplyBody(e.target.value)}
+                onChange={setReplyBody}
+                profiles={mentionProfiles}
+                ariaLabel={`Reply to ${replyTarget ? authorName(replyTarget) : "comment"}`}
                 maxLength={500}
                 autoFocus
-                placeholder={`Reply to ${replyTarget ? replyTarget.authorName : "comment"}…`}
-                className="py-2 text-sm"
+                placeholder={`Reply to ${replyTarget ? authorName(replyTarget) : "comment"}…`}
+                className="py-2 pr-12 text-sm"
+                trailingAction={
+                  <Button
+                    variant="minimal"
+                    size="compact-icon"
+                    type="submit"
+                    disabled={replying || !replyBody.trim()}
+                    aria-label={replying ? "Sending reply" : "Send reply"}
+                    aria-busy={replying}
+                    title={replying ? "Sending reply" : "Send reply"}
+                    className="h-8 w-8 shrink-0"
+                  >
+                    <PaperPlaneTilt size={20} weight="duotone" aria-hidden="true" />
+                  </Button>
+                }
               />
-            </label>
+            </div>
             <Button
-              variant="secondary"
-              size="small"
-              type="submit"
-              disabled={replying || !replyBody.trim()}
-              className="shrink-0"
+              variant="text"
+              type="button"
+              disabled={replying}
+              onClick={() => {
+                setReplyTo(null);
+                setReplyBody("");
+                setReplyError(null);
+              }}
+              className="shrink-0 rounded px-1 py-1 text-xs text-muted"
             >
-              {replying ? "…" : "Reply"}
+              Cancel
             </Button>
           </form>
         )}
@@ -548,28 +450,36 @@ export default function Comments({
   };
 
   return (
-    <div>
-      {loading ? (
-        <p className="text-sm font-bold text-muted">Loading feedback…</p>
-      ) : topLevel.length ? (
-        <ul className="space-y-3">{topLevel.map((c) => renderNode(c, 0))}</ul>
-      ) : (
-        <p className="text-sm font-bold text-muted">
-          No feedback yet. Be the first to share something useful.
-        </p>
-      )}
-      {error && (
-        <p role="alert" className="mt-2 text-sm font-bold">
-          {error}
-        </p>
-      )}
-      {stickyForm ? (
-        <div className="sticky bottom-0 -mx-4 -mb-4 mt-4 border-t-2 border-dashed border-divider bg-surface p-4">
-          {form}
+    <MilestoneTimeProvider>
+      <div className={stickyForm ? "flex min-h-0 flex-1 flex-col overflow-hidden" : "min-w-0"}>
+        <div
+          className={
+            stickyForm ? "min-h-0 flex-1 overflow-y-auto overscroll-contain p-4" : undefined
+          }
+        >
+          {loading ? (
+            <p className="text-sm font-bold text-muted">Loading feedback…</p>
+          ) : topLevel.length ? (
+            <ul className="space-y-3">{topLevel.map((c) => renderNode(c, 0))}</ul>
+          ) : (
+            <p className="text-sm font-bold text-muted">
+              No feedback yet. Be the first to share something useful.
+            </p>
+          )}
+          {error && (
+            <p role="alert" className="mt-2 text-sm font-bold">
+              {error}
+            </p>
+          )}
         </div>
-      ) : (
-        <div className="mt-4">{form}</div>
-      )}
-    </div>
+        {stickyForm ? (
+          <div className="shrink-0 border-t-2 border-dashed border-divider bg-surface p-4">
+            {form}
+          </div>
+        ) : (
+          <div className="mt-4">{form}</div>
+        )}
+      </div>
+    </MilestoneTimeProvider>
   );
 }

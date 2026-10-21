@@ -1,8 +1,35 @@
 import { describe, expect, it } from "vitest";
-import { formatCountdown, formatUploadStamp } from "./time";
+import { formatCountdown, formatMilestoneAge, formatUploadStamp } from "./time";
 
 const NOW = Date.parse("2026-10-07T12:00:00.000Z");
 const ago = (ms: number) => new Date(NOW - ms).toISOString();
+
+describe("formatMilestoneAge", () => {
+  it.each([
+    [0, "Just now"],
+    [-60_000, "Just now"],
+    [59_999, "Just now"],
+    [60_000, "1 minute ago"],
+    [120_000, "2 minutes ago"],
+    [3_600_000, "1 hour ago"],
+    [7_200_000, "2 hours ago"],
+    [86_400_000, "1 day ago"],
+    [6 * 86_400_000, "6 days ago"],
+    [7 * 86_400_000, "1 week ago"],
+    [29 * 86_400_000, "4 weeks ago"],
+    [30 * 86_400_000, "1 month ago"],
+    [60 * 86_400_000, "2 months ago"],
+    [365 * 86_400_000, "1 year ago"],
+    [730 * 86_400_000, "2 years ago"],
+  ])("formats %i milliseconds as %s", (age, expected) => {
+    expect(formatMilestoneAge(ago(age), NOW)).toBe(expected);
+  });
+
+  it("omits invalid timestamps", () => {
+    expect(formatMilestoneAge("", NOW)).toBeNull();
+    expect(formatMilestoneAge("not-a-date", NOW)).toBeNull();
+  });
+});
 
 describe("formatUploadStamp", () => {
   it("says Just now under a minute (and clamps future skew)", () => {

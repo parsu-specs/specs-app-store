@@ -316,7 +316,7 @@ export function buildNotifications(input: NotificationInput): NotificationItem[]
 
   for (const list of threads.values()) {
     for (const c of list) {
-      if (c.authorId === user.id) continue;
+      if (c.isDeleted || c.authorId === user.id) continue;
       if (!validDate(c.createdAt)) continue;
       const app = appById.get(c.appId);
       const appTitle = app?.title ?? "a project";
@@ -356,7 +356,7 @@ export function buildNotifications(input: NotificationInput): NotificationItem[]
   const nameById = new Map((input.profiles ?? []).map((p) => [p.id, p.name]));
   for (const list of threads.values()) {
     for (const c of list) {
-      if (c.authorId !== user.id || !validDate(c.createdAt)) continue;
+      if (c.isDeleted || c.authorId !== user.id || !validDate(c.createdAt)) continue;
       const seenLikes = new Set(likeBaseline[c.id] ?? []);
       const cycles = likeCycles[c.id] ?? {};
       for (const uid of likers.get(c.id) ?? []) {

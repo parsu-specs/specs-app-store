@@ -59,9 +59,9 @@ export type AppRepo = {
   listComments(appId: string, userId?: string): Promise<Comment[]>;
   addComment(appId: string, author: User, body: string, parentId?: string): Promise<Comment>;
   /**
-   * Delete the author's own comment/reply plus its nested replies
-   * (matches the parent_id ON DELETE CASCADE in SQL). Throws when the
-   * requester is not the author.
+   * Delete an author's comment. Preserve its identity as a placeholder when
+   * replies exist; otherwise remove it. Replies are never deleted with it.
+   * Throws when the requester is not the author.
    */
   deleteComment(appId: string, commentId: string, requester: User): Promise<void>;
   toggleCommentLike(appId: string, commentId: string, userId: string): Promise<Comment>;
@@ -72,6 +72,7 @@ export type AppRepo = {
   listCommentLikers(commentIds: string[]): Promise<Record<string, string[]>>;
   listMilestones(userId?: string): Promise<Milestone[]>;
   postMilestone(author: User, body: string, appId?: string): Promise<Milestone>;
+  deleteMilestone(milestoneId: string, requester: User): Promise<void>;
   toggleMilestoneCheer(milestoneId: string, userId: string): Promise<Milestone>;
 };
 

@@ -52,6 +52,7 @@ export default function AppCard({
   useEffect(() => {
     if (!expanded) return;
     const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || (e.target as Element)?.closest("[data-popover-portal]")) return;
       if (e.key === "Escape") onToggle(app.id);
     };
     window.addEventListener("keydown", onKey);
@@ -91,7 +92,7 @@ export default function AppCard({
         pressPos.current = { x: e.clientX, y: e.clientY };
       }}
       onClick={openFromCard}
-      className="toon-card toon-paper bg-paper flex h-full w-full min-w-0 max-w-sm cursor-pointer flex-col rounded-lg p-4 *:min-w-0"
+      className="toon-card toon-paper bg-panel flex h-full w-full min-w-0 max-w-sm cursor-pointer flex-col rounded-lg p-4 *:min-w-0"
     >
       <Button
         variant="plain"
@@ -100,7 +101,7 @@ export default function AppCard({
         className="block w-full"
       >
         {app.screenshots?.[0] ? (
-          <span className="relative block h-48 w-full overflow-hidden rounded-sm border-[3px] border-outline bg-ink">
+          <span className="relative block h-48 w-full overflow-hidden rounded-sm border-[3px] border-outline bg-inverse">
             <img
               src={app.screenshots[0]}
               alt={`${app.title} thumbnail`}
@@ -111,7 +112,7 @@ export default function AppCard({
         ) : (
           <div
             style={{ backgroundColor: `var(--color-${app.color})` }}
-            className="min-w-0 bg-[repeating-linear-gradient(-45deg,transparent_0,transparent_12px,var(--color-cover-stripe)_12px,var(--color-cover-stripe)_24px)] flex h-48 items-center justify-center rounded-sm border-[3px] border-outline [&>*]:min-w-0 max-w-full"
+            className="min-w-0 bg-[repeating-linear-gradient(-45deg,transparent_0,transparent_12px,var(--color-cover-stripe)_12px,var(--color-cover-stripe)_24px)] flex h-48 items-center justify-center rounded-sm border-[3px] border-outline *:min-w-0 max-w-full"
           >
             <span className="rotate-[-4deg] text-4xl font-black">{app.title.charAt(0)}</span>
           </div>
@@ -119,7 +120,7 @@ export default function AppCard({
       </Button>
       <div className="min-w-0 flex flex-1 flex-col *:min-w-0 max-w-full">
         <div className="min-w-0 mt-2 flex flex-col items-start gap-3 *:min-w-0 max-w-full">
-          <span className="text-[10px] font-black uppercase text-purple">{app.category}</span>
+          <span className="text-[10px] font-black uppercase text-primary">{app.category}</span>
           <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-2 *:min-w-0 max-w-full">
             <div className="flex min-w-0 items-center gap-1 *:min-w-0 max-w-full">
               <h3 className="min-w-0 wrap-anywhere text-xl font-black">{app.title} </h3>
@@ -187,8 +188,13 @@ export default function AppCard({
           <span className="min-w-0 flex items-center gap-2 *:min-w-0 max-w-full">
             <Button variant="vote" onClick={() => onVote(app.id)} aria-pressed={voted}>
               <Heart size={20} weight={voted ? "fill" : "duotone"} />
-              {app.votes}
             </Button>
+            <VotersDialog
+              appId={app.id}
+              appTitle={app.title}
+              totalVotes={app.votes}
+              onOpenProfile={onOpenProfile}
+            />
             <Button
               variant="vote"
               onClick={() => onToggle(app.id)}
@@ -200,12 +206,6 @@ export default function AppCard({
               {app.comments}
               <span className="sr-only">Show comments</span>
             </Button>
-            <VotersDialog
-              appId={app.id}
-              appTitle={app.title}
-              totalVotes={app.votes}
-              onOpenProfile={onOpenProfile}
-            />
           </span>
           <span className="min-w-0 ml-auto flex items-center gap-2 *:min-w-0 max-w-full">
             {isOwner && (
@@ -238,15 +238,15 @@ export default function AppCard({
               role="dialog"
               aria-modal="true"
               aria-label={`Comments for ${app.title}`}
-              onClick={() => onToggle(app.id)}
-              className="min-w-0 fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-ink/80 p-4 [&>*]:min-w-0 max-w-full"
+              onClick={(e) => e.stopPropagation()}
+              className="min-w-0 fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-inverse/80 p-4 max-w-full"
             >
               <div
                 id={panelId}
                 onClick={(e) => e.stopPropagation()}
-                className="min-w-0 toon-card my-auto flex max-h-[85vh] min-h-0 w-full max-w-lg flex-col overflow-hidden rounded-lg bg-surface [&>*]:min-w-0"
+                className="min-w-0 toon-card my-auto flex max-h-[85vh] min-h-0 w-full max-w-lg flex-col overflow-hidden rounded-lg bg-surface *:min-w-0"
               >
-                <div className="min-w-0 flex shrink-0 items-center justify-between gap-3 border-b-[3px] border-outline p-4 [&>*]:min-w-0 max-w-full">
+                <div className="min-w-0 flex shrink-0 items-center justify-between gap-3 border-b-[3px] border-outline p-4 *:min-w-0 max-w-full">
                   <h4 className="truncate text-lg font-black">
                     Feedback ({app.comments}) · {app.title}
                   </h4>
@@ -262,7 +262,7 @@ export default function AppCard({
                     <X size={16} weight="bold" />
                   </Button>
                 </div>
-                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
+                <div className="flex min-h-0 flex-1 flex-col">
                   <Comments
                     appId={app.id}
                     appTitle={app.title}

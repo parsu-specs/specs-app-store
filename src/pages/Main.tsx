@@ -11,15 +11,15 @@ const Landing = lazy(() => import("./Landing"));
 
 function PageLoader() {
   return (
-    <main className="min-w-0 grid [&>*]:min-w-0 min-h-screen place-items-center max-w-full">
+    <main className="min-w-0 grid min-h-screen place-items-center max-w-full">
       <div
-        className="min-w-0 flex min-h-screen items-center justify-center gap-2 [&>*]:min-w-0 max-w-full"
+        className="min-w-0 flex min-h-screen items-center justify-center gap-2 *:min-w-0 max-w-full"
         role="status"
         aria-label="Loading CodeCanvas"
       >
-        <span className="size-3 animate-loader-bounce rounded-full border-2 border-outline bg-yellow motion-reduce:animate-none" />
-        <span className="size-3 animate-loader-bounce rounded-full border-2 border-outline bg-pink [animation-delay:120ms] motion-reduce:animate-none" />
-        <span className="size-3 animate-loader-bounce rounded-full border-2 border-outline bg-mint [animation-delay:240ms] motion-reduce:animate-none" />
+        <span className="size-3 animate-loader-bounce rounded-full border-2 border-outline bg-secondary motion-reduce:animate-none" />
+        <span className="size-3 animate-loader-bounce rounded-full border-2 border-outline bg-accent [animation-delay:120ms] motion-reduce:animate-none" />
+        <span className="size-3 animate-loader-bounce rounded-full border-2 border-outline bg-success [animation-delay:240ms] motion-reduce:animate-none" />
       </div>
     </main>
   );
@@ -70,7 +70,7 @@ export default function Main() {
   if (normalizedPath === ROUTES.about) page = <About />;
   else if (normalizedPath === ROUTES.landing || (normalizedPath === ROUTES.root && !user))
     page = <Landing />;
-  else if (user) page = <Store />;
+  else if (user) page = <Store key={user.id} />;
   else if (isProtectedRoute(normalizedPath) || normalizedPath === ROUTES.signin) page = <Login />;
   else page = <Landing />;
 

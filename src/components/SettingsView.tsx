@@ -1,16 +1,11 @@
-import { useEffect, useState } from "react";
-import {
-  ArrowCounterClockwise,
-  Eye,
-  EyeSlash,
-  LockKey,
-  Palette,
-  SpeakerHigh,
-  SpeakerSlash,
-} from "@phosphor-icons/react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { ArrowCounterClockwise, Eye, EyeSlash, LockKey, Palette } from "@phosphor-icons/react";
 import { Button } from "./Button";
 import Input from "./Input";
-import { isSoundsMuted, playNotificationSound, setSoundsMuted } from "../utils/sounds";
+import AppearanceControl from "./AppearanceControl";
+import SoundControl from "./SoundControl";
+import { appearanceSnapshot, subscribeAppearance } from "../utils/appearance";
+import { palettesForMode } from "../utils/darkPalettes";
 import { loadPalette, PALETTES, resolvePalette, setPalette } from "../utils/palette";
 import { getAuthRepo, getProfileRepo } from "../data/factory";
 import { resetLocalData } from "../data/local/localApps";
@@ -74,7 +69,7 @@ function PasswordForm({ mode, onSaved }: { mode: "add" | "change"; onSaved: () =
             onClick={() => setShow((v) => !v)}
             aria-label={show ? "Hide password" : "Show password"}
             aria-pressed={show}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-foreground"
           >
             {show ? <EyeSlash size={21} weight="bold" /> : <Eye size={21} weight="bold" />}
           </Button>
@@ -109,8 +104,14 @@ export default function SettingsView({
   hasPassword: boolean | null;
   onPasswordUpdated: () => void;
 }) {
-  const { user } = useAuth();
-  const [muted, setMuted] = useState(() => isSoundsMuted());
+  const { user, updateCachedProfile } = useAuth();
+  const appearance = useSyncExternalStore(
+    subscribeAppearance,
+    appearanceSnapshot,
+    () => "system:light",
+  );
+  const mode = appearance.endsWith(":dark") ? "dark" : "light";
+  const palettes = palettesForMode(mode, PALETTES);
   const [palette, setPaletteState] = useState(() => loadPalette());
   const [paletteError, setPaletteError] = useState<string | null>(null);
   const [paletteSaving, setPaletteSaving] = useState(false);
@@ -130,7 +131,8 @@ export default function SettingsView({
     if (!user) return;
     setPaletteSaving(true);
     try {
-      await getProfileRepo().updateProfile(user.id, { palette: id }, user.id);
+      const updated = await getProfileRepo().updateProfile(user.id, { palette: id }, user.id);
+      updateCachedProfile(updated);
       onChanged();
     } catch (e) {
       setPalette(previous);
@@ -141,14 +143,6 @@ export default function SettingsView({
     }
   };
 
-  const toggleMute = () => {
-    const next = !muted;
-    setSoundsMuted(next);
-    setMuted(next);
-    // Confirm unmuting audibly; muting stays silent by definition.
-    if (!next) playNotificationSound();
-  };
-
   const resetDemo = () => {
     resetLocalData();
     window.location.reload();
@@ -156,8 +150,8 @@ export default function SettingsView({
 
   return (
     <div className="space-y-6">
-      <section className="toon-card toon-paper bg-paper rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
-        <div className="min-w-0 flex items-center gap-2 [&>*]:min-w-0 max-w-full">
+      <section className="toon-card toon-paper bg-panel rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
+        <div className="min-w-0 flex items-center gap-2 *:min-w-0 max-w-full">
           <LockKey size={22} weight="duotone" aria-hidden="true" />
           <h2 className="text-2xl font-black">Sign-in & password</h2>
         </div>
@@ -167,14 +161,24 @@ export default function SettingsView({
           <PasswordForm mode={hasPassword ? "change" : "add"} onSaved={onPasswordUpdated} />
         )}
       </section>
-      <section className="toon-card toon-paper bg-paper rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
-        <div className="min-w-0 flex items-center gap-2 [&>*]:min-w-0 max-w-full">
+      <section className="toon-card toon-paper bg-panel rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
+        <div className="min-w-0 flex items-center gap-2 *:min-w-0 max-w-full">
           <Palette size={22} weight="duotone" aria-hidden="true" />
           <h2 className="text-2xl font-black">Website theme</h2>
         </div>
+        <h3 className="mt-4 text-base font-black">Appearance</h3>
+        <p className="mt-1 text-sm font-bold text-muted">
+          Choose light or dark, or follow your system. Saved on this device.
+        </p>
+        <AppearanceControl />
+        <h3 className="mt-6 text-base font-black">
+          {mode === "dark" ? "Dark palettes" : "Light palettes"}
+        </h3>
         <p className="mt-2 text-sm font-bold text-muted">
-          Recolor the whole site to your taste. Saved to your account, so it follows you to other
-          browsers.
+          {mode === "dark"
+            ? "Rich dark surfaces with carefully chosen accents."
+            : "Soft paper surfaces with playful color accents."}{" "}
+          Saved to your account, so it follows you to other browsers.
         </p>
         {paletteError && (
           <p role="alert" className="mt-2 text-sm font-bold">
@@ -182,11 +186,11 @@ export default function SettingsView({
           </p>
         )}
         <div
-          className="min-w-0 mt-4 grid [&>*]:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-3 max-w-full"
+          className="min-w-0 mt-4 grid *:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-3 max-w-full"
           role="group"
           aria-label="Website theme"
         >
-          {PALETTES.map((p) => {
+          {palettes.map((p) => {
             const active = palette === p.id;
             return (
               <Button
@@ -196,10 +200,10 @@ export default function SettingsView({
                 onClick={() => void pickPalette(p.id)}
                 disabled={paletteSaving}
                 aria-pressed={active}
-                className={`min-w-0 flex flex-wrap items-center gap-3 rounded-xl border-[3px] p-3 text-left ${active ? "border-outline bg-yellow shadow-[3px_3px_0_var(--color-outline)]" : "border-divider bg-surface hover:bg-cream"} [&>*]:min-w-0 max-w-full`}
+                className={`min-w-0 flex flex-wrap items-center gap-3 rounded-xl border-[3px] p-3 text-left ${active ? "border-outline bg-secondary shadow-[3px_3px_0_var(--color-outline)]" : "border-divider bg-surface hover:bg-background"} max-w-full`}
               >
                 <span
-                  className="min-w-0 flex shrink-0 -space-x-1.5 [&>*]:min-w-0 max-w-full"
+                  className="min-w-0 flex shrink-0 -space-x-1.5 *:min-w-0 max-w-full"
                   aria-hidden="true"
                 >
                   {p.swatches.map((hex) => (
@@ -221,51 +225,11 @@ export default function SettingsView({
           })}
         </div>
       </section>
-      <section className="toon-card toon-paper bg-paper rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
-        <div className="min-w-0 flex items-center gap-2 [&>*]:min-w-0 max-w-full">
-          {muted ? (
-            <SpeakerSlash size={22} weight="duotone" aria-hidden="true" />
-          ) : (
-            <SpeakerHigh size={22} weight="duotone" aria-hidden="true" />
-          )}
-          <h2 className="text-2xl font-black">Sounds</h2>
-        </div>
-        <p className="mt-2 text-sm font-bold text-muted">
-          Chimes for upvotes and new notifications. Stored on this device only.
-        </p>
-        <div className="min-w-0 mt-4 flex flex-wrap items-center gap-3 [&>*]:min-w-0 max-w-full">
-          <Button
-            variant="plain"
-            type="button"
-            role="switch"
-            aria-checked={!muted}
-            aria-label="Sound effects"
-            onClick={toggleMute}
-            className={`min-w-0 flex w-16 items-center rounded-full border-[3px] border-outline p-1 ${muted ? "justify-start bg-divider" : "justify-end bg-mint"} [&>*]:min-w-0 max-w-full`}
-          >
-            <span
-              aria-hidden="true"
-              className="h-6 w-6 rounded-full border-2 border-outline bg-surface"
-            />
-          </Button>
-          <span className="text-sm font-black">{muted ? "Muted" : "On"}</span>
-          <Button
-            variant="surface"
-            size="small"
-            type="button"
-            onClick={() => playNotificationSound()}
-            disabled={muted}
-            title={muted ? "Unmute to preview" : "Preview the notification chime"}
-            className="ml-auto"
-          >
-            Preview chime
-          </Button>
-        </div>
-      </section>
+      <SoundControl />
 
       {isLocalMode && (
-        <section className="toon-card toon-paper bg-paper rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
-          <div className="min-w-0 flex items-center gap-2 [&>*]:min-w-0 max-w-full">
+        <section className="toon-card toon-paper bg-panel rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
+          <div className="min-w-0 flex items-center gap-2 *:min-w-0 max-w-full">
             <ArrowCounterClockwise size={22} weight="duotone" aria-hidden="true" />
             <h2 className="text-2xl font-black">Demo data</h2>
           </div>
@@ -286,7 +250,7 @@ export default function SettingsView({
           ) : (
             <div role="alert" className="mt-4 rounded-xl border-2 border-dashed border-divider p-3">
               <p className="text-sm font-black">Clear all local projects and activity?</p>
-              <div className="min-w-0 mt-3 flex flex-wrap gap-3 [&>*]:min-w-0 max-w-full">
+              <div className="min-w-0 mt-3 flex flex-wrap gap-3 *:min-w-0 max-w-full">
                 <Button variant="danger" size="small" type="button" onClick={resetDemo}>
                   Yes, reset it
                 </Button>

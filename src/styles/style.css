@@ -1,5 +1,50 @@
 @import "tailwindcss";
 
+html[data-pinch-zoom="disabled"],
+html[data-pinch-zoom="disabled"] * {
+  touch-action: pan-x pan-y;
+}
+
+@utility scrollbar-minimal {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-primary) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track,
+  &::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--color-primary);
+    border: 0;
+    border-radius: 999px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary);
+  }
+
+  &::-webkit-scrollbar-button {
+    color: var(--color-primary);
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
+body:has([data-dropdown-portal]) {
+  overflow: hidden;
+
+  @variant md {
+    overflow: revert-layer;
+  }
+}
+
 @theme {
   --color-black: #000000;
   --color-google-button: #1e1e1e;
@@ -24,23 +69,29 @@
   --color-podium-silver: #dde3ea;
   --color-podium-bronze: #eac39e;
 
-  --color-ink: #20283c;
-  --color-outline: var(--color-ink);
-  --color-cream: #f6f4ed;
-  --color-purple: #6558bd;
-  --color-yellow: #e8c451;
-  --color-mint: #9bcab5;
-  --color-pink: #dfa0a4;
-  --color-sky: #91b8c8;
-  --color-lavender: #b9b3d0;
-  --color-paper: #fbfaf5;
+  --color-primary: var(--palette-primary);
+  --color-secondary: var(--palette-secondary);
+  --color-success: var(--palette-success);
+  --color-accent: var(--palette-accent);
+  --color-info: var(--palette-info);
+  --color-tertiary: var(--palette-tertiary);
+  --color-primary-foreground: #ffffff;
+  --color-brand-surface: var(--color-primary);
+  --color-brand-foreground: var(--color-primary-foreground);
+  --color-brand-accent: var(--palette-secondary);
+  --color-inverse-foreground: #ffffff;
+  --color-inverse: #20283c;
+  --color-foreground: #20283c;
+  --color-outline: var(--color-foreground);
+  --color-background: #f6f4ed;
+  --color-panel: #fbfaf5;
   --color-surface: #ffffff;
   --color-body: #3f485b;
   --color-muted: #626a78;
   --color-placeholder: #cbd1dc;
   --color-divider: #b8becc;
   --color-divider-strong: #9ca4b4;
-  --color-alert: #ff5b82;
+  --color-danger: #ff5b82;
   --color-vote: #e83e70;
   --color-medal-silver: #c0c0c0;
   --color-medal-bronze: #a85d1a;
@@ -89,127 +140,170 @@
 
 /* Runtime palette variables are shared design tokens. */
 :root {
+  --palette-primary: #6558bd;
+  --palette-secondary: #e8c451;
+  --palette-success: #9bcab5;
+  --palette-accent: #dfa0a4;
+  --palette-info: #91b8c8;
+  --palette-tertiary: #b9b3d0;
   color-scheme: light;
   font-synthesis: none;
 }
 
 :root[data-palette="ocean"] {
-  --color-purple: #2f6df6;
-  --color-yellow: #ffcf5c;
-  --color-mint: #4fd1b5;
-  --color-pink: #ff9ec6;
-  --color-sky: #6fc3e8;
-  --color-lavender: #9aa8f0;
-  --color-paper: #f6f3ea;
-  --color-cream: #ebf2ec;
+  --palette-primary: #2f6df6;
+  --palette-secondary: #ffcf5c;
+  --palette-success: #4fd1b5;
+  --palette-accent: #ff9ec6;
+  --palette-info: #6fc3e8;
+  --palette-tertiary: #9aa8f0;
+  --color-panel: #f6f3ea;
+  --color-background: #ebf2ec;
   --color-surface: #ffffff;
 }
 
 :root[data-palette="sunset"] {
-  --color-purple: #9d4edd;
-  --color-yellow: #ff9e00;
-  --color-mint: #8ac926;
-  --color-pink: #ff5d8f;
-  --color-sky: #4cc9f0;
-  --color-lavender: #c4b5fd;
-  --color-paper: #faf3ea;
-  --color-cream: #f6e9dd;
+  --palette-primary: #9d4edd;
+  --palette-secondary: #ff9e00;
+  --palette-success: #8ac926;
+  --palette-accent: #ff5d8f;
+  --palette-info: #4cc9f0;
+  --palette-tertiary: #c4b5fd;
+  --color-panel: #faf3ea;
+  --color-background: #f6e9dd;
   --color-surface: #ffffff;
 }
 
 :root[data-palette="forest"] {
-  --color-purple: #2d6a4f;
-  --color-yellow: #e9c46a;
-  --color-mint: #74c69d;
-  --color-pink: #e5989b;
-  --color-sky: #6aaed6;
-  --color-lavender: #a78bfa;
-  --color-paper: #f4f1e6;
-  --color-cream: #e9efe3;
+  --palette-primary: #2d6a4f;
+  --palette-secondary: #e9c46a;
+  --palette-success: #74c69d;
+  --palette-accent: #e5989b;
+  --palette-info: #6aaed6;
+  --palette-tertiary: #a78bfa;
+  --color-panel: #f4f1e6;
+  --color-background: #e9efe3;
   --color-surface: #ffffff;
 }
 
 :root[data-palette="mono"] {
-  --color-purple: #3f3f3f;
-  --color-yellow: #8a8a8a;
-  --color-mint: #b0b0b0;
-  --color-pink: #c9c9c9;
-  --color-sky: #dcdcdc;
-  --color-lavender: #e8e8e8;
-  --color-paper: #fafafa;
-  --color-cream: #f1f1f1;
+  --palette-primary: #3f3f3f;
+  --palette-secondary: #8a8a8a;
+  --palette-success: #b0b0b0;
+  --palette-accent: #c9c9c9;
+  --palette-info: #dcdcdc;
+  --palette-tertiary: #e8e8e8;
+  --color-panel: #fafafa;
+  --color-background: #f1f1f1;
   --color-surface: #ffffff;
 }
 
 :root[data-palette="bubblegum"] {
-  --color-purple: #d6336c;
-  --color-yellow: #ffd166;
-  --color-mint: #8ce8d2;
-  --color-pink: #ff5d8f;
-  --color-sky: #a9def9;
-  --color-lavender: #d0b3f5;
-  --color-paper: #fdf2f6;
-  --color-cream: #fbdfea;
+  --palette-primary: #d6336c;
+  --palette-secondary: #ffd166;
+  --palette-success: #8ce8d2;
+  --palette-accent: #ff5d8f;
+  --palette-info: #a9def9;
+  --palette-tertiary: #d0b3f5;
+  --color-panel: #fdf2f6;
+  --color-background: #fbdfea;
   --color-surface: #ffffff;
 }
 
 :root[data-palette="citrus"] {
-  --color-purple: #65a30d;
-  --color-yellow: #facc15;
-  --color-mint: #4ade80;
-  --color-pink: #fb7185;
-  --color-sky: #22d3ee;
-  --color-lavender: #a78bfa;
-  --color-paper: #faf9ec;
-  --color-cream: #f3eedb;
+  --palette-primary: #65a30d;
+  --palette-secondary: #facc15;
+  --palette-success: #4ade80;
+  --palette-accent: #fb7185;
+  --palette-info: #22d3ee;
+  --palette-tertiary: #a78bfa;
+  --color-panel: #faf9ec;
+  --color-background: #f3eedb;
   --color-surface: #ffffff;
 }
 
 :root[data-palette="grape"] {
-  --color-purple: #6d28d9;
-  --color-yellow: #e9d5ff;
-  --color-mint: #c4b5fd;
-  --color-pink: #f0abfc;
-  --color-sky: #a5b4fc;
-  --color-lavender: #ddd6fe;
-  --color-paper: #f7f3fc;
-  --color-cream: #efe9fb;
+  --palette-primary: #6d28d9;
+  --palette-secondary: #e9d5ff;
+  --palette-success: #c4b5fd;
+  --palette-accent: #f0abfc;
+  --palette-info: #a5b4fc;
+  --palette-tertiary: #ddd6fe;
+  --color-panel: #f7f3fc;
+  --color-background: #efe9fb;
   --color-surface: #ffffff;
 }
 
-/* Midnight is the only dark palette: dark surfaces + light text, but the
-   accent hues stay saturated (brightened where needed so they read on dark)
-   instead of going grayscale — the old gray wash is what looked inverted.
-   Tape, grid lines, and alert colors are shared because they read fine. */
+/* Midnight remains available as a palette; appearance is selected independently. */
 :root[data-palette="midnight"] {
+  --palette-primary: #8b7cf6;
+  --palette-secondary: #e8c451;
+  --palette-success: #7dd3b8;
+  --palette-accent: #f2a3b3;
+  --palette-info: #7cc7e8;
+  --palette-tertiary: #b9b3d0;
+}
+
+:root[data-mode="dark"] {
   color-scheme: dark;
-  --color-purple: #8b7cf6;
-  --color-yellow: #e8c451;
-  --color-mint: #7dd3b8;
-  --color-pink: #f2a3b3;
-  --color-sky: #7cc7e8;
-  --color-lavender: #b9b3d0;
-  --color-paper: #101013;
-  --color-cream: #17171b;
-  --color-surface: #202026;
-  --color-ink: #f4f4f5;
-  --color-outline: #43434c;
-  --color-body: #b9bdc6;
-  --color-muted: #868b95;
-  --color-placeholder: #555a64;
-  --color-divider: #2c2c31;
-  --color-divider-strong: #3d3d44;
-  --color-ink-dots: rgb(244 244 245 / 10%);
-  --color-ink-shadow: rgb(0 0 0 / 60%);
+  --color-primary: #c2a5f5;
+  --color-primary-foreground: #161b29;
+  --color-brand-surface: #21192e;
+  --color-brand-foreground: #edeaf3;
+  --color-brand-accent: var(--color-primary);
+  --color-podium-gold: #494025;
+  --color-podium-silver: #353e50;
+  --color-podium-bronze: #49372b;
+  --color-medal-silver: #434d60;
+  --color-secondary: #3d304f;
+  --color-success: #233e36;
+  --color-accent: #492d40;
+  --color-info: #293a4c;
+  --color-tertiary: #322b43;
+  --color-panel: #181e2c;
+  --color-background: #111622;
+  --color-surface: #222a3b;
+  --color-foreground: #f0f2f8;
+  --color-outline: #444454;
+  --color-body: #c4ccdb;
+  --color-muted: #a6b1c5;
+  --color-placeholder: #8793aa;
+  --color-divider: #3c475c;
+  --color-divider-strong: #69758d;
+  --color-danger: #ff8aa5;
+  --color-vote: #ff8fb3;
+  --color-paper-line: rgb(164 153 255 / 4%);
+  --color-margin-line: rgb(255 138 165 / 9%);
+  --color-ink-dots: rgb(240 242 248 / 4%);
+  --color-ink-shadow: rgb(0 0 0 / 50%);
+  --color-tape: rgb(186 148 39 / 60%);
+  --color-tape-border: rgb(232 196 81 / 35%);
+  --color-cover-stripe: rgb(255 255 255 / 7%);
+}
+
+/* Compatibility for color identifiers stored in existing profiles and projects. */
+:root {
+  --color-purple: var(--color-primary);
+  --color-yellow: var(--color-secondary);
+  --color-mint: var(--color-success);
+  --color-pink: var(--color-accent);
+  --color-sky: var(--color-info);
+  --color-lavender: var(--color-tertiary);
+  --color-paper: var(--color-panel);
 }
 
 /* Only document canvas painting, native scrollbar defaults, and the accessibility
    preference remain global. Base-layer rules allow component utilities to win. */
 @layer base {
+  :where(body, body *) {
+    @apply scrollbar-minimal;
+  }
+
   html {
-    scrollbar-color: var(--color-yellow) var(--color-ink);
+    color: var(--color-foreground);
+    scrollbar-color: var(--color-primary) var(--color-outline);
     scrollbar-width: auto;
-    background-color: var(--color-cream);
+    background-color: var(--color-background);
     background-image:
       linear-gradient(90deg, transparent 63px, var(--color-margin-line) 64px, transparent 65px),
       linear-gradient(var(--color-paper-line) 1px, transparent 1px),
@@ -228,7 +322,7 @@
     inset: -100vmax;
     z-index: -1;
     pointer-events: none;
-    background-color: var(--color-cream);
+    background-color: var(--color-background);
     background-image:
       linear-gradient(90deg, transparent 63px, var(--color-margin-line) 64px, transparent 65px),
       linear-gradient(var(--color-paper-line) 1px, transparent 1px),
@@ -246,35 +340,35 @@
     background-repeat: repeat-y, repeat, repeat, repeat;
   }
 
-  *::-webkit-scrollbar {
+  html::-webkit-scrollbar {
     width: 14px;
     height: 14px;
   }
 
-  *::-webkit-scrollbar-track {
-    background: var(--color-ink);
+  html::-webkit-scrollbar-track {
+    background: var(--color-outline);
   }
 
-  *::-webkit-scrollbar-thumb {
+  html::-webkit-scrollbar-thumb {
     min-width: 36px;
     min-height: 36px;
-    background: var(--color-yellow);
-    border: 3px solid var(--color-yellow);
+    background: var(--color-primary);
+    border: 3px solid var(--color-outline);
     border-radius: 999px;
   }
 
-  *::-webkit-scrollbar-thumb:hover {
-    background: var(--color-yellow);
+  html::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary);
   }
 
-  *::-webkit-scrollbar-button {
+  html::-webkit-scrollbar-button {
     width: 14px;
     height: 14px;
-    background: var(--color-yellow);
+    background: var(--color-outline);
   }
 
-  *::-webkit-scrollbar-corner {
-    background: var(--color-ink);
+  html::-webkit-scrollbar-corner {
+    background: var(--color-outline);
   }
 
   @media (prefers-reduced-motion: reduce) {

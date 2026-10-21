@@ -60,6 +60,10 @@ The default backend is browser localStorage. Supabase Auth/PostgREST and custom 
 
 Review `supabase/schema.sql` and each migration header. Apply migrations in dependency order, not an assumed alphabetical order: legacy profile-claim support must precede its retirement in `migration_drop_claim.sql`; counter and vote protections must be applied in their intended sequence. For an existing database, inspect what is already applied and back up first. Do not blindly rerun all files after the consolidated schema.
 
+Comment threads allow four levels, including the top-level comment. For existing Supabase databases, apply `migration_comment_limits.sql` after `migration_comment_placeholders.sql`. The equivalent CLI migration is `migrations/20261021000300_comment_limits.sql`; fresh databases receive the guards from `schema.sql`. Deleted placeholders cannot receive likes, while their replies can. Older threads deeper than four levels remain readable, but cannot receive deeper replies. A custom HTTP backend must enforce the same rules.
+
+To test the SQL without connecting to Supabase, install `@electric-sql/pglite` in a temporary directory, then run `node supabase/tests/comment-limits.mjs <temporary-directory>`. The runner loads the schema and migrations into disposable PostgreSQL and runs `supabase/tests/comment_limits.sql`.
+
 ## Local demo boundaries
 
 Local Google account claims and browser password storage are demo behavior. Production identity verification and authorization belong in Supabase or the custom server. Local demo IDs are not interchangeable with Supabase UUID identities.

@@ -18,6 +18,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { getAppRepo, getProfileRepo } from "../data/factory";
 import { fileToThumbnailDataUrl } from "../utils/images";
 import { useScrollToForm } from "../utils/scroll";
+import { loadCachedProfile } from "../utils/viewerCache";
 import { PROFILE_THEMES } from "../data/types";
 import type { AppItem, Profile, User } from "../data/types";
 
@@ -57,18 +58,23 @@ export default function ProfileView({
   onSubmitProject,
   onProfileUpdated,
 }: ProfileViewProps) {
-  const { updateName } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { updateName, updateCachedProfile } = useAuth();
+  const [initialProfile] = useState(() =>
+    currentUser?.id === profileId ? loadCachedProfile(profileId) : null,
+  );
+  const [profile, setProfile] = useState<Profile | null>(initialProfile);
   const [apps, setApps] = useState<AppItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
-  const [name, setName] = useState("");
-  const [role, setRole] = useState("");
-  const [bio, setBio] = useState("");
-  const [color, setColor] = useState<string>("sky");
-  const [theme, setTheme] = useState<string>("");
-  const [imageUrl, setImageUrl] = useState("");
+  const editingRef = useRef(false);
+  editingRef.current = editing;
+  const [name, setName] = useState(initialProfile?.name ?? "");
+  const [role, setRole] = useState(initialProfile?.role ?? "");
+  const [bio, setBio] = useState(initialProfile?.bio ?? "");
+  const [color, setColor] = useState<string>(initialProfile?.color ?? "sky");
+  const [theme, setTheme] = useState<string>(initialProfile?.theme ?? "");
+  const [imageUrl, setImageUrl] = useState(initialProfile?.imageUrl ?? "");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -95,12 +101,15 @@ export default function ProfileView({
         const all = await getAppRepo().listApps({ limit: 200, userId: currentUser?.id });
         if (cancelled) return;
         setProfile(p);
-        setName(p.name);
-        setRole(p.role);
-        setBio(p.bio);
-        setColor(p.color);
-        setTheme(p.theme ?? "");
-        setImageUrl(p.imageUrl ?? "");
+        if (p.id === currentUser?.id) updateCachedProfile(p);
+        if (!editingRef.current) {
+          setName(p.name);
+          setRole(p.role);
+          setBio(p.bio);
+          setColor(p.color);
+          setTheme(p.theme ?? "");
+          setImageUrl(p.imageUrl ?? "");
+        }
         setApps(
           all.filter((a) =>
             a.creatorId ? a.creatorId === p.id : a.creator.toLowerCase() === p.name.toLowerCase(),
@@ -144,6 +153,7 @@ export default function ProfileView({
         }
       }
       setProfile(updated);
+      if (isSelf) updateCachedProfile(updated);
       setEditing(false);
       // Push color/photo/bio changes to shared surfaces (sidebar, comment
       // avatars), which otherwise keep the old profile until a reload.
@@ -155,10 +165,10 @@ export default function ProfileView({
     }
   };
 
-  if (loading) return <p className="font-bold text-muted">Loading developer…</p>;
-  if (error || !profile) {
+  if (loading && !profile) return <p className="font-bold text-muted">Loading developer…</p>;
+  if (!profile) {
     return (
-      <div className="toon-card toon-paper bg-paper rounded-lg p-10 text-center">
+      <div className="toon-card toon-paper bg-panel rounded-lg p-10 text-center">
         <h3 className="text-xl font-black">Developer not found</h3>
         <p className="font-bold text-muted">{error ?? "This profile does not exist."}</p>
         <Button variant="secondary" className="mt-5" onClick={onBack}>
@@ -182,22 +192,22 @@ export default function ProfileView({
       </Button>
 
       <div
-        className="toon-card toon-paper bg-paper mt-5 rounded-lg p-6 pt-10 sm:p-8 sm:pt-12"
+        className="toon-card toon-paper bg-panel mt-5 rounded-lg p-6 pt-10 sm:p-8 sm:pt-12"
         style={
           pageTheme
             ? {
-                backgroundColor: `color-mix(in srgb, var(--color-${pageTheme}) 24%, var(--color-paper))`,
+                backgroundColor: `color-mix(in srgb, var(--color-${pageTheme}) 24%, var(--color-panel))`,
               }
             : undefined
         }
       >
-        <div className="min-w-0 flex flex-col items-center gap-5 text-center sm:flex-row sm:items-start sm:text-left [&>*]:min-w-0 max-w-full">
+        <div className="min-w-0 flex flex-col items-center gap-5 text-center sm:flex-row sm:items-start sm:text-left *:min-w-0 max-w-full">
           <Avatar name={profile.name} color={profile.color} imageUrl={profile.imageUrl} size="xl" />
           <div className="w-full min-w-0 flex-1 sm:w-auto">
-            <p className="min-w-0 inline-flex -rotate-2 items-center gap-2 border-2 border-dashed border-purple px-3 py-1 text-xs font-black uppercase text-purple bg-surface [&>*]:min-w-0 max-w-full">
+            <p className="min-w-0 inline-flex -rotate-2 items-center gap-2 border-2 border-dashed border-primary px-3 py-1 text-xs font-black uppercase text-primary bg-surface *:min-w-0 max-w-full">
               {isSelf ? "Your profile" : "Developer"}
             </p>
-            <h2 className="mt-3 flex min-w-0 max-w-full flex-wrap items-center justify-center gap-2 text-3xl font-black sm:justify-start [&>*]:min-w-0">
+            <h2 className="mt-3 flex min-w-0 max-w-full flex-wrap items-center justify-center gap-2 text-3xl font-black sm:justify-start *:min-w-0">
               <span className="min-w-0 max-w-full wrap-anywhere">{profile.name}</span>
               {trophies.get(profile.id) !== undefined && (
                 <TrophyMark place={trophies.get(profile.id) as 1 | 2 | 3} size={32} />
@@ -207,17 +217,19 @@ export default function ProfileView({
             {profile.bio && (
               <p className="mt-3 max-w-2xl break-words leading-7 text-body">{profile.bio}</p>
             )}
-            <div className="min-w-0 mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm font-black sm:justify-start [&>*]:min-w-0 max-w-full">
-              <span>
-                {apps.length} project{apps.length === 1 ? "" : "s"}
-              </span>
-              <span className="min-w-0 flex items-center gap-1 [&>*]:min-w-0 max-w-full">
-                <Heart size={16} weight="duotone" /> {totalVotes} votes received
-              </span>
-              <span className="min-w-0 flex items-center gap-1 [&>*]:min-w-0 max-w-full">
-                <ChatCircleDots size={16} weight="duotone" /> {totalFeedback} feedback
-              </span>
-            </div>
+            {!loading && !error && (
+              <div className="min-w-0 mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm font-black sm:justify-start *:min-w-0 max-w-full">
+                <span>
+                  {apps.length} project{apps.length === 1 ? "" : "s"}
+                </span>
+                <span className="min-w-0 flex items-center gap-1 *:min-w-0 max-w-full">
+                  <Heart size={16} weight="duotone" /> {totalVotes} votes received
+                </span>
+                <span className="min-w-0 flex items-center gap-1 *:min-w-0 max-w-full">
+                  <ChatCircleDots size={16} weight="duotone" /> {totalFeedback} feedback
+                </span>
+              </div>
+            )}
             {rankSummary && (
               <p className="mt-4 rounded-xl border-2 border-dashed border-divider p-3 text-sm font-bold text-muted">
                 Ranked #{rankSummary.rank} of {rankSummary.total} · {rankSummary.points}{" "}
@@ -244,7 +256,7 @@ export default function ProfileView({
           <form
             ref={editFormRef}
             onSubmit={(e) => void save(e)}
-            className="min-w-0 mt-6 grid [&>*]:min-w-0 scroll-mt-28 gap-4 border-t-2 border-dashed border-divider pt-6 @min-[36rem]/content:grid-cols-2 max-w-full"
+            className="min-w-0 mt-6 grid *:min-w-0 scroll-mt-28 gap-4 border-t-2 border-dashed border-divider pt-6 @min-[36rem]/content:grid-cols-2 max-w-full"
           >
             <label>
               <span className="mb-2 block text-xs font-black uppercase">Display name</span>
@@ -281,7 +293,7 @@ export default function ProfileView({
                 Profile theme (profile page only)
               </span>
               <div
-                className="min-w-0 flex flex-wrap items-center gap-2 [&>*]:min-w-0 max-w-full"
+                className="min-w-0 flex flex-wrap items-center gap-2 *:min-w-0 max-w-full"
                 role="group"
                 aria-label="Profile theme"
               >
@@ -291,7 +303,7 @@ export default function ProfileView({
                   onClick={() => setTheme("")}
                   aria-pressed={theme === ""}
                   title="Default"
-                  className={`rounded-full border-2 px-3 py-1 text-xs font-black ${theme === "" ? "border-outline bg-yellow shadow-[2px_2px_0_var(--color-outline)]" : "border-divider bg-surface"}`}
+                  className={`rounded-full border-2 px-3 py-1 text-xs font-black ${theme === "" ? "border-outline bg-secondary shadow-[2px_2px_0_var(--color-outline)]" : "border-divider bg-surface"}`}
                 >
                   Default
                 </Button>
@@ -321,7 +333,7 @@ export default function ProfileView({
             </label>
             <label className="@min-[36rem]/content:col-span-2">
               <span className="mb-2 block text-xs font-black uppercase">Profile photo</span>
-              <span className="min-w-0 flex flex-wrap items-center gap-3 [&>*]:min-w-0 max-w-full">
+              <span className="min-w-0 flex flex-wrap items-center gap-3 *:min-w-0 max-w-full">
                 <ButtonLabel variant="surface" size="small" className="cursor-pointer">
                   <Images size={18} weight="duotone" />
                   {photoBusy ? "Processing…" : "Choose from gallery"}
@@ -364,7 +376,7 @@ export default function ProfileView({
                 placeholder="…or paste an https:// image link"
               />
             </label>
-            <div className="min-w-0 flex items-center gap-3 @min-[36rem]/content:col-span-2 [&>*]:min-w-0 max-w-full">
+            <div className="min-w-0 flex items-center gap-3 @min-[36rem]/content:col-span-2 *:min-w-0 max-w-full">
               <Avatar
                 name={name.trim() || profile.name}
                 color={color}
@@ -395,7 +407,7 @@ export default function ProfileView({
 
       <div className="mb-5 mt-8 flex flex-wrap items-center justify-between gap-4 border-t-2 border-dashed border-divider pt-6">
         <div>
-          <p className="text-xs font-black uppercase text-purple">Projects</p>
+          <p className="text-xs font-black uppercase text-primary">Projects</p>
           <h3 className="mt-1 text-2xl font-black">
             {isSelf ? "Your projects" : `Projects by ${profile.name}`}
           </h3>
@@ -406,17 +418,25 @@ export default function ProfileView({
           </Button>
         )}
       </div>
-      {apps.length ? (
-        <div className="min-w-0 grid [&>*]:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-6 max-w-full">
+      {loading ? (
+        <p role="status" className="font-bold text-muted">
+          Loading projects?
+        </p>
+      ) : error ? (
+        <p role="alert" className="font-bold text-muted">
+          {error}
+        </p>
+      ) : apps.length ? (
+        <div className="min-w-0 grid *:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-6 max-w-full">
           {apps.map((app) => (
             <Button
               variant="plain"
               key={app.id}
               onClick={() => onOpenApp(app.id)}
-              className="toon-card toon-paper bg-paper flex h-full w-full min-w-0 max-w-sm flex-col rounded-lg p-5 pt-9 text-left [&>*]:min-w-0"
+              className="toon-card toon-paper bg-panel flex h-full w-full min-w-0 max-w-sm flex-col rounded-lg p-5 pt-9 text-left *:min-w-0"
             >
               {app.screenshots?.[0] ? (
-                <span className="relative block h-24 w-full overflow-hidden rounded-sm border-[3px] border-outline bg-ink">
+                <span className="relative block h-24 w-full overflow-hidden rounded-sm border-[3px] border-outline bg-inverse">
                   <img
                     src={app.screenshots[0]}
                     alt=""
@@ -434,13 +454,13 @@ export default function ProfileView({
               ) : (
                 <div
                   style={{ backgroundColor: `var(--color-${app.color})` }}
-                  className="min-w-0 bg-[repeating-linear-gradient(-45deg,transparent_0,transparent_12px,var(--color-cover-stripe)_12px,var(--color-cover-stripe)_24px)] flex h-24 items-center justify-center rounded-sm border-[3px] border-outline [&>*]:min-w-0 max-w-full"
+                  className="min-w-0 bg-[repeating-linear-gradient(-45deg,transparent_0,transparent_12px,var(--color-cover-stripe)_12px,var(--color-cover-stripe)_24px)] flex h-24 items-center justify-center rounded-sm border-[3px] border-outline *:min-w-0 max-w-full"
                 >
                   <span className="rotate-[-4deg] text-3xl font-black">{app.title.charAt(0)}</span>
                 </div>
               )}
-              <p className="mt-4 text-[10px] font-black uppercase text-purple">{app.category}</p>
-              <h4 className="flex min-w-0 max-w-full flex-wrap items-center gap-2 text-lg font-black [&>*]:min-w-0">
+              <p className="mt-4 text-[10px] font-black uppercase text-primary">{app.category}</p>
+              <h4 className="flex min-w-0 max-w-full flex-wrap items-center gap-2 text-lg font-black *:min-w-0">
                 <span className="min-w-0 max-w-full wrap-anywhere">{app.title}</span>
                 {projectTrophies.get(app.id) !== undefined && (
                   <TrophyMark place={projectTrophies.get(app.id) as 1 | 2 | 3} size={20} />
@@ -454,11 +474,11 @@ export default function ProfileView({
                 />
               </p>
               <div aria-hidden="true" className="flex-1" />
-              <p className="min-w-0 mt-3 flex flex-wrap items-center gap-4 text-sm font-black [&>*]:min-w-0 max-w-full">
-                <span className="min-w-0 flex items-center gap-1 [&>*]:min-w-0 max-w-full">
+              <p className="min-w-0 mt-3 flex flex-wrap items-center gap-4 text-sm font-black max-w-full">
+                <span className="min-w-0 flex items-center gap-1 *:min-w-0 max-w-full">
                   <Heart size={18} weight="duotone" /> {app.votes}
                 </span>
-                <span className="min-w-0 flex items-center gap-1 [&>*]:min-w-0 max-w-full">
+                <span className="min-w-0 flex items-center gap-1 *:min-w-0 max-w-full">
                   <ChatCircleDots size={18} weight="duotone" /> {app.comments}
                 </span>
               </p>
@@ -469,13 +489,13 @@ export default function ProfileView({
           ))}
         </div>
       ) : (
-        <div className="toon-card toon-paper bg-paper rounded-lg p-10 text-center">
+        <div className="toon-card toon-paper bg-panel rounded-lg p-10 text-center">
           {isSelf && (
             <RocketLaunch
               size={40}
               weight="duotone"
               aria-hidden="true"
-              className="mx-auto mb-4 text-purple"
+              className="mx-auto mb-4 text-primary"
             />
           )}
           <h4 className="text-xl font-black">

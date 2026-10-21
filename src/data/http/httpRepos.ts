@@ -264,6 +264,10 @@ export function createHttpAppRepo(): AppRepo {
       return toMilestone(milestone);
     },
 
+    async deleteMilestone(milestoneId: string, _requester: User): Promise<void> {
+      await api(`/milestones/${encodeURIComponent(milestoneId)}`, { method: "DELETE" });
+    },
+
     async toggleMilestoneCheer(milestoneId: string, _userId: string) {
       const { milestone } = await api<{ milestone: MilestoneRow }>(
         `/milestones/${encodeURIComponent(milestoneId)}/cheer`,

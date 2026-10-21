@@ -16,6 +16,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import Avatar from "./Avatar";
+import ImageViewer from "./ImageViewer";
 import CollaboratorPicker from "./CollaboratorPicker";
 import Comments from "./Comments";
 import MentionInput from "./MentionInput";
@@ -71,11 +72,11 @@ function DocsSection({ text, source }: { text: string; source?: string }) {
 
   return (
     <section className="toon-card toon-paper mt-8 rounded-lg bg-surface p-6 pt-10 sm:p-8 sm:pt-12">
-      <div className="min-w-0 mb-3 flex items-center gap-2 [&>*]:min-w-0 max-w-full">
+      <div className="min-w-0 mb-3 flex items-center gap-2 *:min-w-0 max-w-full">
         <BookOpen size={22} weight="duotone" />
         <h3 className="text-2xl font-black">Documentation</h3>
       </div>
-      <div className="min-w-0 mb-4 flex flex-wrap items-center justify-between gap-3 [&>*]:min-w-0 max-w-full">
+      <div className="min-w-0 mb-4 flex flex-wrap items-center justify-between gap-3 *:min-w-0 max-w-full">
         {source && <p className="text-xs font-black uppercase text-muted">{source}</p>}
         <Button variant="surface" size="small" type="button" onClick={download}>
           <DownloadSimple size={19} weight="bold" />
@@ -133,7 +134,7 @@ export default function ProjectView({
   const [eError, setEError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -195,19 +196,6 @@ export default function ProjectView({
 
     return () => controller.abort();
   }, [app?.docs, app?.url]);
-
-  useEffect(() => {
-    if (!lightbox) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setLightbox(null);
-    };
-    window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [lightbox]);
 
   const [voting, setVoting] = useState(false);
   const [voteNotice, setVoteNotice] = useState<string | null>(null);
@@ -461,7 +449,7 @@ export default function ProjectView({
   if (loading) return <p className="font-bold text-muted">Loading project…</p>;
   if (error || !app) {
     return (
-      <div className="toon-card toon-paper bg-paper rounded-lg p-10 text-center">
+      <div className="toon-card toon-paper bg-panel rounded-lg p-10 text-center">
         <h3 className="text-xl font-black">Project not found</h3>
         <p className="font-bold text-muted">{error ?? "This project does not exist."}</p>
         <Button variant="secondary" className="mt-5" onClick={onBack}>
@@ -477,45 +465,38 @@ export default function ProjectView({
   return (
     <div className="@container/content min-w-0 max-w-full wrap-anywhere">
       <Button variant="surface" size="small" onClick={onBack}>
-        <ArrowLeft size={18} weight="bold" /> Back to projects
+        <ArrowLeft size={18} weight="bold" /> Go Back
       </Button>
 
-      <div className="toon-card toon-paper bg-paper mt-5 rounded-lg">
+      <div className="mt-5">
         {cover ? (
           <Button
             variant="plain"
             type="button"
-            onClick={() => setLightbox(cover)}
+            onClick={() => setLightbox(0)}
             aria-label={`View ${app.title} cover full size`}
-            className="block w-full cursor-zoom-in"
+            className="block w-full cursor-zoom-in rounded-lg toon-card"
           >
-            <span className="relative block h-64 w-full overflow-hidden rounded-t-lg border-b-[3px] border-outline bg-ink sm:h-80">
-              <img
-                src={cover}
-                alt=""
-                aria-hidden="true"
-                loading="lazy"
-                className="absolute inset-0 h-full w-full scale-110 object-cover opacity-60 blur-2xl"
-              />
+            <span className="relative block h-80 w-full overflow-hidden md:h-96 rounded-sm">
               <img
                 src={cover}
                 alt={`${app.title} thumbnail`}
                 loading="lazy"
-                className="relative h-full w-full object-contain"
+                className="relative h-full w-full object-cover"
               />
             </span>
           </Button>
         ) : (
           <div
             style={{ backgroundColor: `var(--color-${app.color})` }}
-            className="min-w-0 bg-[repeating-linear-gradient(-45deg,transparent_0,transparent_12px,var(--color-cover-stripe)_12px,var(--color-cover-stripe)_24px)] flex h-48 items-center justify-center border-b-[3px] border-outline [&>*]:min-w-0 max-w-full"
+            className="min-w-0 bg-[repeating-linear-gradient(-45deg,transparent_0,transparent_12px,var(--color-cover-stripe)_12px,var(--color-cover-stripe)_24px)] flex h-48 items-center justify-center border-b-[3px] border-outline *:min-w-0 max-w-full"
           >
             <span className="rotate-[-4deg] text-6xl font-black">{app.title.charAt(0)}</span>
           </div>
         )}
-        <div className="p-6 sm:p-8">
-          <div className="min-w-0 flex flex-wrap items-start justify-between gap-4 [&>*]:min-w-0 max-w-full">
-            <p className="min-w-0 inline-flex -rotate-2 items-center gap-2 border-2 border-dashed border-purple px-3 py-1 text-xs font-black uppercase text-purple bg-surface [&>*]:min-w-0 max-w-full">
+        <div className="p-8 lg:py-8 lg:px-2">
+          <div className="min-w-0 flex flex-wrap items-start justify-between gap-4 *:min-w-0 max-w-full">
+            <p className="min-w-0 inline-flex -rotate-2 items-center gap-2 border-2 border-dashed border-primary px-3 py-1 text-xs font-black uppercase text-primary bg-surface *:min-w-0 max-w-full">
               {app.category}
             </p>
             {isOwner && !editing && (
@@ -524,7 +505,7 @@ export default function ProjectView({
               </Button>
             )}
           </div>
-          <h2 className="mt-4 flex min-w-0 max-w-full flex-wrap items-center gap-2 text-3xl font-black sm:text-4xl [&>*]:min-w-0">
+          <h2 className="mt-4 flex min-w-0 max-w-full flex-wrap items-center gap-2 text-3xl font-black sm:text-4xl *:min-w-0">
             <span className="min-w-0 max-w-full wrap-anywhere">{app.title}</span>
             {projectTrophies.get(app.id) !== undefined && (
               <TrophyMark place={projectTrophies.get(app.id) as 1 | 2 | 3} size={30} />
@@ -533,7 +514,7 @@ export default function ProjectView({
           <div className="mt-2">
             <UploadStamp createdAt={app.createdAt} />
           </div>
-          <p className="mt-3 max-w-3xl text-lg leading-8 text-body">
+          <p className="mt-3 text-lg leading-8 text-body">
             <MentionText
               text={app.description}
               profiles={[...profiles.values()]}
@@ -564,7 +545,7 @@ export default function ProjectView({
             );
           })()}
 
-          <div className="min-w-0 mt-5 flex flex-wrap items-center gap-4 [&>*]:min-w-0 max-w-full">
+          <div className="min-w-0 mt-5 flex flex-wrap items-center gap-4 *:min-w-0 max-w-full">
             <Button
               variant="vote"
               onClick={() => void vote()}
@@ -574,7 +555,7 @@ export default function ProjectView({
               <Heart size={20} weight={app.viewerHasVoted ? "fill" : "duotone"} />
               {app.votes} upvotes
             </Button>
-            <span className="min-w-0 flex items-center gap-1 text-sm font-black [&>*]:min-w-0 max-w-full">
+            <span className="min-w-0 flex items-center gap-1 text-sm font-black *:min-w-0 max-w-full">
               <ChatCircleDots size={20} weight="duotone" />
               {app.comments} feedback
             </span>
@@ -601,7 +582,7 @@ export default function ProjectView({
             <Button
               variant="plain"
               onClick={() => onOpenProfile(developer.id)}
-              className="min-w-0 mt-6 flex w-full items-center gap-4 rounded-2xl border-[3px] border-outline bg-surface p-4 text-left shadow-[3px_3px_0_var(--color-outline)] [&>*]:min-w-0 max-w-full"
+              className="min-w-0 mt-6 flex w-full items-center gap-4 rounded-2xl border-[3px] border-outline bg-surface p-4 text-left shadow-[3px_3px_0_var(--color-outline)] *:min-w-0 max-w-full"
             >
               <Avatar
                 name={developer.name}
@@ -610,8 +591,8 @@ export default function ProjectView({
                 size="md"
               />
               <span className="min-w-0 flex-1">
-                <span className="block text-xs font-black uppercase text-purple">Built by</span>
-                <span className="flex min-w-0 max-w-full flex-wrap items-center gap-2 text-lg font-black [&>*]:min-w-0">
+                <span className="block text-xs font-black uppercase text-primary">Built by</span>
+                <span className="flex min-w-0 max-w-full flex-wrap items-center gap-2 text-lg font-black *:min-w-0">
                   <span className="min-w-0 max-w-full wrap-anywhere">{developer.name}</span>
                   {trophies.get(developer.id) !== undefined && (
                     <TrophyMark place={trophies.get(developer.id) as 1 | 2 | 3} size={22} />
@@ -631,7 +612,7 @@ export default function ProjectView({
         <form
           ref={editFormRef}
           onSubmit={(e) => void saveEdit(e)}
-          className="min-w-0 toon-card toon-paper mt-8 grid [&>*]:min-w-0 scroll-mt-28 gap-5 rounded-lg bg-sky p-6 pt-10 @min-[36rem]/content:grid-cols-2 max-w-full"
+          className="min-w-0 toon-card toon-paper mt-8 grid *:min-w-0 scroll-mt-28 gap-5 rounded-lg bg-info p-6 pt-10 @min-[36rem]/content:grid-cols-2 max-w-full"
         >
           <div className="@min-[36rem]/content:col-span-2">
             <PencilSimple size={32} weight="duotone" />
@@ -751,7 +732,7 @@ export default function ProjectView({
               </p>
             )}
             {eShots.length > 0 && (
-              <div className="min-w-0 mt-3 grid [&>*]:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-3 max-w-full">
+              <div className="min-w-0 mt-3 grid *:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-3 max-w-full">
                 {eShots.map((src, i) => (
                   <div key={src.slice(0, 32) + i} className="relative">
                     <img
@@ -760,7 +741,7 @@ export default function ProjectView({
                       className="h-24 w-full rounded-xl border-[3px] border-outline object-cover"
                     />
                     {i === 0 && (
-                      <span className="absolute left-2 top-2 rounded-full border-2 border-outline bg-yellow px-2 py-0.5 text-[10px] font-black">
+                      <span className="absolute left-2 top-2 rounded-full border-2 border-outline bg-secondary px-2 py-0.5 text-[10px] font-black">
                         COVER
                       </span>
                     )}
@@ -783,7 +764,7 @@ export default function ProjectView({
             <span className="mb-2 block text-xs font-black uppercase">
               Documentation (optional, markdown supported)
             </span>
-            <div className="min-w-0 mb-3 flex flex-wrap items-center gap-2 [&>*]:min-w-0 max-w-full">
+            <div className="min-w-0 mb-3 flex flex-wrap items-center gap-2 *:min-w-0 max-w-full">
               {(["write", "upload", "repository"] as const).map((tab) => (
                 <Button
                   key={tab}
@@ -838,6 +819,7 @@ export default function ProjectView({
                   setEDocsFile(null);
                 }}
                 maxLength={50000}
+                showCharacterCount
                 placeholder={"# My project\n\nWhat it does, how to run it…"}
               />
             )}
@@ -898,17 +880,17 @@ export default function ProjectView({
                         : "Load Markdown files"}
                     </Button>
                     {eRepositoryFilesError && (
-                      <p role="alert" className="mt-3 text-sm font-bold text-ink">
+                      <p role="alert" className="mt-3 text-sm font-bold text-foreground">
                         {eRepositoryFilesError}
                       </p>
                     )}
                     {eRepositoryFiles.length > 0 && (
                       <>
-                        <div className="min-w-0 mt-4 flex flex-wrap items-center justify-between gap-3 [&>*]:min-w-0 max-w-full">
+                        <div className="min-w-0 mt-4 flex flex-wrap items-center justify-between gap-3 *:min-w-0 max-w-full">
                           <p className="text-sm font-black">
                             {eSelectedRepositoryFiles.length} of {eRepositoryFiles.length} selected
                           </p>
-                          <label className="min-w-0 flex items-center gap-2 text-sm font-black [&>*]:min-w-0 max-w-full">
+                          <label className="min-w-0 flex items-center gap-2 text-sm font-black *:min-w-0 max-w-full">
                             <Checkbox
                               checked={eSelectedRepositoryFiles.length === eRepositoryFiles.length}
                               onChange={(event) =>
@@ -924,7 +906,7 @@ export default function ProjectView({
                           {eRepositoryFiles.map((path) => (
                             <label
                               key={path}
-                              className="min-w-0 flex items-start gap-2 rounded-md px-2 py-1.5 text-sm font-bold hover:bg-cream [&>*]:min-w-0 max-w-full"
+                              className="min-w-0 flex items-start gap-2 rounded-md px-2 py-1.5 text-sm font-bold hover:bg-background *:min-w-0 max-w-full"
                             >
                               <Checkbox
                                 checked={eSelectedRepositoryFiles.includes(path)}
@@ -979,7 +961,7 @@ export default function ProjectView({
               {eError}
             </p>
           )}
-          <div className="min-w-0 flex flex-wrap gap-3 @min-[36rem]/content:col-span-2 [&>*]:min-w-0 max-w-full">
+          <div className="min-w-0 flex flex-wrap gap-3 @min-[36rem]/content:col-span-2 *:min-w-0 max-w-full">
             <Button type="submit" disabled={eSaving || eBusy}>
               {eSaving ? "Saving…" : "Save changes"}
             </Button>
@@ -1000,14 +982,14 @@ export default function ProjectView({
                 size="small"
                 type="button"
                 onClick={() => setConfirmDelete(true)}
-                className="ml-auto text-alert"
+                className="ml-auto text-danger"
               >
                 <Trash size={18} weight="bold" /> Delete project
               </Button>
             ) : (
               <div
                 role="alert"
-                className="min-w-0 flex w-full flex-wrap items-center gap-3 rounded-2xl border-[3px] border-outline bg-surface p-4 [&>*]:min-w-0 max-w-full"
+                className="min-w-0 flex w-full flex-wrap items-center gap-3 rounded-2xl border-[3px] border-outline bg-surface p-4 *:min-w-0 max-w-full"
               >
                 <p className="w-full text-sm font-black">
                   Delete “{app.title}” forever? Its screenshots, docs, and feedback go with it. This
@@ -1039,21 +1021,21 @@ export default function ProjectView({
 
       {rest.length > 0 && (
         <section className="mt-8">
-          <div className="min-w-0 mb-4 flex items-center gap-2 [&>*]:min-w-0 max-w-full">
+          <div className="min-w-0 mb-4 flex items-center gap-2 *:min-w-0 max-w-full">
             <Images size={22} weight="duotone" />
             <h3 className="text-2xl font-black">Screenshots</h3>
           </div>
-          <div className="min-w-0 grid [&>*]:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-6 max-w-full">
+          <div className="min-w-0 grid *:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-6 max-w-full">
             {rest.map((src, i) => (
               <Button
                 variant="plain"
                 key={src.slice(0, 64) + i}
                 type="button"
-                onClick={() => setLightbox(src)}
+                onClick={() => setLightbox(i + 1)}
                 aria-label={`View ${app.title} screenshot ${i + 1} full size`}
                 className="toon-card bg-surface block w-full cursor-zoom-in overflow-hidden rounded-lg p-0 text-left"
               >
-                <span className="relative block aspect-video w-full overflow-hidden bg-ink">
+                <span className="relative block aspect-video w-full overflow-hidden bg-inverse">
                   <img
                     src={src}
                     alt=""
@@ -1077,45 +1059,23 @@ export default function ProjectView({
         </section>
       )}
 
-      {lightbox &&
-        createPortal(
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label={`${app.title} screenshot full size`}
-            onClick={() => setLightbox(null)}
-            className="min-w-0 fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-ink/80 p-4 [&>*]:min-w-0 max-w-full"
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="toon-card relative my-auto max-h-[85vh] w-full max-w-4xl overflow-hidden rounded-lg bg-surface"
-            >
-              <img
-                src={lightbox}
-                alt={`${app.title} screenshot full size`}
-                className="max-h-[85vh] w-full object-contain"
-              />
-              <Button
-                variant="icon"
-                size="default"
-                type="button"
-                onClick={() => setLightbox(null)}
-                aria-label="Close full size image"
-                autoFocus
-                className="absolute right-3 top-3"
-              >
-                <X size={18} weight="bold" />
-              </Button>
-            </div>
-          </div>,
-          document.body,
-        )}
+      {lightbox !== null && (
+        <ImageViewer
+          title={`${app.title} screenshots`}
+          images={(app.screenshots ?? []).map((src, index) => ({
+            src,
+            alt: `${app.title} screenshot ${index + 1}`,
+          }))}
+          initialIndex={lightbox}
+          onClose={() => setLightbox(null)}
+        />
+      )}
 
       {voteNotice &&
         createPortal(
           <div
             role="alert"
-            className="min-w-0 pointer-events-none fixed inset-x-0 bottom-24 z-100 flex justify-center px-4 [&>*]:min-w-0 max-w-full"
+            className="min-w-0 pointer-events-none fixed inset-x-0 bottom-24 z-100 flex justify-center px-4 *:min-w-0 max-w-full"
           >
             <p className="toon-card rounded-xl bg-surface px-5 py-3 text-center text-sm font-black">
               {voteNotice}
@@ -1129,9 +1089,9 @@ export default function ProjectView({
       ) : readmeLoading ? (
         <section
           aria-live="polite"
-          className="toon-card toon-paper bg-paper mt-8 rounded-lg p-6 pt-10 sm:p-8 sm:pt-12"
+          className="toon-card toon-paper bg-panel mt-8 rounded-lg p-6 pt-10 sm:p-8 sm:pt-12"
         >
-          <div className="min-w-0 mb-3 flex items-center gap-2 [&>*]:min-w-0 max-w-full">
+          <div className="min-w-0 mb-3 flex items-center gap-2 *:min-w-0 max-w-full">
             <BookOpen size={22} weight="duotone" />
             <h3 className="text-2xl font-black">Loading repository README…</h3>
           </div>
@@ -1142,17 +1102,17 @@ export default function ProjectView({
       ) : readmeError ? (
         <section
           role="status"
-          className="toon-card toon-paper bg-paper mt-8 rounded-lg p-6 pt-10 sm:p-8 sm:pt-12"
+          className="toon-card toon-paper bg-panel mt-8 rounded-lg p-6 pt-10 sm:p-8 sm:pt-12"
         >
-          <div className="min-w-0 mb-3 flex items-center gap-2 [&>*]:min-w-0 max-w-full">
+          <div className="min-w-0 mb-3 flex items-center gap-2 *:min-w-0 max-w-full">
             <BookOpen size={22} weight="duotone" />
             <h3 className="text-2xl font-black">Repository README unavailable</h3>
           </div>
           <p className="font-bold text-muted">{readmeError}</p>
         </section>
       ) : app.url && isGitHubRepositoryUrl(app.url) ? (
-        <section className="toon-card toon-paper bg-paper mt-8 rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
-          <div className="min-w-0 mb-3 flex items-center gap-2 [&>*]:min-w-0 max-w-full">
+        <section className="toon-card toon-paper bg-panel mt-8 rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
+          <div className="min-w-0 mb-3 flex items-center gap-2 *:min-w-0 max-w-full">
             <BookOpen size={22} weight="duotone" />
             <h3 className="text-2xl font-black">No repository README found</h3>
           </div>

@@ -1,4 +1,6 @@
 import { SITE_PALETTE_IDS } from "../data/types";
+import { applyAppearance } from "./appearance";
+import { activeViewerId, viewerSettingKey } from "./viewerCache";
 
 export type Palette = {
   id: string;
@@ -45,7 +47,7 @@ const META: Record<SitePaletteId, { label: string; swatches: string[] }> = {
     swatches: ["#6d28d9", "#e9d5ff", "#c4b5fd", "#f0abfc", "#a5b4fc"],
   },
   midnight: {
-    label: "Midnight",
+    label: "Moonstone",
     swatches: ["#8b7cf6", "#e8c451", "#7dd3b8", "#f2a3b3", "#7cc7e8"],
   },
 };
@@ -61,7 +63,8 @@ function isKnown(id: string): boolean {
 
 function readStored(): string | null {
   try {
-    return localStorage.getItem(STORAGE_KEY);
+    if (!activeViewerId()) return null;
+    return localStorage.getItem(viewerSettingKey(STORAGE_KEY));
   } catch {
     return null;
   }
@@ -90,21 +93,20 @@ function applyAttribute(id: string): void {
   if (typeof document === "undefined") return;
   if (id === DEFAULT_ID) document.documentElement.removeAttribute("data-palette");
   else document.documentElement.setAttribute("data-palette", id);
+  applyAppearance();
 }
 
 export function setPalette(id: string): void {
   const next = isKnown(id) ? id : DEFAULT_ID;
   try {
-    localStorage.setItem(STORAGE_KEY, next);
+    if (activeViewerId()) localStorage.setItem(viewerSettingKey(STORAGE_KEY), next);
   } catch {
     // Non-fatal.
   }
   applyAttribute(next);
 }
 
-// Apply before first paint so reloads don't flash the default theme.
-try {
+// Called by the entry point on every route, before React mounts.
+export function initializePalette(): void {
   applyAttribute(loadPalette());
-} catch {
-  // Non-DOM runtimes (tests) skip silently.
 }

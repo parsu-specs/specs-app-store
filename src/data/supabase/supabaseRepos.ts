@@ -220,6 +220,7 @@ function toAppRow(row: Record<string, unknown>): AppRow {
 
 function toCommentRow(row: Record<string, unknown>): CommentRow {
   return {
+    is_deleted: Boolean(row["is_deleted"]),
     id: String(row["id"]),
     app_id: String(row["app_id"] ?? ""),
     author_id: String(row["author_id"] ?? ""),
@@ -520,20 +521,11 @@ export function createSupabaseAppRepo(): AppRepo {
       return { ...toComment(toCommentRow(data as Record<string, unknown>)), viewerHasLiked: false };
     },
 
-    async deleteComment(appId: string, commentId: string, author: User): Promise<void> {
-      const supabase = getSupabase();
-      const { data: existing, error: fetchError } = await supabase
-        .from("comments")
-        .select("id,app_id,author_id")
-        .eq("id", commentId)
-        .single();
-      if (fetchError || !existing) throw new NotFoundError("Comment not found.");
-      const row = existing as { app_id: string; author_id: string };
-      if (row.app_id !== appId) throw new Error("That comment belongs to another thread.");
-      if (row.author_id !== author.id) throw new Error("You can only delete your own comments.");
-      // Replies cascade via the parent_id FK; the RLS policy ("own delete
-      // comments", see schema.sql) enforces authorship server-side too.
-      const { error } = await supabase.from("comments").delete().eq("id", commentId);
+    async deleteComment(appId: string, commentId: string, _author: User): Promise<void> {
+      const { error } = await getSupabase().rpc("delete_comment", {
+        p_app_id: appId,
+        p_comment_id: commentId,
+      });
       if (error) throw new Error(error.message);
     },
 
@@ -624,6 +616,18 @@ export function createSupabaseAppRepo(): AppRepo {
         ...toMilestone(toMilestoneRow(data as Record<string, unknown>)),
         viewerHasCheered: false,
       };
+    },
+
+    async deleteMilestone(milestoneId: string, requester: User): Promise<void> {
+      const { data, error } = await getSupabase()
+        .from("milestones")
+        .delete()
+        .eq("id", milestoneId)
+        .eq("author_id", requester.id)
+        .select("id")
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error("Update not found or you cannot delete it.");
     },
 
     async toggleMilestoneCheer(milestoneId: string, _userId: string) {

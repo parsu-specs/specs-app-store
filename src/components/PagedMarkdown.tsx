@@ -74,7 +74,7 @@ export default function PagedMarkdown({
           />
         )}
       </div>
-      <div className="min-w-0 mt-4 flex flex-wrap items-center gap-3 [&>*]:min-w-0 max-w-full">
+      <div className="min-w-0 mt-4 flex flex-wrap items-center gap-3 *:min-w-0 max-w-full">
         {hasMore && (
           <Button
             variant="secondary"

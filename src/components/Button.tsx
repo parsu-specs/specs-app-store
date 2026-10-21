@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import type {
   AnchorHTMLAttributes,
   ButtonHTMLAttributes,
@@ -11,6 +11,7 @@ export type ButtonVariant =
   | "icon"
   | "menu"
   | "plain"
+  | "minimal"
   | "primary"
   | "secondary"
   | "surface"
@@ -47,27 +48,29 @@ type ButtonChipProps = HTMLAttributes<HTMLSpanElement> &
   };
 
 const commonClasses =
-  "inline-flex min-w-0 max-w-full whitespace-normal wrap-anywhere items-center justify-center gap-2 [&>svg]:shrink-0 font-black focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-yellow focus-visible:ring-offset-2";
+  "inline-flex min-w-0 max-w-full whitespace-normal wrap-anywhere items-center justify-center gap-2 [&>svg]:shrink-0 font-black focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary focus-visible:ring-offset-2";
 
 const variantClasses: Record<ButtonVariant, string> = {
-  icon: "shrink-0 rounded-full border-2 border-outline bg-surface transition-colors hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60",
-  menu: "w-full justify-start rounded-lg px-3 py-2 text-left text-sm hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60",
+  icon: "shrink-0 rounded-full border-2 border-outline bg-surface transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-60",
+  menu: "w-full justify-start rounded-lg px-3 py-2 text-left text-sm hover:bg-background disabled:cursor-not-allowed disabled:opacity-60",
   plain:
-    "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-yellow focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
-  primary: "rounded-2xl border-[3px] border-outline bg-purple text-surface",
-  secondary: "rounded-2xl border-[3px] border-outline bg-yellow text-ink",
+    "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
+  primary: "rounded-2xl border-[3px] border-outline bg-primary text-primary-foreground",
+  minimal:
+    "cursor-pointer rounded-lg border-0 bg-transparent text-primary disabled:cursor-default disabled:text-muted",
+  secondary: "rounded-2xl border-[3px] border-outline bg-secondary text-foreground",
   surface: "rounded-2xl border-[3px] border-outline bg-surface text-inherit",
-  danger: "rounded-2xl border-[3px] border-outline bg-alert text-surface",
+  danger: "rounded-2xl border-[3px] border-outline bg-danger text-primary-foreground",
   outline:
-    "rounded-lg border-2 border-outline bg-transparent px-3 py-2 text-ink transition-colors hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60",
+    "rounded-lg border-2 border-outline bg-transparent px-3 py-2 text-foreground transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-60",
   "outline-flat":
-    "min-w-0 max-w-full rounded-md border-2 border-outline bg-transparent text-ink transition-colors aria-pressed:bg-purple aria-pressed:text-surface aria-pressed:hover:bg-purple hover:bg-yellow disabled:cursor-not-allowed disabled:opacity-60",
+    "min-w-0 max-w-full rounded-md border-2 border-outline bg-transparent text-foreground transition-colors aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60",
   ghost:
-    "text-sm decoration-2 transition-colors hover:text-purple disabled:cursor-not-allowed disabled:opacity-60",
+    "text-sm decoration-2 transition-colors hover:text-primary disabled:cursor-not-allowed disabled:opacity-60",
   filter:
-    "min-w-0 max-w-full rounded-md border-2 border-outline bg-transparent text-ink transition-colors aria-pressed:bg-purple aria-pressed:text-surface aria-pressed:hover:bg-purple aria-selected:bg-purple aria-selected:text-surface aria-selected:hover:bg-purple hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60",
-  vote: "gap-1 transition-colors hover:text-purple aria-pressed:text-vote aria-pressed:hover:text-vote disabled:cursor-not-allowed disabled:opacity-60",
-  text: "inline border-0 bg-transparent p-0 font-inherit text-inherit transition-colors hover:text-purple disabled:cursor-not-allowed disabled:opacity-60",
+    "min-w-0 max-w-full rounded-md border-2 border-outline bg-transparent text-foreground transition-colors aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary aria-selected:bg-primary aria-selected:text-primary-foreground aria-selected:hover:bg-primary hover:bg-background disabled:cursor-not-allowed disabled:opacity-60",
+  vote: "gap-1 transition-colors hover:text-primary aria-pressed:text-vote aria-pressed:hover:text-vote disabled:cursor-not-allowed disabled:opacity-60",
+  text: "inline border-0 bg-transparent p-0 font-inherit text-inherit transition-colors hover:text-primary disabled:cursor-not-allowed disabled:opacity-60",
 };
 
 const raisedShellClasses = [
@@ -88,7 +91,7 @@ const raisedShellClasses = [
 
   "focus-visible:outline-none",
   "focus-visible:ring-4",
-  "focus-visible:ring-yellow",
+  "focus-visible:ring-secondary",
   "focus-visible:ring-offset-2",
 
   "disabled:cursor-not-allowed",
@@ -107,7 +110,7 @@ const raisedSideClasses = [
   "rounded-[20px]",
   "border-[3px]",
   "border-outline",
-  "bg-ink",
+  "bg-outline",
 
   "transition-[top,left,border-radius]",
   "duration-100",
@@ -120,6 +123,9 @@ const raisedSideClasses = [
 
   "group-active:top-2",
   "group-active:left-2",
+
+  "group-data-[touch-pressed=true]:top-2",
+  "group-data-[touch-pressed=true]:left-2",
 
   "group-disabled:top-2",
   "group-disabled:left-2",
@@ -157,12 +163,58 @@ const raisedFaceClasses = [
   "group-active:translate-y-2",
   "group-active:brightness-90",
 
+  "group-data-[touch-pressed=true]:translate-x-2",
+  "group-data-[touch-pressed=true]:translate-y-2",
+  "group-data-[touch-pressed=true]:brightness-90",
+
   "group-disabled:translate-x-2",
   "group-disabled:translate-y-2",
   "group-disabled:brightness-100",
 ].join(" ");
 
 const raisedVariants = new Set<ButtonVariant>(["primary", "secondary", "surface", "danger"]);
+
+// Keep quick taps visible through the 100ms transition without delaying clicks.
+function useTouchPress<T extends HTMLElement>(props: HTMLAttributes<T>, enabled: boolean) {
+  const [pressed, setPressed] = useState(false);
+  const startedAt = useRef(0);
+  const pointerId = useRef<number | null>(null);
+  const releaseTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => () => clearTimeout(releaseTimer.current), []);
+
+  return {
+    "data-touch-pressed": enabled && pressed ? "true" : undefined,
+    onPointerDown: ((event) => {
+      props.onPointerDown?.(event);
+      if (!enabled || event.defaultPrevented || event.pointerType === "mouse" || !event.isPrimary) {
+        return;
+      }
+      clearTimeout(releaseTimer.current);
+      pointerId.current = event.pointerId;
+      startedAt.current = performance.now();
+      setPressed(true);
+    }) satisfies NonNullable<HTMLAttributes<T>["onPointerDown"]>,
+    onPointerUp: ((event) => {
+      if (pointerId.current === event.pointerId) {
+        pointerId.current = null;
+        releaseTimer.current = setTimeout(
+          () => setPressed(false),
+          Math.max(0, 160 - (performance.now() - startedAt.current)),
+        );
+      }
+      props.onPointerUp?.(event);
+    }) satisfies NonNullable<HTMLAttributes<T>["onPointerUp"]>,
+    onPointerCancel: ((event) => {
+      if (pointerId.current === event.pointerId) {
+        clearTimeout(releaseTimer.current);
+        pointerId.current = null;
+        setPressed(false);
+      }
+      props.onPointerCancel?.(event);
+    }) satisfies NonNullable<HTMLAttributes<T>["onPointerCancel"]>,
+  };
+}
 
 const sizeClasses: Record<ButtonSize, string> = {
   default: "px-5 py-3",
@@ -210,13 +262,15 @@ function buttonClassName(
   const sizeClass =
     variant === "icon"
       ? ({ default: "p-2", small: "p-1.5", compact: "p-1", "compact-icon": "p-0.5" } as const)[size]
-      : variant === "filter" || variant === "outline-flat"
-        ? filterSizeClasses[size]
-        : variant === "vote"
-          ? size === "compact"
-            ? "text-xs"
-            : "text-sm"
-          : "";
+      : variant === "minimal"
+        ? sizeClasses[size]
+        : variant === "filter" || variant === "outline-flat"
+          ? filterSizeClasses[size]
+          : variant === "vote"
+            ? size === "compact"
+              ? "text-xs"
+              : "text-sm"
+            : "";
 
   return [
     variant === "text" ? commonClasses.replace("inline-flex", "inline") : commonClasses,
@@ -281,11 +335,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   ref,
 ) {
   const clickableClass = props.onClick && !props.disabled ? "cursor-pointer" : "";
+  const touchPress = useTouchPress(props, raisedVariants.has(variant) && !props.disabled);
 
   return (
     <button
       ref={ref}
       {...props}
+      {...touchPress}
       type={type}
       className={buttonClassName(
         variant,
@@ -310,9 +366,11 @@ export function ButtonLink({
   href,
   ...props
 }: ButtonLinkProps) {
+  const touchPress = useTouchPress(props, raisedVariants.has(variant));
   return (
     <a
       {...props}
+      {...touchPress}
       href={href}
       className={buttonClassName(variant, size, className, fullWidth, fullHeight)}
     >
@@ -330,13 +388,15 @@ export function ButtonLabel({
   children,
   ...props
 }: ButtonLabelProps) {
+  const touchPress = useTouchPress(props, raisedVariants.has(variant));
   return (
     <label
       {...props}
+      {...touchPress}
       className={buttonClassName(
         variant,
         size,
-        `focus-within:ring-4 focus-within:ring-yellow focus-within:ring-offset-2 ${className ?? ""}`,
+        `focus-within:ring-4 focus-within:ring-secondary focus-within:ring-offset-2 ${className ?? ""}`,
         fullWidth,
         fullHeight,
       )}
@@ -347,11 +407,11 @@ export function ButtonLabel({
 }
 
 const chipToneClasses = {
-  default: "bg-lavender text-ink",
-  gold: "bg-yellow text-ink",
-  silver: "bg-medal-silver text-ink",
-  bronze: "bg-medal-bronze text-surface",
-  muted: "bg-muted text-surface",
+  default: "bg-tertiary text-foreground",
+  gold: "bg-secondary text-foreground",
+  silver: "bg-medal-silver text-foreground",
+  bronze: "bg-medal-bronze text-inverse-foreground",
+  muted: "bg-muted text-primary-foreground",
 } satisfies Record<NonNullable<ButtonChipProps["tone"]>, string>;
 
 export function ButtonChip({ className, children, tone = "default", ...props }: ButtonChipProps) {
