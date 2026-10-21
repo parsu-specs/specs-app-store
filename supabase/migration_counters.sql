@@ -1,119 +1,18 @@
--- Spam-vote pauses: rapid or sustained vote-button mashing pauses voting.
--- Two independent tripwires, both read from rate_hits (every toggle call is
--- logged there, on and off — unvotes delete app_votes rows, so counting that
--- table would miss flapping):
---   BURST: 5 toggles within 10 seconds (rapid clicking).
---   SUSTAINED: 10 toggles chained by gaps of 2–5 seconds each (steady
---     mashing with short pauses; shorter gaps are machine-rapid, longer
---     pauses break the chain and exempt).
--- Either tripwire pauses voting for 5 minutes. Normal browsing never trips:
--- humans don't click 5x in 10s or chain 10 votes back-to-back.
---
--- TRANSACTION RULE (the bug this file must never reintroduce): a pause row
--- only survives if the call that writes it COMMITS. RAISE EXCEPTION aborts
--- the whole RPC transaction and rolls the insert back — the original version
--- raised right after inserting vote_timeouts, so the pause vanished on page
--- refresh (it only ever lived in the browser). Now the tripping call returns
--- normally, the pause commits, and every later call bounces off it.
---
--- Run in the Supabase SQL editor (main project). Re-runnable.
--- Companion: toggle_app_vote below is mirrored in migration_counters.sql
--- for fresh installs (same check_vote_spam line).
+-- Counter toggles + project delete as SECURITY DEFINER functions.
+-- Why: direct row edits of counters stay forbidden (see the
+-- apps_votes_guard trigger in migration_votes_guard.sql — owners could
+-- otherwise PATCH votes via the "owners manage apps" policy), so the app
+-- must mutate the apps.votes counter through toggle_app_vote below.
+-- (comments.likes and milestone cheers have no UPDATE policy at all, so
+-- their toggles need no extra guard.) Each function verifies caller's
+-- identity itself and touches only the counter + its membership row.
+-- Run in the Supabase SQL editor.
 
--- Active pauses. RLS-locked like rate_hits (no policies: deny direct).
-create table if not exists vote_timeouts (
-  actor_id text primary key,
-  until timestamptz not null
-);
-alter table vote_timeouts enable row level security;
-
--- 'ok' = vote may proceed; 'tripped' = this call started a pause (the vote
--- that carried it is rejected by toggle_app_vote, but the transaction must
--- still commit so the pause row survives).
---
--- The return type changed (void -> text), and PostgreSQL rejects CREATE OR
--- REPLACE when the return type differs (SQLSTATE 42P13: "cannot change
--- return type of existing function"). DROP first; it is idempotent, and the
--- only callers are PL/pgSQL bodies (toggle_app_vote), which Postgres does
--- not track as hard dependencies — so no CASCADE is needed and this same
--- script recreates everything below.
-drop function if exists check_vote_spam();
-
-create or replace function check_vote_spam()
-returns text
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_uid text := auth.uid()::text;
-  v_until timestamptz;
-  v_secs int;
-  v_n int;
-  v_ts timestamptz[];
-  v_run int := 1;
-  v_gap numeric;
-  i int;
-begin
-  if v_uid is null then
-    raise exception 'Sign in to vote.';
-  end if;
-  -- Hygiene: drop expired pauses so the table stays tiny.
-  delete from vote_timeouts where until <= now();
-  -- Already paused: report remaining time, no new logging. This path writes
-  -- nothing, so raising here is rollback-safe.
-  select until into v_until from vote_timeouts where actor_id = v_uid;
-  if found and v_until > now() then
-    v_secs := ceil(extract(epoch from (v_until - now())))::int;
-    if v_secs >= 60 then
-      raise exception 'Voting is paused for another % minutes. Try again later.', ceil(v_secs / 60.0)::int;
-    else
-      raise exception 'Voting is paused for another % seconds. Try again later.', v_secs;
-    end if;
-  end if;
-  -- Log this attempt, then judge it with its own history included.
-  insert into rate_hits (actor_id, action) values (v_uid, 'vote:toggle');
-  -- BURST: 5 toggles within 10 seconds.
-  select count(*) into v_n from rate_hits
-    where actor_id = v_uid and action = 'vote:toggle'
-      and created_at > now() - interval '10 seconds';
-  if v_n < 5 then
-    -- SUSTAINED: walk the newest-first timestamps, counting the trailing
-    -- chain linked by gaps of at most 5 seconds. A longer pause ends it.
-    select array_agg(created_at order by created_at desc) into v_ts
-      from (select created_at from rate_hits
-              where actor_id = v_uid and action = 'vote:toggle'
-              order by created_at desc limit 11) s;
-    for i in 2..coalesce(array_length(v_ts, 1), 1) loop
-      v_gap := extract(epoch from (v_ts[i - 1] - v_ts[i]));
-      -- Only 2–5s gaps link the chain: sub-2s is machine-rapid (burst rule
-      -- already covers it), over-5s pauses exempt.
-      if v_gap < 2 or v_gap > 5 then
-        exit;
-      end if;
-      v_run := v_run + 1;
-    end loop;
-    if v_run < 10 then
-      return 'ok';
-    end if;
-  end if;
-  -- Tripwire fired: persist the pause, then return WITHOUT raising so the
-  -- enclosing transaction commits and the row survives the page refresh.
-  insert into vote_timeouts (actor_id, until)
-    values (v_uid, now() + interval '5 minutes')
-    on conflict (actor_id) do update set until = excluded.until;
-  return 'tripped';
-end;
-$$;
-
--- Same toggle as migration_counters.sql, with the spam gate instead of the
--- flat 30/min check. CREATE OR REPLACE so existing databases pick it up
--- from this file alone.
---
--- Spam-guard contract: when check_vote_spam() returns 'tripped' the vote is
--- rejected (no counter change) but the call SUCCEEDS so the pause row
--- commits; the payload then carries pause_started/paused_seconds for the UI.
--- Raising instead would roll the pause back — see the TRANSACTION RULE above.
+-- ── Toggle a project upvote ───────────────────────────────────────────────
+-- Mirrors the spam-gated toggle in migration_spam_votes.sql. Spam-guard
+-- contract: a 'tripped' check_vote_spam() rejects the vote but must NOT
+-- raise — raising rolls the whole transaction back, including the pause row
+-- the tripwire just wrote (the pause then vanished on page refresh).
 create or replace function toggle_app_vote(p_app_id text)
 returns jsonb
 language plpgsql
@@ -170,31 +69,99 @@ begin
 end;
 $$;
 
-grant execute on function check_vote_spam() to authenticated;
-grant execute on function toggle_app_vote(text) to authenticated;
-
--- Remaining pause for the caller, in whole seconds (0 = not paused).
--- Lets the UI answer "how much longer?" without attempting a toggle — and
--- lets it restore the countdown right after a page refresh.
-create or replace function vote_timeout_seconds()
-returns int
+-- ── Toggle a comment like ─────────────────────────────────────────────────
+create or replace function toggle_comment_like(p_comment_id text)
+returns jsonb
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
   v_uid text := auth.uid()::text;
-  v_until timestamptz;
+  v_row comments%rowtype;
+  v_liked boolean;
 begin
   if v_uid is null then
-    return 0;
+    raise exception 'Sign in to like.';
   end if;
-  select until into v_until from vote_timeouts where actor_id = v_uid;
-  if not found or v_until <= now() then
-    return 0;
+  perform check_rate('like:toggle', 30, interval '1 minute');
+  if exists (select 1 from comment_likes where comment_id = p_comment_id and user_id = v_uid) then
+    delete from comment_likes where comment_id = p_comment_id and user_id = v_uid;
+    update comments set likes = greatest(0, likes - 1) where id = p_comment_id returning * into v_row;
+    v_liked := false;
+  else
+    insert into comment_likes (comment_id, user_id) values (p_comment_id, v_uid);
+    update comments set likes = likes + 1 where id = p_comment_id returning * into v_row;
+    v_liked := true;
   end if;
-  return ceil(extract(epoch from (v_until - now())))::int;
+  if v_row.id is null then
+    raise exception 'Comment not found.';
+  end if;
+  return jsonb_build_object('row', to_jsonb(v_row), 'liked', v_liked);
 end;
 $$;
 
-grant execute on function vote_timeout_seconds() to authenticated;
+-- ── Toggle a milestone cheer ──────────────────────────────────────────────
+create or replace function toggle_milestone_cheer(p_milestone_id text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid text := auth.uid()::text;
+  v_row milestones%rowtype;
+  v_liked boolean;
+begin
+  if v_uid is null then
+    raise exception 'Sign in to cheer.';
+  end if;
+  perform check_rate('cheer:toggle', 30, interval '1 minute');
+  if exists (select 1 from milestone_cheers where milestone_id = p_milestone_id and user_id = v_uid) then
+    delete from milestone_cheers where milestone_id = p_milestone_id and user_id = v_uid;
+    update milestones set cheers = greatest(0, cheers - 1) where id = p_milestone_id returning * into v_row;
+    v_liked := false;
+  else
+    insert into milestone_cheers (milestone_id, user_id) values (p_milestone_id, v_uid);
+    update milestones set cheers = cheers + 1 where id = p_milestone_id returning * into v_row;
+    v_liked := true;
+  end if;
+  if v_row.id is null then
+    raise exception 'Update not found.';
+  end if;
+  return jsonb_build_object('row', to_jsonb(v_row), 'liked', v_liked);
+end;
+$$;
+
+-- ── Delete a project with its threads ─────────────────────────────────────
+-- Comments carry no FK (wall threads share the table), so they are cleaned
+-- explicitly. Votes cascade. Only the owner may call it.
+create or replace function delete_project(p_app_id text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid text := auth.uid()::text;
+  v_creator text;
+begin
+  if v_uid is null then
+    raise exception 'Sign in to delete.';
+  end if;
+  select creator_id into v_creator from apps where id = p_app_id;
+  if not found then
+    raise exception 'Project not found.';
+  end if;
+  if v_creator is distinct from v_uid then
+    raise exception 'You can only delete your own projects.';
+  end if;
+  delete from comments where app_id = p_app_id;
+  delete from apps where id = p_app_id;
+end;
+$$;
+
+grant execute on function toggle_app_vote(text) to authenticated;
+grant execute on function toggle_comment_like(text) to authenticated;
+grant execute on function toggle_milestone_cheer(text) to authenticated;
+grant execute on function delete_project(text) to authenticated;

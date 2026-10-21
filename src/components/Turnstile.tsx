@@ -9,6 +9,38 @@ type TurnstileApi = {
 
 type TurnstileWindow = Window & { turnstile?: TurnstileApi };
 
+// One api.js copy per page, ever. Turnstile's script warns
+// "[Cloudflare Turnstile] Turnstile already has been loaded. Was Turnstile
+// imported multiple times?" whenever a second copy executes. That happened
+// because the load effect below ran again while the first script was still
+// downloading (window.turnstile not set yet): React StrictMode double-mounts
+// effects in development, and the login form remounts this component via
+// `key` after every submit. The first caller appends the script; every other
+// mount — concurrent or later — awaits the same in-flight promise.
+let scriptLoading: Promise<void> | null = null;
+
+function loadTurnstile(): Promise<void> {
+  const win = window as TurnstileWindow;
+  if (win.turnstile) return Promise.resolve();
+  if (!scriptLoading) {
+    scriptLoading = new Promise<void>((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = SCRIPT_SRC;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => resolve();
+      script.onerror = () => {
+        // Drop the dead tag and clear the flight so a later mount can retry.
+        script.remove();
+        scriptLoading = null;
+        reject(new Error("Turnstile script failed to load"));
+      };
+      document.head.appendChild(script);
+    });
+  }
+  return scriptLoading;
+}
+
 /**
  * Cloudflare Turnstile widget (explicit render). Parent remounts via `key`
  * after every submit because tokens are single-use. Callbacks ride a ref so
@@ -55,13 +87,7 @@ export default function Turnstile({
     if (win.turnstile) {
       renderWidget();
     } else {
-      const script = document.createElement("script");
-      script.src = SCRIPT_SRC;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => renderWidget();
-      script.onerror = () => fail();
-      document.head.appendChild(script);
+      loadTurnstile().then(renderWidget, fail);
     }
     return () => {
       cancelled = true;

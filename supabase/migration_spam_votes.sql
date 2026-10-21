@@ -30,6 +30,15 @@ alter table vote_timeouts enable row level security;
 -- 'ok' = vote may proceed; 'tripped' = this call started a pause (the vote
 -- that carried it is rejected by toggle_app_vote, but the transaction must
 -- still commit so the pause row survives).
+--
+-- The return type changed (void -> text), and PostgreSQL rejects CREATE OR
+-- REPLACE when the return type differs (SQLSTATE 42P13: "cannot change
+-- return type of existing function"). DROP first; it is idempotent, and the
+-- only callers are PL/pgSQL bodies (toggle_app_vote), which Postgres does
+-- not track as hard dependencies — so no CASCADE is needed and this same
+-- script recreates everything below.
+drop function if exists check_vote_spam();
+
 create or replace function check_vote_spam()
 returns text
 language plpgsql
