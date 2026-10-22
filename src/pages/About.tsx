@@ -1,11 +1,23 @@
 import { ButtonLink, Button } from "../components/Button";
 import { useState } from "react";
-import { EnvelopeSimple, Binoculars, RocketLaunch, UsersThree } from "@phosphor-icons/react";
+import {
+  EnvelopeSimple, Binoculars, RocketLaunch, UsersThree,
+  Compass, Palette, Code, Stack, ShieldCheck, CloudArrowUp,
+} from "@phosphor-icons/react";
 import Avatar from "../components/Avatar";
 import ImageViewer from "../components/ImageViewer";
 import Footer from "../components/Footer";
 import SiteHeader from "../components/SiteHeader";
 import { APP_INFO, CONTACT_EMAIL, TEAM } from "../data/team";
+
+const badgeIcons = {
+  Leadership: Compass,
+  "UI/UX": Palette,
+  Development: Code,
+  "Full-Stack": Stack,
+  Security: ShieldCheck,
+  DevOps: CloudArrowUp,
+};
 
 export default function About() {
   const [lightbox, setLightbox] = useState<{ src: string; name: string } | null>(null);
@@ -117,7 +129,21 @@ export default function About() {
                 </div>
                 <h3 className="mt-4 text-xl font-black">{member.name}</h3>
                 <p className="mt-1 text-sm font-black uppercase text-primary">{member.role}</p>
-                <p className="mt-2 text-sm leading-6 text-muted">{member.bio}</p>
+                <p className="mt-2 text-sm leading-6 text-muted text-justify">{member.bio}</p>
+                <ul className="mt-4 flex flex-wrap gap-2" aria-label={`${member.name}'s expertise`}>
+                  {member.badges.map((badge) => {
+                    const Icon = badgeIcons[badge];
+                    return (
+                      <li
+                        key={badge}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-bold text-primary"
+                      >
+                        <Icon size={16} weight="duotone" aria-hidden="true" />
+                        {badge}
+                      </li>
+                    );
+                  })}
+                </ul>
               </article>
             ))}
           </div>
