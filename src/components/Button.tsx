@@ -55,23 +55,23 @@ const variantClasses: Record<ButtonVariant, string> = {
   avatar:
     "shrink-0 rounded-full border-0 bg-transparent p-0 leading-none transition-[translate,box-shadow,filter] duration-100 ease-out enabled:hover:-translate-y-1 enabled:hover:shadow-[0_4px_0_var(--color-outline)] enabled:active:translate-y-0 enabled:active:shadow-none enabled:active:brightness-90 data-[touch-pressed=true]:translate-y-0 data-[touch-pressed=true]:shadow-none data-[touch-pressed=true]:brightness-90 motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-60",
   icon: "shrink-0 rounded-full border-2 border-outline bg-surface transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-60",
-  menu: "w-full justify-start rounded-xl px-3 py-2 text-left text-sm hover:bg-background disabled:cursor-not-allowed disabled:opacity-60",
+  menu: "w-full justify-start rounded-2xl px-3 py-2 text-left text-sm hover:bg-background disabled:cursor-not-allowed disabled:opacity-60",
   plain:
     "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
   primary: "rounded-2xl border-[3px] border-outline bg-primary text-primary-foreground",
   minimal:
-    "cursor-pointer rounded-xl border-0 bg-transparent text-primary disabled:cursor-default disabled:text-muted",
+    "cursor-pointer rounded-2xl border-0 bg-transparent text-primary disabled:cursor-default disabled:text-muted",
   secondary: "rounded-2xl border-[3px] border-outline bg-secondary text-foreground",
   surface: "rounded-2xl border-[3px] border-outline bg-surface text-inherit",
   danger: "rounded-2xl border-[3px] border-outline bg-danger text-primary-foreground",
   outline:
-    "rounded-xl border-2 border-outline bg-transparent px-3 py-2 text-foreground transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-60",
+    "rounded-2xl border-2 border-outline bg-transparent px-3 py-2 text-foreground transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-60",
   "outline-flat":
-    "min-w-0 max-w-full rounded-lg border-2 border-outline bg-transparent text-foreground transition-colors aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60",
+    "min-w-0 max-w-full rounded-2xl border-2 border-outline bg-transparent text-foreground transition-colors aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60",
   ghost:
     "text-sm decoration-2 transition-colors hover:text-primary disabled:cursor-not-allowed disabled:opacity-60",
   filter:
-    "min-w-0 max-w-full rounded-lg border-2 border-outline bg-transparent text-foreground transition-colors aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary aria-selected:bg-primary aria-selected:text-primary-foreground aria-selected:hover:bg-primary hover:bg-background disabled:cursor-not-allowed disabled:opacity-60",
+    "min-w-0 max-w-full rounded-2xl border-2 border-outline bg-transparent text-foreground transition-colors aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary aria-selected:bg-primary aria-selected:text-primary-foreground aria-selected:hover:bg-primary hover:bg-background disabled:cursor-not-allowed disabled:opacity-60",
   vote: "gap-1 transition-colors hover:text-primary aria-pressed:text-vote aria-pressed:hover:text-vote disabled:cursor-not-allowed disabled:opacity-60",
   text: "inline border-0 bg-transparent p-0 font-inherit text-inherit transition-colors hover:text-primary disabled:cursor-not-allowed disabled:opacity-60",
 };

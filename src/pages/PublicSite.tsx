@@ -23,7 +23,7 @@ export default function PublicSite({ page }: { page: "home" | "about" }) {
             href={href}
             onClick={navigateInternalLink}
             aria-current={page === id ? "page" : undefined}
-            className={`rounded-lg border-2 border-outline px-3 py-2 text-sm font-black transition-colors ${page === id ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary hover:text-foreground"}`}
+            className={`rounded-2xl border-2 border-outline px-3 py-2 text-sm font-black transition-colors ${page === id ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary hover:text-foreground"}`}
           >
             {label}
           </ButtonLink>

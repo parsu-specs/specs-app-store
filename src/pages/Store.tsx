@@ -150,7 +150,7 @@ export default function Store() {
             variant="plain"
             href={ROUTES.about}
             onClick={navigateInternalLink}
-            className="flex w-full items-center justify-between rounded-xl px-4 py-2 text-sm hover:bg-surface/15"
+            className="flex w-full items-center justify-between rounded-2xl px-4 py-2 text-sm hover:bg-surface/15"
           >
             <span>About</span> <ArrowSquareUpRight size={20} />
           </ButtonLink>
@@ -158,7 +158,7 @@ export default function Store() {
             variant="plain"
             href={ROUTES.home}
             onClick={navigateInternalLink}
-            className="flex w-full items-center justify-between rounded-xl px-4 py-2 text-sm hover:bg-surface/15"
+            className="flex w-full items-center justify-between rounded-2xl px-4 py-2 text-sm hover:bg-surface/15"
           >
             <span>Home</span> <ArrowSquareUpRight size={20} />
           </ButtonLink>
