@@ -47,6 +47,7 @@ The default backend is browser localStorage. Supabase Auth/PostgREST and custom 
    - `DELETE /apps/:id/comments/:commentId` → 204 (author only, replies cascade)
    - `GET /milestones` → `{ milestones }` (newest first)
    - `POST /milestones {body, appId?}` → `{ milestone }`
+   - `GET /milestones/:id/voters` ? `{ voters }` (profiles of feed upvoters, any order)
    - `POST /milestones/:id/cheer` → `{ milestone }` (toggle)
    - `GET /profiles` → `{ profiles }` · `GET /profiles/:id` → `{ profile }`
    - `GET /profiles/by-name/:name` → `{ profile }` (404 → null)
@@ -69,3 +70,19 @@ To test the SQL without connecting to Supabase, install `@electric-sql/pglite` i
 Local Google account claims and browser password storage are demo behavior. Production identity verification and authorization belong in Supabase or the custom server. Local demo IDs are not interchangeable with Supabase UUID identities.
 
 See [setup](setup.md) for environment configuration and [runbook](runbook.md) for backup/recovery.
+
+## Permanent mentions
+
+For existing databases, run `supabase db push` to apply
+`supabase/migrations/20261022000100_mentions.sql` before deploying this client.
+For manual SQL Editor application, use the identical `supabase/migration_mentions.sql`.
+Fresh installations include it in `schema.sql`. Apps and comments now return a `mentions`
+JSON array of `{ name, userId }`: the posted label and permanent target profile ID.
+The database captures bindings on insert and retains prior bindings during text edits.
+The HTTP adapter sends the same metadata; custom servers must persist it and return it
+on app/comment reads, and preserve prior bindings when updating descriptions.
+
+Legacy posts are backfilled against currently identifiable profile names without rewriting
+text. Mentions made before a previous rename cannot be reliably reconstructed without
+historical identity data. Browser storage snapshots legacy bindings before profile edits.
+Missing or deleted targets stay plain text and never redirect to another account.

@@ -7,6 +7,7 @@ import { getAppRepo } from "../data/factory";
 import type { Profile } from "../data/types";
 
 type VotersDialogProps = {
+  target?: "app" | "milestone";
   appId: string;
   appTitle: string;
   totalVotes: number;
@@ -18,6 +19,7 @@ type VotersDialogProps = {
  * The list is fetched lazily on open so cards stay cheap.
  */
 export default function VotersDialog({
+  target = "app",
   appId,
   appTitle,
   totalVotes,
@@ -35,7 +37,7 @@ export default function VotersDialog({
     setLoading(true);
     setError(null);
     getAppRepo()
-      .listVoters(appId)
+      .listVoters(appId, target)
       .then((list) => {
         if (!cancelled) setVoters(list);
       })
@@ -48,7 +50,7 @@ export default function VotersDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, appId, attempt]);
+  }, [open, appId, target, attempt]);
 
   useEffect(() => {
     if (!open) return;

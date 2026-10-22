@@ -1,7 +1,7 @@
-import { Heart, Trophy } from "@phosphor-icons/react";
+﻿import { Heart, Trophy } from "@phosphor-icons/react";
+import TrophyMark from "../../components/TrophyMark";
 import Avatar from "../../components/Avatar";
 import { Button } from "../../components/Button";
-import TrophyMark from "../../components/TrophyMark";
 import type { StoreController } from "./useStoreController";
 
 type Props = Pick<
@@ -22,159 +22,172 @@ export default function LeaderboardPage({
   openApp,
   openProfile,
   profilesLookup,
-  projectTrophies,
   rankedDevelopers,
   rankedProjects,
   setBoardTab,
-  trophies,
 }: Props) {
+  const developers = boardTab === "developers";
+  const entries = developers
+    ? rankedDevelopers.slice(0, 10).map(({ profile, projects, points }) => ({
+        id: profile.id,
+        name: profile.name,
+        profile,
+        detail: `${projects} ${projects === 1 ? "project" : "projects"}`,
+        score: points,
+        open: () => openProfile(profile.id),
+      }))
+    : rankedProjects.slice(0, 10).map((app) => {
+        const profile = app.creatorId
+          ? profilesLookup.get(app.creatorId)
+          : [...profilesLookup.values()].find(
+              (p) => p.name.toLowerCase() === app.creator.toLowerCase(),
+            );
+        return {
+          id: app.id,
+          name: app.title,
+          profile,
+          detail: `by ${profile?.name ?? app.creator}`,
+          score: app.votes,
+          open: () => openApp(app.id),
+        };
+      });
+  const ScoreIcon = developers ? Trophy : Heart;
+  const scoreLabel = developers ? "pts" : "votes";
+  const renderDetail = (entry: (typeof entries)[number]) => {
+    if (developers || !entry.profile) return entry.detail;
+    const author = entry.profile;
+    return (
+      <>
+        by{" "}
+        <Button
+          variant="text"
+          onClick={() => openProfile(author.id)}
+          className=""
+          aria-label={`View ${author.name}'s profile`}
+        >
+          {author.name}
+        </Button>
+      </>
+    );
+  };
+
   return (
-    <>
-      <section>
-        <div className="mb-6">
-          <p className="text-xs font-black uppercase text-primary">
-            {boardTab === "developers"
-              ? "Rank points = upvotes + 20 per published project"
-              : "Ranked by project upvotes"}
-          </p>
-          <h2 className="mt-1 text-2xl font-black">
-            {boardTab === "developers" ? "Top developers" : "Top projects"}
-          </h2>
-          <div
-            className="min-w-0 mt-4 flex flex-wrap gap-2 *:min-w-0 max-w-full"
-            role="tablist"
-            aria-label="Leaderboard view"
-          >
-            {(["developers", "projects"] as const).map((tab) => (
-              <Button
-                variant="filter"
-                key={tab}
-                role="tab"
-                aria-selected={boardTab === tab}
-                onClick={() => setBoardTab(tab)}
-                className="capitalize"
-              >
-                {tab}
-              </Button>
-            ))}
-          </div>
+    <section>
+      <div className="mb-6">
+        <p className="text-xs font-black uppercase text-primary">
+          {developers
+            ? "Rank points = upvotes + 20 per published project"
+            : "Ranked by project upvotes"}
+        </p>
+        <h2 className="mt-1 text-2xl font-black">
+          {developers ? "Top developers" : "Top projects"}
+        </h2>
+        <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="Leaderboard view">
+          {(["developers", "projects"] as const).map((tab) => (
+            <Button
+              variant="plain"
+              key={tab}
+              role="tab"
+              aria-selected={boardTab === tab}
+              onClick={() => setBoardTab(tab)}
+              className={`rounded-md border-2 border-outline px-3 py-2 text-sm font-black capitalize transition-colors ${boardTab === tab ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary hover:text-foreground"}`}
+            >
+              {tab}
+            </Button>
+          ))}
         </div>
-        {boardTab === "developers" ? (
-          rankedDevelopers.length ? (
-            <ol className="space-y-4">
-              {rankedDevelopers.map(({ profile: p, projects, points }, i) => (
+      </div>
+      {entries.length ? (
+        <>
+          <ol aria-label="Top three" className="grid grid-cols-3 items-end gap-2 pt-4 sm:gap-5">
+            {entries.slice(0, 3).map((entry, index) => (
+              <li
+                key={entry.id}
+                value={index + 1}
+                className={`toon-card relative flex min-w-0 flex-col items-center rounded-lg px-2 py-5 text-center sm:px-4 sm:py-7 ${index === 0 ? "col-start-2 row-start-1 bg-podium-gold" : index === 1 ? "col-start-1 row-start-1 bg-podium-silver" : "col-start-3 row-start-1 bg-podium-bronze"}`}
+              >
+                <span className="mb-3 inline-flex">
+                  <TrophyMark
+                    minimal
+                    place={(index + 1) as 1 | 2 | 3}
+                    size={index === 0 ? 96 : index === 1 ? 60 : 48}
+                  />
+                </span>
+                <span className="mb-3 text-xs font-black uppercase tracking-wider sm:text-sm">
+                  {index === 0 ? "1st place" : index === 1 ? "2nd place" : "3rd place"}
+                </span>
+                <Avatar
+                  name={entry.profile?.name ?? entry.name}
+                  color={entry.profile?.color ?? "primary"}
+                  imageUrl={entry.profile?.imageUrl}
+                  size="lg"
+                  className="h-14! w-14! sm:h-20! sm:w-20!"
+                />
+                <Button
+                  variant="text"
+                  onClick={entry.open}
+                  className="mt-3 max-w-full wrap-anywhere text-sm font-black hover:text-primary active:text-primary sm:text-xl"
+                >
+                  {entry.name}
+                </Button>
+                <p className="mt-1 w-full wrap-break-word text-xs font-bold text-muted sm:text-sm">
+                  {renderDetail(entry)}
+                </p>
+                <p className="mt-4 text-sm font-black sm:text-lg">
+                  {entry.score} <span className="text-xs uppercase text-muted">{scoreLabel}</span>
+                </p>
+              </li>
+            ))}
+          </ol>
+          {entries.length > 3 && (
+            <ol start={4} aria-label="Remaining rankings" className="mt-6 space-y-3">
+              {entries.slice(3).map((entry, index) => (
                 <li
-                  key={p.id}
-                  className={`min-w-0 toon-card flex flex-wrap items-center gap-3 rounded-lg p-4 sm:flex-nowrap sm:gap-4 sm:p-5 ${i + 1 === 1 ? "bg-podium-gold" : i + 1 === 2 ? "bg-podium-silver" : i + 1 === 3 ? "bg-podium-bronze" : "bg-surface"} *:min-w-0 max-w-full`}
+                  key={entry.id}
+                  className="toon-card flex min-w-0 items-center gap-3 rounded-lg bg-surface p-3 sm:gap-4 sm:p-5"
                 >
                   <span
-                    aria-label={`Rank ${i + 1}`}
-                    className={`min-w-0 grid *:min-w-0 h-10 w-10 shrink-0 place-items-center rounded-full border-[3px] border-outline text-base font-black ${i === 0 ? "bg-secondary" : i === 1 ? "bg-success" : i === 2 ? "bg-accent" : "bg-background"} max-w-full`}
+                    aria-label={`Rank ${index + 4}`}
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full border-[3px] border-outline bg-background font-black"
                   >
-                    {i + 1}
+                    {index + 4}
                   </span>
-                  <Button
-                    variant="plain"
-                    onClick={() => openProfile(p.id)}
-                    aria-label={`View ${p.name}'s profile`}
-                    className="shrink-0"
-                  >
-                    <Avatar name={p.name} color={p.color} imageUrl={p.imageUrl} size="md" />
-                  </Button>
+                  <Avatar
+                    name={entry.profile?.name ?? entry.name}
+                    color={entry.profile?.color ?? "primary"}
+                    imageUrl={entry.profile?.imageUrl}
+                    size="md"
+                    className="h-10! w-10! sm:h-14! sm:w-14!"
+                  />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-lg font-black">
-                      <Button
-                        variant="text"
-                        onClick={() => openProfile(p.id)}
-                        className="underline-offset-4 hover:underline"
-                      >
-                        {p.name}
-                      </Button>
-                      {trophies.get(p.id) !== undefined && (
-                        <TrophyMark place={trophies.get(p.id) as 1 | 2 | 3} />
-                      )}
-                    </p>
-                    <p className="truncate text-sm font-bold text-muted">
-                      {projects} {projects === 1 ? "project" : "projects"}
+                    <Button
+                      variant="text"
+                      onClick={entry.open}
+                      className="block max-w-full truncate text-sm sm:text-lg"
+                    >
+                      {entry.name}
+                    </Button>
+                    <p className="truncate text-xs font-bold text-muted sm:text-sm">
+                      {renderDetail(entry)}
                     </p>
                   </div>
-                  <p className="min-w-0 flex shrink-0 items-center gap-1.5 text-base font-black *:min-w-0 max-w-full">
-                    <Trophy
-                      size={20}
-                      weight="duotone"
-                      className={i === 0 ? "text-primary" : "text-muted"}
-                    />
-                    {points}{" "}
-                    <span className="text-xs uppercase text-muted">
-                      {points === 1 ? "pt" : "pts"}
-                    </span>
+                  <p className="flex shrink-0 items-center gap-1 text-sm font-black sm:gap-2 sm:text-base">
+                    <ScoreIcon size={20} weight="duotone" className="hidden text-muted sm:block" />
+                    {entry.score} <span className="text-xs uppercase text-muted">{scoreLabel}</span>
                   </p>
                 </li>
               ))}
             </ol>
-          ) : (
-            <div className="toon-card toon-paper bg-panel rounded-lg p-10 text-center">
-              <h3 className="text-xl font-black">No developers yet</h3>
-              <p className="font-bold text-muted">Check back once builders join.</p>
-            </div>
-          )
-        ) : rankedProjects.length ? (
-          <ol className="space-y-4">
-            {rankedProjects.map((app, i) => {
-              const creator = app.creatorId
-                ? profilesLookup.get(app.creatorId)
-                : [...profilesLookup.values()].find(
-                    (p) => p.name.toLowerCase() === app.creator.toLowerCase(),
-                  );
-              return (
-                <li
-                  key={app.id}
-                  className={`min-w-0 toon-card flex flex-wrap items-center gap-3 rounded-lg p-4 sm:flex-nowrap sm:gap-4 sm:p-5 ${i + 1 === 1 ? "bg-podium-gold" : i + 1 === 2 ? "bg-podium-silver" : i + 1 === 3 ? "bg-podium-bronze" : "bg-surface"} max-w-full`}
-                >
-                  <span
-                    aria-label={`Rank ${i + 1}`}
-                    className={`min-w-0 grid *:min-w-0 h-10 w-10 shrink-0 place-items-center rounded-full border-[3px] border-outline text-base font-black ${i === 0 ? "bg-secondary" : i === 1 ? "bg-success" : i === 2 ? "bg-accent" : "bg-background"} max-w-full`}
-                  >
-                    {i + 1}
-                  </span>
-                  <Button
-                    variant="text"
-                    onClick={() => openApp(app.id)}
-                    aria-label={`Open ${app.title} details`}
-                    className="min-w-0 flex-1 text-left"
-                  >
-                    <span className="block truncate text-lg font-black underline-offset-4 hover:underline">
-                      {app.title}
-                      {projectTrophies.get(app.id) !== undefined && (
-                        <TrophyMark place={projectTrophies.get(app.id) as 1 | 2 | 3} />
-                      )}
-                    </span>
-                    <span className="block truncate text-sm font-bold text-muted">
-                      by {creator ? creator.name : app.creator}
-                    </span>
-                  </Button>
-                  <p className="min-w-0 flex shrink-0 items-center gap-1.5 text-base font-black *:min-w-0 max-w-full">
-                    <Heart
-                      size={20}
-                      weight="duotone"
-                      className={i === 0 ? "text-vote" : "text-muted"}
-                    />
-                    {app.votes}{" "}
-                    <span className="text-xs uppercase text-muted">
-                      {app.votes === 1 ? "vote" : "votes"}
-                    </span>
-                  </p>
-                </li>
-              );
-            })}
-          </ol>
-        ) : (
-          <div className="toon-card toon-paper bg-panel rounded-lg p-10 text-center">
-            <h3 className="text-xl font-black">No projects yet</h3>
-            <p className="font-bold text-muted">Check back once builders share work.</p>
-          </div>
-        )}
-      </section>
-    </>
+          )}
+        </>
+      ) : (
+        <div className="toon-card toon-paper rounded-lg bg-panel p-10 text-center">
+          <h3 className="text-xl font-black">No {boardTab} yet</h3>
+          <p className="font-bold text-muted">
+            Check back once builders {developers ? "join" : "share work"}.
+          </p>
+        </div>
+      )}
+    </section>
   );
 }

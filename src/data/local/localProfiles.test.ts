@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createLocalAppRepo } from "./localApps";
 import { createLocalProfileRepo } from "./localProfiles";
 
 const store = new Map<string, string>();
@@ -43,5 +44,52 @@ describe("updateProfile name guard", () => {
     await expect(
       repo.ensureUserProfile({ id: "brand-new", email: "n@x.com", name: a.name }),
     ).rejects.toThrow("already taken");
+  });
+});
+
+describe("mention persistence across renames", () => {
+  it("keeps comment and description bindings through reloads, edits and name reuse", async () => {
+    const profiles = createLocalProfileRepo();
+    const [original] = await profiles.listProfiles();
+    const author = { id: original.id, name: original.name, email: "test@example.com" };
+    const apps = createLocalAppRepo();
+    const text = `Thanks @${original.name}!`;
+    const app = await apps.createApp(
+      { title: "Mentions", description: text, category: "Creative" },
+      author,
+    );
+    const comment = await apps.addComment(app.id, author, text);
+    const expected = [{ name: original.name, userId: original.id }];
+    expect(app.mentions).toEqual(expected);
+    expect(comment.mentions).toEqual(expected);
+    await profiles.updateProfile(original.id, { name: "Renamed Developer" }, original.id);
+    await profiles.ensureUserProfile({
+      id: "new-owner",
+      name: original.name,
+      email: "other@example.com",
+    });
+    const reloaded = createLocalAppRepo();
+    expect((await reloaded.listComments(app.id))[0].mentions).toEqual(expected);
+    expect((await reloaded.getApp(app.id)).mentions).toEqual(expected);
+    const edited = await reloaded.updateApp(app.id, author, {
+      description: text + " More details.",
+    });
+    expect(edited.description).toBe(text + " More details.");
+    expect(edited.mentions).toEqual(expected);
+  });
+
+  it("freezes legacy content before a rename without rewriting it", async () => {
+    const profiles = createLocalProfileRepo();
+    const [original] = await profiles.listProfiles();
+    const text = `Thanks @${original.name}!`;
+    store.set("cc.apps.v1", JSON.stringify([{ id: "legacy", description: text }]));
+    store.set("cc.comments.v1", JSON.stringify({ legacy: [{ body: text }] }));
+    await profiles.updateProfile(original.id, { name: "New Display Name" }, original.id);
+    const app = JSON.parse(store.get("cc.apps.v1")!)[0];
+    const comment = JSON.parse(store.get("cc.comments.v1")!).legacy[0];
+    expect(app.description).toBe(text);
+    expect(comment.body).toBe(text);
+    expect(app.mentions).toEqual([{ name: original.name, userId: original.id }]);
+    expect(comment.mentions).toEqual(app.mentions);
   });
 });

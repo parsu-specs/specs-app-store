@@ -71,7 +71,7 @@ describe("feed update deletion", () => {
     expect((await repo.listMilestones()).map((m) => m.id)).toEqual(["other"]);
     const threads = JSON.parse(store.get("cc.comments.v1")!);
     expect(threads["ms:mine"]).toBeUndefined();
-    expect(threads["ms:other"]).toEqual([{ id: "keep", body: "Keep" }]);
+    expect(threads["ms:other"]).toEqual([{ id: "keep", body: "Keep", mentions: [] }]);
   });
 
   it("rejects deleting another user's update without changing stored data", async () => {
@@ -218,4 +218,26 @@ describe("comment nesting", () => {
       });
     },
   );
+});
+
+describe("feed upvote previews", () => {
+  it("resolves feed voters and refreshes after toggling an upvote", async () => {
+    store.set(
+      "cc.profiles.v1",
+      JSON.stringify([
+        { id: "other", name: "Other", color: "sky" },
+        { id: author.id, name: author.name, color: "sky" },
+      ]),
+    );
+    const repo = createLocalAppRepo();
+    expect((await repo.listVoters("mine", "milestone")).map((p) => p.id)).toEqual(["other"]);
+    await repo.toggleMilestoneCheer("mine", author.id);
+    expect((await repo.listVoters("mine", "milestone")).map((p) => p.id)).toEqual([
+      author.id,
+      "other",
+    ]);
+    await repo.toggleMilestoneCheer("mine", "other");
+    expect((await repo.listVoters("mine", "milestone")).map((p) => p.id)).toEqual([author.id]);
+    expect(await repo.listVoters("missing", "milestone")).toEqual([]);
+  });
 });

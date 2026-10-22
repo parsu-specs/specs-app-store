@@ -96,7 +96,7 @@ export default function NotificationBell({
       onOpenChange={onOpenChange}
       id={panelId}
       label="Notifications"
-      className="w-80 overflow-hidden"
+      className="w-96 overflow-hidden"
       trigger={
         <Button
           type="button"
@@ -122,45 +122,50 @@ export default function NotificationBell({
         </Button>
       }
     >
-      <div className="min-w-0 flex shrink-0 flex-wrap items-center justify-between gap-2 border-b-[3px] border-outline p-3 *:min-w-0 max-w-full">
-        <h2 className="text-base font-black">Notifications{unread > 0 && ` (${unread})`}</h2>
-        <div className="min-w-0 flex shrink-0 items-center gap-2 *:min-w-0 max-w-full">
+      <div className="flex shrink-0 items-start justify-between gap-3 p-4">
+        <div className="min-w-0">
+          <h2 className="text-lg font-black">Notifications</h2>
+          <p className="mt-1 text-xs font-bold text-muted">
+            {unread > 0 ? `${unread} unread updates` : "You're all caught up"}
+          </p>
+        </div>
+        <Button
+          variant="icon"
+          type="button"
+          onClick={() => onOpenChange(false)}
+          aria-label="Close notifications"
+          className="h-10 w-10 shrink-0"
+        >
+          <X size={18} weight="bold" />
+        </Button>
+      </div>
+      {items.length > 0 && (
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-y-2 border-dashed border-divider/60 px-3 py-2">
           {unread > 0 && (
             <Button
-              variant="plain"
+              variant="menu"
               type="button"
               onClick={() => onMarkAllRead()}
-              className="text-xs font-black underline decoration-2 underline-offset-4"
+              className="min-h-10 w-auto! px-3 text-xs"
             >
               Mark all read
             </Button>
           )}
           {items.length > 0 && (
             <Button
-              variant="text"
+              variant="menu"
               type="button"
               onClick={() => onDeleteAll()}
               title="Delete all notifications"
-              className="text-xs font-black text-danger underline decoration-2 underline-offset-4"
+              className="ml-auto min-h-10 w-auto! px-3 text-xs text-danger hover:bg-danger/10"
             >
               Delete all
             </Button>
           )}
-          <Button
-            variant="icon"
-            size="compact"
-            type="button"
-            onClick={() => onOpenChange(false)}
-            aria-label="Close notifications"
-            autoFocus
-            className=""
-          >
-            <X size={14} weight="bold" />
-          </Button>
         </div>
-      </div>
+      )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
         {loading ? (
           <p className="p-3 text-sm font-bold text-muted">Checking for updates…</p>
         ) : items.length === 0 ? (
@@ -172,23 +177,24 @@ export default function NotificationBell({
             </p>
           </div>
         ) : (
-          <ul className="space-y-1">
+          <ul className="space-y-2">
             {items.map((item) => {
               const Icon = KIND_ICON[item.kind];
               const isUnread = unreadIds.has(item.id);
               return (
                 <li key={item.id}>
                   <Button
-                    variant="icon"
-                    size="small"
+                    variant="plain"
                     type="button"
                     onClick={() => go(item)}
-                    className={`min-w-0 flex w-full items-start gap-2.5 rounded-lg border-2 p-2.5 text-left hover:bg-background ${
-                      isUnread ? "border-outline bg-background/60" : "border-transparent"
+                    className={`min-w-0 flex w-full items-start gap-3 rounded-xl border-2 border-dashed p-3 text-left hover:bg-background ${
+                      isUnread ? "border-primary/40 bg-primary/5" : "border-divider/60"
                     } *:min-w-0 max-w-full`}
                   >
-                    <span className="mt-0.5">
-                      <Icon size={16} weight="duotone" aria-hidden="true" />
+                    <span
+                      className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${isUnread ? "bg-primary/15 text-primary" : "bg-background text-muted"}`}
+                    >
+                      <Icon size={20} weight="duotone" aria-hidden="true" />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="min-w-0 flex flex-wrap items-center gap-2 *:min-w-0 max-w-full">
@@ -202,11 +208,13 @@ export default function NotificationBell({
                           />
                         )}
                       </span>
-                      <span className="mt-1 block truncate text-sm font-black">{item.title}</span>
+                      <span className="mt-2 block wrap-anywhere text-sm font-black">
+                        {item.title}
+                      </span>
                       <span className="mt-0.5 block line-clamp-2 text-xs font-bold text-muted">
                         {item.body}
                       </span>
-                      <span className="min-w-0 mt-1 flex items-center gap-1 *:min-w-0 max-w-full">
+                      <span className="min-w-0 mt-3 flex flex-wrap items-center gap-1 border-t-2 border-dashed border-divider/60 pt-2 *:min-w-0 max-w-full">
                         {item.kind === "vote" || item.kind === "collab" || item.kind === "like" ? (
                           <UploadStamp
                             createdAt={item.createdAt}

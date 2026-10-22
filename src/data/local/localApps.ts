@@ -1,3 +1,4 @@
+import { captureMentions } from "../../utils/mentions";
 import { NotFoundError, type AppRepo } from "../repositories";
 import type {
   AppInput,
@@ -11,7 +12,11 @@ import type {
   User,
 } from "../types";
 import { seedApps, seedBuilders, seedComments, seedMilestones } from "./seed";
-import { getLocalProfilesByIds } from "./localProfiles";
+import {
+  createLocalProfileRepo,
+  freezeLegacyLocalMentions,
+  getLocalProfilesByIds,
+} from "./localProfiles";
 import { assertReplyDepth } from "../commentRules";
 
 const APPS_KEY = "cc.apps.v1";
@@ -28,6 +33,7 @@ function delay(ms = 120): Promise<void> {
 
 function loadApps(): AppItem[] {
   try {
+    freezeLegacyLocalMentions();
     const raw = localStorage.getItem(APPS_KEY);
     if (!raw) {
       localStorage.setItem(APPS_KEY, JSON.stringify(seedApps));
@@ -91,6 +97,7 @@ function saveVotes(votes: VotesStore): void {
 
 function loadComments(): CommentsStore {
   try {
+    freezeLegacyLocalMentions();
     const raw = localStorage.getItem(COMMENTS_KEY);
     if (!raw) {
       localStorage.setItem(COMMENTS_KEY, JSON.stringify(seedComments));
@@ -221,7 +228,9 @@ export function createLocalAppRepo(): AppRepo {
         if (src.length > 500_000) throw new Error("Images are too large. Pick smaller files.");
       }
       const apps = loadApps();
+      const mentions = captureMentions(description, await createLocalProfileRepo().listProfiles());
       const item: AppItem = {
+        mentions,
         id: newId(),
         title,
         description,
@@ -281,10 +290,16 @@ export function createLocalAppRepo(): AppRepo {
       for (const src of screenshots) {
         if (src.length > 500_000) throw new Error("Images are too large. Pick smaller files.");
       }
+      const mentions = captureMentions(
+        description,
+        await createLocalProfileRepo().listProfiles(),
+        target.mentions,
+      );
       const next = apps.map((a) =>
         a.id === appId
           ? {
               ...a,
+              mentions,
               title,
               description,
               url: url ? url : undefined,
@@ -355,8 +370,12 @@ export function createLocalAppRepo(): AppRepo {
       return 0;
     },
 
-    async listVoters(appId: string): Promise<Profile[]> {
+    async listVoters(appId: string, target = "app"): Promise<Profile[]> {
       await delay(80);
+      if (target === "milestone") {
+        const milestone = loadMilestones().find((m) => m.id === appId);
+        return getLocalProfilesByIds(milestone?.cheeredBy ?? []);
+      }
       const votes = loadVotes();
       const voterIds = Object.entries(votes)
         .filter(([, ids]) => ids.includes(appId))
@@ -406,6 +425,7 @@ export function createLocalAppRepo(): AppRepo {
         assertReplyDepth(thread, parentId);
       }
       const comment: Comment = {
+        mentions: captureMentions(text, await createLocalProfileRepo().listProfiles()),
         id: newId(),
         appId,
         authorId: author.id,

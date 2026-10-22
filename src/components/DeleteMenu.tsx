@@ -35,7 +35,7 @@ export default function DeleteMenu({
       label={label}
       open={open}
       onOpenChange={setOpen}
-      className="w-40 p-1"
+      className="w-52 gap-2 p-3"
       trigger={
         <Button
           variant="plain"
@@ -48,7 +48,7 @@ export default function DeleteMenu({
             setError(null);
             setOpen(!open);
           }}
-          className="rounded-full p-1 text-muted hover:bg-background hover:text-foreground"
+          className="grid h-10 w-10 place-items-center rounded-lg text-muted hover:bg-background hover:text-foreground"
         >
           <DotsThreeVertical size={20} weight="bold" aria-hidden="true" />
         </Button>
@@ -60,13 +60,16 @@ export default function DeleteMenu({
         disabled={pending}
         aria-busy={pending}
         onClick={() => void remove()}
-        className="text-danger"
+        className="min-h-11 justify-between! text-danger hover:bg-danger/10"
       >
-        <Trash size={16} aria-hidden="true" />
-        {pending ? "Deleting…" : "Delete"}
+        <span>{pending ? "Deleting…" : "Delete"}</span>
+        <Trash size={20} aria-hidden="true" />
       </Button>
       {error && (
-        <p role="alert" className="px-3 py-2 text-xs font-bold">
+        <p
+          role="alert"
+          className="border-t-2 border-dashed border-divider/60 px-3 py-2 text-xs font-bold"
+        >
           {error}
         </p>
       )}

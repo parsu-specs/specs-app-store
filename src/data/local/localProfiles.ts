@@ -1,5 +1,14 @@
+import { captureMentions } from "../../utils/mentions";
 import { NotFoundError, type ProfileRepo } from "../repositories";
-import { AVATAR_COLORS, PROFILE_THEMES, SITE_PALETTE_IDS, type Profile, type User } from "../types";
+import {
+  AVATAR_COLORS,
+  PROFILE_THEMES,
+  SITE_PALETTE_IDS,
+  type AppItem,
+  type Comment,
+  type Profile,
+  type User,
+} from "../types";
 import { seedProfiles } from "./seed";
 
 const PROFILES_KEY = "cc.profiles.v1";
@@ -45,6 +54,56 @@ function saveProfiles(profiles: Profile[]): void {
 }
 
 /** Profiles for the given user ids (missing ids skipped), alphabetical by name. */
+/** Snapshot legacy local posts before names change. */
+export function freezeLegacyLocalMentions(): void {
+  const profiles = loadProfiles();
+  const parse = (raw: string): unknown => {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  };
+  const appsRaw = localStorage.getItem("cc.apps.v1");
+  if (appsRaw) {
+    const parsed = parse(appsRaw);
+    const apps = Array.isArray(parsed)
+      ? parsed.filter((app): app is AppItem => app && typeof app === "object")
+      : [];
+    if (apps.some((app) => app.mentions === undefined)) {
+      localStorage.setItem(
+        "cc.apps.v1",
+        JSON.stringify(
+          apps.map((app) => ({
+            ...app,
+            mentions: app.mentions ?? captureMentions(app.description ?? "", profiles),
+          })),
+        ),
+      );
+    }
+  }
+  const commentsRaw = localStorage.getItem("cc.comments.v1");
+  if (commentsRaw) {
+    const parsed = parse(commentsRaw);
+    const threads =
+      parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? (parsed as Record<string, Comment[]>)
+        : {};
+    let changed = false;
+    for (const comments of Object.values(threads)) {
+      if (!Array.isArray(comments)) continue;
+      for (const comment of comments) {
+        if (!comment || typeof comment !== "object") continue;
+        if (comment.mentions === undefined) {
+          comment.mentions = captureMentions(comment.body ?? "", profiles);
+          changed = true;
+        }
+      }
+    }
+    if (changed) localStorage.setItem("cc.comments.v1", JSON.stringify(threads));
+  }
+}
+
 export function getLocalProfilesByIds(ids: string[]): Profile[] {
   if (ids.length === 0) return [];
   const wanted = new Set(ids);
@@ -169,6 +228,7 @@ export function createLocalProfileRepo(): ProfileRepo {
         theme,
         palette,
       };
+      freezeLegacyLocalMentions();
       saveProfiles(profiles.map((p) => (p.id === id ? updated : p)));
       return updated;
     },

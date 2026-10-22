@@ -1,3 +1,4 @@
+import { captureMentions } from "../../utils/mentions";
 // Supabase implementations of the repo contracts. Active only when
 // VITE_DATA_SOURCE=supabase. Reads work with the anon key under the public
 // RLS policies; writes require a Supabase Auth session (Google provider).
@@ -228,6 +229,7 @@ function toAppRow(row: Record<string, unknown>): AppRow {
     id: String(row["id"]),
     title: String(row["title"] ?? ""),
     description: String(row["description"] ?? ""),
+    mentions: row["mentions"] as AppRow["mentions"],
     creator: String(row["creator"] ?? ""),
     creator_id: (row["creator_id"] as string | null) ?? null,
     category: row["category"] as AppRow["category"],
@@ -245,6 +247,7 @@ function toAppRow(row: Record<string, unknown>): AppRow {
 function toCommentRow(row: Record<string, unknown>): CommentRow {
   return {
     is_deleted: Boolean(row["is_deleted"]),
+    mentions: row["mentions"] as CommentRow["mentions"],
     id: String(row["id"]),
     app_id: String(row["app_id"] ?? ""),
     author_id: String(row["author_id"] ?? ""),
@@ -336,6 +339,7 @@ export function createSupabaseAppRepo(): AppRepo {
           id: newId(),
           title,
           description,
+          mentions: captureMentions(description, await createSupabaseProfileRepo().listProfiles()),
           creator: author.name,
           creator_id: uid,
           category: input.category,
@@ -399,6 +403,11 @@ export function createSupabaseAppRepo(): AppRepo {
           description,
           url: url || null,
           repo_url: repoUrl || null,
+          mentions: captureMentions(
+            description,
+            await createSupabaseProfileRepo().listProfiles(),
+            current.mentions,
+          ),
           category: patch.category ?? current.category,
           screenshots,
           docs: docs || null,
@@ -463,12 +472,12 @@ export function createSupabaseAppRepo(): AppRepo {
       return typeof data === "number" && data > 0 ? Math.ceil(data) : 0;
     },
 
-    async listVoters(appId: string) {
+    async listVoters(appId: string, target = "app") {
       const supabase = getSupabase();
       const { data: votes, error: votesError } = await supabase
-        .from("app_votes")
+        .from(target === "milestone" ? "milestone_cheers" : "app_votes")
         .select("user_id")
-        .eq("app_id", appId);
+        .eq(target === "milestone" ? "milestone_id" : "app_id", appId);
       if (votesError) throw new Error(votesError.message);
       const ids = [...new Set(((votes ?? []) as { user_id: string }[]).map((v) => v.user_id))];
       if (ids.length === 0) return [];
@@ -554,6 +563,7 @@ export function createSupabaseAppRepo(): AppRepo {
           author_id: author.id,
           author_name: author.name,
           body: text,
+          mentions: captureMentions(text, await createSupabaseProfileRepo().listProfiles()),
           parent_id: parentId ?? null,
           likes: 0,
         })

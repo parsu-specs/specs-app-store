@@ -21,14 +21,18 @@ export default function AppearanceControl({ compact = false }: { compact?: boole
     const dark = resolved === "dark";
     return (
       <Button
-        variant="icon"
+        variant="surface"
         size="compact-icon"
         onClick={() => setAppearance(dark ? "light" : "dark")}
         aria-label={`Switch to ${dark ? "light" : "dark"} mode`}
         title={`Switch to ${dark ? "light" : "dark"} mode`}
-        className="text-foreground"
+        className="relative text-foreground"
       >
-        {dark ? <Sun size={20} weight="bold" /> : <Moon size={20} weight="bold" />}
+        {dark ? (
+          <Sun size={20} weight="duotone" aria-hidden="true" />
+        ) : (
+          <Moon size={20} weight="duotone" aria-hidden="true" />
+        )}
       </Button>
     );
   }

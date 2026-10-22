@@ -1,3 +1,4 @@
+import { captureMentions } from "../../utils/mentions";
 // HTTP implementations of the repo contracts. Inactive until
 // VITE_DATA_SOURCE=http AND VITE_API_URL are set — see docs/backends.md
 // for the endpoint contract the server must honor. Local behavior is untouched.
@@ -153,6 +154,10 @@ export function createHttpAppRepo(): AppRepo {
         body: JSON.stringify({
           title: input.title,
           description: input.description,
+          mentions: captureMentions(
+            input.description,
+            await createHttpProfileRepo().listProfiles(),
+          ),
           url: input.url,
           repo_url: input.repoUrl,
           category: input.category,
@@ -170,6 +175,14 @@ export function createHttpAppRepo(): AppRepo {
         body: JSON.stringify({
           title: patch.title,
           description: patch.description,
+          mentions:
+            patch.description === undefined
+              ? undefined
+              : captureMentions(
+                  patch.description,
+                  await createHttpProfileRepo().listProfiles(),
+                  (await this.getApp(appId)).mentions,
+                ),
           url: patch.url,
           repo_url: patch.repoUrl,
           category: patch.category,
@@ -197,9 +210,9 @@ export function createHttpAppRepo(): AppRepo {
       return 0;
     },
 
-    async listVoters(appId: string) {
+    async listVoters(appId: string, target = "app") {
       const { voters } = await api<{ voters: ProfileRow[] }>(
-        `/apps/${encodeURIComponent(appId)}/voters`,
+        `/${target === "milestone" ? "milestones" : "apps"}/${encodeURIComponent(appId)}/voters`,
       );
       return voters.map(toProfile).sort((a, b) => a.name.localeCompare(b.name));
     },
@@ -226,7 +239,14 @@ export function createHttpAppRepo(): AppRepo {
     async addComment(appId: string, _author: User, body: string, parentId?: string) {
       const { comment } = await api<{ comment: CommentRow }>(
         `/apps/${encodeURIComponent(appId)}/comments`,
-        { method: "POST", body: JSON.stringify({ body, parentId }) },
+        {
+          method: "POST",
+          body: JSON.stringify({
+            body,
+            parentId,
+            mentions: captureMentions(body.trim(), await createHttpProfileRepo().listProfiles()),
+          }),
+        },
       );
       return toComment(comment);
     },

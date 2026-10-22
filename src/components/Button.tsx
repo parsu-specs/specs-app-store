@@ -9,6 +9,7 @@ import type {
 
 export type ButtonVariant =
   | "icon"
+  | "avatar"
   | "menu"
   | "plain"
   | "minimal"
@@ -51,6 +52,8 @@ const commonClasses =
   "inline-flex min-w-0 max-w-full whitespace-normal wrap-anywhere items-center justify-center gap-2 [&>svg]:shrink-0 font-black focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary focus-visible:ring-offset-2";
 
 const variantClasses: Record<ButtonVariant, string> = {
+  avatar:
+    "shrink-0 rounded-full border-0 bg-transparent p-0 leading-none transition-[translate,box-shadow,filter] duration-100 ease-out enabled:hover:-translate-y-1 enabled:hover:shadow-[0_4px_0_var(--color-outline)] enabled:active:translate-y-0 enabled:active:shadow-none enabled:active:brightness-90 data-[touch-pressed=true]:translate-y-0 data-[touch-pressed=true]:shadow-none data-[touch-pressed=true]:brightness-90 motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-60",
   icon: "shrink-0 rounded-full border-2 border-outline bg-surface transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-60",
   menu: "w-full justify-start rounded-lg px-3 py-2 text-left text-sm hover:bg-background disabled:cursor-not-allowed disabled:opacity-60",
   plain:
@@ -335,7 +338,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   ref,
 ) {
   const clickableClass = props.onClick && !props.disabled ? "cursor-pointer" : "";
-  const touchPress = useTouchPress(props, raisedVariants.has(variant) && !props.disabled);
+  const touchPress = useTouchPress(
+    props,
+    (raisedVariants.has(variant) || variant === "avatar") && !props.disabled,
+  );
 
   return (
     <button

@@ -210,7 +210,7 @@ export default function ProfileView({
             <h2 className="mt-3 flex min-w-0 max-w-full flex-wrap items-center justify-center gap-2 text-3xl font-black sm:justify-start *:min-w-0">
               <span className="min-w-0 max-w-full wrap-anywhere">{profile.name}</span>
               {trophies.get(profile.id) !== undefined && (
-                <TrophyMark place={trophies.get(profile.id) as 1 | 2 | 3} size={32} />
+                <TrophyMark minimal place={trophies.get(profile.id) as 1 | 2 | 3} size={32} />
               )}
             </h2>
             <p className="mt-1 font-bold text-muted">{profile.role}</p>
@@ -463,12 +463,13 @@ export default function ProfileView({
               <h4 className="flex min-w-0 max-w-full flex-wrap items-center gap-2 text-lg font-black *:min-w-0">
                 <span className="min-w-0 max-w-full wrap-anywhere">{app.title}</span>
                 {projectTrophies.get(app.id) !== undefined && (
-                  <TrophyMark place={projectTrophies.get(app.id) as 1 | 2 | 3} size={20} />
+                  <TrophyMark minimal place={projectTrophies.get(app.id) as 1 | 2 | 3} size={20} />
                 )}
               </h4>
               <p className="mt-1 text-sm leading-6 text-muted">
                 <MentionText
                   text={app.description}
+                  mentions={app.mentions ?? []}
                   profiles={[...profiles.values()]}
                   onOpenProfile={onOpenProfile}
                 />

@@ -26,6 +26,6 @@ export function profileForApp(app: AppItem, lookup: Map<string, Profile>): Profi
 }
 
 export function profileForComment(comment: Comment, lookup: Map<string, Profile>): Profile | null {
-  if (lookup.has(comment.authorId)) return lookup.get(comment.authorId)!;
+  if (comment.authorId) return lookup.get(comment.authorId) ?? null;
   return lookup.get(`name:${comment.authorName.trim().toLowerCase()}`) ?? null;
 }

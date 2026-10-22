@@ -7,7 +7,7 @@ import { ButtonLink } from "./Button";
 export default function SiteHeader({ page }: { page: "landing" | "about" }) {
   const { user } = useAuth();
   return (
-    <header className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-6 sm:px-8 lg:px-10">
+    <header className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 px-5 py-6 sm:flex-row sm:flex-wrap sm:items-center sm:px-8 lg:px-10">
       <ButtonLink
         variant="plain"
         href={ROUTES.landing}
@@ -16,7 +16,10 @@ export default function SiteHeader({ page }: { page: "landing" | "about" }) {
       >
         <Brand />
       </ButtonLink>
-      <nav aria-label="Site navigation" className="flex flex-wrap items-center gap-4 sm:gap-6">
+      <nav
+        aria-label="Site navigation"
+        className="flex w-full flex-wrap items-center gap-4 sm:w-auto sm:gap-6"
+      >
         <AppearanceControl compact />
         {(
           [

@@ -540,7 +540,7 @@ export default function ProjectView({
           <h2 className="mt-4 flex min-w-0 max-w-full flex-wrap items-center gap-2 text-3xl font-black sm:text-4xl *:min-w-0">
             <span className="min-w-0 max-w-full wrap-anywhere">{app.title}</span>
             {projectTrophies.get(app.id) !== undefined && (
-              <TrophyMark place={projectTrophies.get(app.id) as 1 | 2 | 3} size={30} />
+              <TrophyMark minimal place={projectTrophies.get(app.id) as 1 | 2 | 3} size={30} />
             )}
           </h2>
           <div className="mt-2">
@@ -549,6 +549,7 @@ export default function ProjectView({
           <p className="mt-3 text-lg leading-8 text-body">
             <MentionText
               text={app.description}
+              mentions={app.mentions ?? []}
               profiles={[...profiles.values()]}
               onOpenProfile={onOpenProfile}
             />
@@ -627,7 +628,7 @@ export default function ProjectView({
                 <span className="flex min-w-0 max-w-full flex-wrap items-center gap-2 text-lg font-black *:min-w-0">
                   <span className="min-w-0 max-w-full wrap-anywhere">{developer.name}</span>
                   {trophies.get(developer.id) !== undefined && (
-                    <TrophyMark place={trophies.get(developer.id) as 1 | 2 | 3} size={22} />
+                    <TrophyMark minimal place={trophies.get(developer.id) as 1 | 2 | 3} size={22} />
                   )}
                 </span>
                 <span className="block wrap-anywhere text-sm font-bold text-muted">

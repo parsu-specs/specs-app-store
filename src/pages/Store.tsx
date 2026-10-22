@@ -1,8 +1,6 @@
 import { createPortal } from "react-dom";
 import {
   Gear,
-  Info,
-  House,
   MagnifyingGlass,
   Newspaper,
   SignOut,
@@ -16,6 +14,7 @@ import AppearanceControl from "../components/AppearanceControl";
 import ErrorBoundary from "../components/ErrorBoundary";
 import NotificationBell from "../components/NotificationBell";
 import Avatar from "../components/Avatar";
+import TrophyMark from "../components/TrophyMark";
 import Popover from "../components/Popover";
 import { Button, ButtonLink } from "../components/Button";
 import { ROUTES, navigateInternalLink } from "./routes";
@@ -55,6 +54,7 @@ export default function Store() {
     setPublishBonus,
     signIn,
     threadsLoading,
+    trophies,
     unreadIds,
     user,
     view,
@@ -63,11 +63,12 @@ export default function Store() {
   } = store;
   const pageTitle = copyForView[view]?.title?.trim();
   const pageDescription = copyForView[view]?.description?.trim();
+  const myTrophy = myProfile ? trophies.get(myProfile.id) : undefined;
   return (
     <div className="min-h-screen overflow-x-clip">
       <aside className="fixed inset-x-0 top-0 z-40 h-21.25 border-b-[3px] border-outline bg-brand-surface px-3 py-5 text-brand-foreground sm:px-5 lg:inset-y-0 lg:left-0 lg:right-auto lg:flex lg:h-screen lg:w-70 lg:flex-col lg:border-b-0 lg:border-r-[3px] lg:p-7">
-        <div className="min-w-0 flex items-center justify-between *:min-w-0 max-w-full">
-          <Brand light className="max-lg:max-w-[55%]" />
+        <div className="hidden min-w-0 items-center justify-between *:min-w-0 max-w-full lg:flex">
+          <Brand light />
           <AppearanceControl compact />
         </div>
         <nav
@@ -122,7 +123,7 @@ export default function Store() {
         </nav>
         <nav
           aria-label="Website"
-          className="mt-6 hidden border-t-2 border-surface/30 pt-4 lg:mt-auto lg:block"
+          className="mt-6 hidden border-t-2 border-dashed border-brand-foreground/25 pt-4 lg:mt-auto lg:block"
         >
           <ButtonLink
             variant="plain"
@@ -243,7 +244,15 @@ export default function Store() {
         )}
 
       <div className="min-w-0">
-        <header className="fixed right-3 top-0 z-60 flex h-21.25 max-w-[45%] items-center sm:right-4 lg:left-70 lg:right-0 lg:z-40 lg:max-w-none lg:justify-between lg:gap-4 lg:border-b-[3px] lg:bg-panel lg:px-8 lg:py-4">
+        <header className="fixed inset-x-0 top-0 z-60 flex h-21.25 items-center justify-between gap-3 border-b-[3px] border-outline bg-brand-surface px-3 sm:px-5 lg:left-70 lg:z-40 lg:gap-4 lg:bg-panel lg:px-8 lg:py-4">
+          <div className="min-w-0 text-brand-foreground lg:hidden">
+            <div className="md:hidden">
+              <Brand light monogram />
+            </div>
+            <div className="hidden md:block">
+              <Brand light />
+            </div>
+          </div>
           <nav aria-label="Breadcrumb" className="hidden min-w-0 flex-1 text-sm lg:block">
             <ol className="flex min-w-0 flex-1 flex-wrap items-center gap-2 *:min-w-0 max-w-full">
               {crumbs.map((c, i) => (
@@ -275,6 +284,9 @@ export default function Store() {
           </nav>
           <div className="relative min-w-0 max-w-full shrink-0 lg:max-w-[45%]">
             <div className="relative flex min-w-0 max-w-full items-center gap-2 *:min-w-0">
+              <div className="shrink-0 lg:hidden">
+                <AppearanceControl compact />
+              </div>
               {user && (
                 <NotificationBell
                   items={visibleItems}
@@ -295,7 +307,7 @@ export default function Store() {
                 onOpenChange={setAccountMenuOpen}
                 id="account-menu"
                 label="Profile and site menu"
-                className="w-56 p-2 text-sm"
+                className="w-80 gap-2 p-3 text-sm"
                 trigger={
                   <Button
                     type="button"
@@ -336,20 +348,27 @@ export default function Store() {
                     variant="menu"
                     type="button"
                     onClick={() => openMyProfile()}
+                    aria-label={`View ${myProfile.name}'s profile`}
                     aria-current={view === "profile" ? "page" : undefined}
-                    className="gap-3"
+                    className="gap-3 rounded-xl border-2 border-outline bg-background px-3 py-4 hover:bg-secondary"
                   >
                     <Avatar
                       name={myProfile.name}
                       color={myProfile.color}
                       imageUrl={myProfile.imageUrl}
                       size="sm"
-                      className="border-outline!"
+                      className="h-12! w-12! shrink-0 border-outline! text-base!"
                     />
-                    <span className="min-w-0 truncate">My profile</span>
+                    <span className="min-w-0 flex-1 text-left">
+                      <span className="block wrap-anywhere text-base font-black">
+                        {myProfile.name}
+                      </span>
+                      <span className="mt-1 block text-xs font-bold text-muted">SPECS member</span>
+                    </span>
+                    {myTrophy !== undefined && <TrophyMark minimal place={myTrophy} size={28} />}
                   </Button>
                 )}
-                <div className="lg:hidden">
+                <div className="space-y-1 lg:hidden">
                   <Button
                     variant="menu"
                     type="button"
@@ -357,10 +376,11 @@ export default function Store() {
                       setAccountMenuOpen(false);
                       goPath(ROUTES.developers, "builders");
                     }}
-                    className="gap-3"
+                    aria-current={view === "builders" ? "page" : undefined}
+                    className="min-h-11 justify-between! px-3 aria-[current=page]:bg-background aria-[current=page]:text-primary"
                   >
+                    <span>Developers</span>
                     <UsersThree size={20} weight="duotone" />
-                    Developers
                   </Button>
                   <Button
                     variant="menu"
@@ -369,46 +389,51 @@ export default function Store() {
                       setAccountMenuOpen(false);
                       goPath(ROUTES.leaderboard, "leaderboard");
                     }}
-                    className="gap-3"
+                    aria-current={view === "leaderboard" ? "page" : undefined}
+                    className="min-h-11 justify-between! px-3 aria-[current=page]:bg-background aria-[current=page]:text-primary"
                   >
+                    <span>Leaderboard</span>
                     <Trophy size={20} weight="duotone" />
-                    Leaderboard
                   </Button>
-                  <div className="my-1 border-t-2 border-dashed border-muted" />
+                </div>
+                <div className="space-y-1 border-t-2 border-dashed border-outline/15 pt-2 lg:hidden">
                   <ButtonLink
-                    variant="menu"
+                    variant="plain"
                     href={ROUTES.about}
                     onClick={(event) => {
                       setAccountMenuOpen(false);
                       navigateInternalLink(event);
                     }}
-                    className="gap-3"
+                    className="flex min-h-11 w-full items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-background"
                   >
-                    <Info size={20} weight="duotone" />
-                    About
+                    <span>About</span> <ArrowSquareUpRight size={20} weight="duotone" />
                   </ButtonLink>
                   <ButtonLink
-                    variant="menu"
+                    variant="plain"
                     href={ROUTES.landing}
-                    onClick={navigateInternalLink}
-                    className="gap-3"
+                    onClick={(event) => {
+                      setAccountMenuOpen(false);
+                      navigateInternalLink(event);
+                    }}
+                    className="flex min-h-11 w-full items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-background"
                   >
-                    <House size={20} weight="duotone" /> Landing page
+                    <span>Landing</span> <ArrowSquareUpRight size={20} weight="duotone" />
                   </ButtonLink>
-                  <div className="my-1 border-t-2 border-dashed border-muted" />
                 </div>
-                <Button
-                  variant="menu"
-                  type="button"
-                  onClick={() => {
-                    setAccountMenuOpen(false);
-                    setConfirmSignOut(true);
-                  }}
-                  className="gap-3 text-danger"
-                >
-                  <SignOut size={20} weight="bold" />
-                  Sign out
-                </Button>
+                <div className="border-t-2 border-dashed border-outline/15 pt-2">
+                  <Button
+                    variant="menu"
+                    type="button"
+                    onClick={() => {
+                      setAccountMenuOpen(false);
+                      setConfirmSignOut(true);
+                    }}
+                    className="min-h-11 justify-between! px-3 text-danger hover:bg-danger/10"
+                  >
+                    <span>Sign out</span>
+                    <SignOut size={20} weight="bold" />
+                  </Button>
+                </div>
               </Popover>
             </div>
           </div>

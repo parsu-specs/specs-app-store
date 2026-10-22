@@ -34,7 +34,7 @@ export default function About() {
           {APP_INFO.features.map((f, i) => (
             <article
               key={f.title}
-              className={`toon-card toon-paper bg-panel rounded-lg p-6 pt-10 ${i % 3 === 0 ? "rotate-[-1deg]" : i % 3 === 1 ? "rotate-1" : "rotate-[-.5deg]"}`}
+              className={`toon-card toon-paper bg-panel rounded-lg p-6 pt-10 ${i % 3 === 0 ? "-rotate-1" : i % 3 === 1 ? "rotate-1" : "rotate-[-.5deg]"}`}
             >
               <h3 className="text-xl font-black">{f.title}</h3>
               <p className="mt-2 leading-7 text-body">{f.body}</p>

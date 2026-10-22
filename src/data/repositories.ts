@@ -61,11 +61,11 @@ export type AppRepo = {
   /** Remaining vote pause for the caller, in whole seconds (0 = not paused). */
   getVoteTimeoutSeconds(): Promise<number>;
   /**
-   * Profiles that upvoted a project, alphabetical by name. Only voters with
+   * Profiles that upvoted a project or feed milestone, alphabetical by name. Only voters with
    * a resolvable profile are returned, so legacy seed counts may exceed the
    * list length — callers should treat the list as identities, not a count.
    */
-  listVoters(appId: string): Promise<Profile[]>;
+  listVoters(appId: string, target?: "app" | "milestone"): Promise<Profile[]>;
   listBuilders(): Promise<Builder[]>;
   listComments(appId: string, userId?: string): Promise<Comment[]>;
   addComment(appId: string, author: User, body: string, parentId?: string): Promise<Comment>;

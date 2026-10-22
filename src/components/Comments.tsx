@@ -67,7 +67,7 @@ function authorHeader(
         ) : (
           displayName
         )}
-        {place !== undefined && <TrophyMark place={place} size={16} />}
+        {place !== undefined && <TrophyMark minimal place={place} size={16} />}
         <MilestoneStamp createdAt={c.createdAt} subject="comment" />
       </div>
     </div>
@@ -251,7 +251,7 @@ export default function Comments({
               ariaLabel={`Add feedback for ${appTitle}`}
               suggestionsPlacement={stickyForm ? "above" : "below"}
               maxLength={500}
-              placeholder="Share useful feedback…"
+              placeholder="Reply to this post..."
               className="py-2 text-sm"
             />
           </div>
@@ -262,7 +262,7 @@ export default function Comments({
             disabled={posting || !body.trim()}
             className="shrink-0"
           >
-            {posting ? "…" : "Post"}
+            {posting ? "…" : "Reply"}
           </Button>
         </form>
       ) : (
@@ -283,14 +283,16 @@ export default function Comments({
     const hidden = kids.length - shown.length;
     const replyTarget = replyTo === c.id ? comments.find((x) => x.id === c.id) : undefined;
     const childListClass =
-      depth < 2 ? "mt-3 space-y-3 border-l-2 border-divider pl-2 sm:pl-3" : "mt-3 space-y-3";
+      depth < 2
+        ? "mt-4 space-y-3 border-l-2 border-dashed border-divider/60 pl-2 sm:pl-3"
+        : "mt-4 space-y-3";
     return (
       <li
         key={c.id}
         className={
           depth === 0
-            ? "rounded-xl border-2 border-dashed border-divider p-3"
-            : "rounded-lg py-3 pl-3"
+            ? "rounded-xl border-2 border-dashed border-divider/60 p-4"
+            : "rounded-xl border-2 border-dashed border-divider/60 p-3"
         }
       >
         {authorHeader(c, profiles, trophies, onOpenProfile)}
@@ -298,10 +300,15 @@ export default function Comments({
           {c.isDeleted ? (
             <span className="italic text-muted">Deleted comment</span>
           ) : (
-            <MentionText text={c.body} profiles={mentionProfiles} onOpenProfile={onOpenProfile} />
+            <MentionText
+              mentions={c.mentions ?? []}
+              text={c.body}
+              profiles={mentionProfiles}
+              onOpenProfile={onOpenProfile}
+            />
           )}
         </p>
-        <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="mt-3 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 border-t-2 border-dashed border-divider/60 pt-2">
           {!c.isDeleted && likeButton(c, depth > 0)}
           {currentUser && depth < MAX_COMMENT_LEVELS - 1 ? (
             <Button
@@ -311,7 +318,7 @@ export default function Comments({
                 if (replyTo !== c.id) openReply(c);
               }}
               aria-expanded={replyTo === c.id}
-              className="min-w-0 flex items-center gap-1 text-xs font-black text-muted transition-colors hover:text-primary *:min-w-0 max-w-full"
+              className="min-w-0 flex min-h-10 items-center gap-2 rounded-lg px-2 text-xs font-black text-muted transition-colors hover:bg-background hover:text-primary *:min-w-0 max-w-full"
             >
               <ChatCircleDots size={15} weight="duotone" />
               Reply
@@ -473,7 +480,7 @@ export default function Comments({
           )}
         </div>
         {stickyForm ? (
-          <div className="shrink-0 border-t-2 border-dashed border-divider bg-surface p-4">
+          <div className="shrink-0 border-t-2 border-dashed border-divider/60 bg-surface p-4">
             {form}
           </div>
         ) : (

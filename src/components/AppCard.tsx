@@ -126,7 +126,7 @@ export default function AppCard({
               <h3 className="min-w-0 wrap-anywhere text-xl font-black">{app.title} </h3>
               {projectRank !== undefined &&
                 (trophyPlace !== undefined ? (
-                  <TrophyMark place={trophyPlace} size={24} />
+                  <TrophyMark minimal place={trophyPlace} size={24} />
                 ) : (
                   <ButtonChip className="ml-2" tone="muted">
                     #{projectRank} App
@@ -180,6 +180,7 @@ export default function AppCard({
         <p className="my-4 line-clamp-4 flex-1 text-xs text-left text-pretty leading-6 text-muted/75">
           <MentionText
             text={app.description}
+            mentions={app.mentions ?? []}
             profiles={[...profiles.values()]}
             onOpenProfile={onOpenProfile}
           />

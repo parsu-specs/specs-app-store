@@ -1,46 +1,40 @@
 import { Button } from "./Button";
 import React from "react";
-import type { Profile } from "../data/types";
-
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
+import type { Mention, Profile } from "../data/types";
+import { mentionPattern } from "../utils/mentions";
 
 type MentionTextProps = {
   text: string;
   profiles: Profile[];
+  mentions?: Mention[];
   onOpenProfile: (profileId: string) => void;
 };
 
-/** Renders @Developer mentions as tappable profile links. Unknown names stay plain. */
-export default function MentionText({ text, profiles, onOpenProfile }: MentionTextProps) {
-  const names = profiles
-    .map((p) => p.name)
-    .filter(Boolean)
-    .sort((a, b) => b.length - a.length);
-  if (!names.length || !text.includes("@")) return <>{text}</>;
-  const byLower = new Map(profiles.map((p) => [p.name.toLowerCase(), p]));
-  const parts = text.split(
-    new RegExp(
-      `(?<![\\p{L}\\p{N}_@])(@(?:${names.map(escapeRegExp).join("|")}))(?![\\p{L}\\p{N}_])`,
-      "giu",
-    ),
-  );
+/** Saved labels retain their original text; links always use the saved user ID. */
+export default function MentionText({ text, profiles, mentions, onOpenProfile }: MentionTextProps) {
+  const bindings = mentions ?? [];
+  const pattern = mentionPattern(bindings.map((m) => m.name));
+  if (!pattern) return <>{text}</>;
+  const byName = new Map(bindings.map((m) => [m.name.toLowerCase(), m]));
+  const byId = new Map(profiles.map((p) => [p.id, p]));
   return (
     <>
-      {parts.map((part, i) => {
-        const hit = part.startsWith("@") ? byLower.get(part.slice(1).toLowerCase()) : undefined;
-        if (!hit) return <React.Fragment key={i}>{part}</React.Fragment>;
+      {text.split(pattern).map((part, i) => {
+        const mention = part.startsWith("@") ? byName.get(part.slice(1).toLowerCase()) : undefined;
+        if (!mention) return <React.Fragment key={i}>{part}</React.Fragment>;
+        const profile = byId.get(mention.userId);
+        // A deleted account must never redirect to a new owner of its former name.
+        if (!profile) return <React.Fragment key={i}>{part}</React.Fragment>;
         return (
           <Button
             variant="plain"
             key={i}
             type="button"
-            onClick={() => onOpenProfile(hit.id)}
-            title={`View ${hit.name}'s profile`}
+            onClick={() => onOpenProfile(mention.userId)}
+            title={`View ${profile.name}'s profile`}
             className="inline cursor-pointer border-0 bg-transparent p-0 font-bold text-primary hover:opacity-80"
           >
-            @{hit.name}
+            {part}
           </Button>
         );
       })}

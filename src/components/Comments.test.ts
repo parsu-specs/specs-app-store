@@ -202,6 +202,7 @@ describe("posted mentions", () => {
       root.render(
         createElement(MentionText, {
           text: "@Bob Smith thanks, bob@Alice.com and @AliceJones",
+          mentions: [{ name: "Bob Smith", userId: "Bob Smith" }],
           profiles,
           onOpenProfile: openProfile,
         }),
@@ -212,5 +213,45 @@ describe("posted mentions", () => {
     expect(buttons[0].className).not.toContain("underline");
     await act(async () => buttons[0].click());
     expect(openProfile).toHaveBeenCalledWith("Bob Smith");
+  });
+});
+
+describe("mentions after account changes", () => {
+  it("keeps the original label and opens the original ID after a rename and name reuse", async () => {
+    const openProfile = vi.fn();
+    await act(async () =>
+      root.render(
+        createElement(MentionText, {
+          text: "Thanks @Alice!",
+          mentions: [{ name: "Alice", userId: "original" }],
+          profiles: [
+            { ...profiles[0], id: "original", name: "Alicia" },
+            { ...profiles[0], id: "new-owner", name: "Alice" },
+          ],
+          onOpenProfile: openProfile,
+        }),
+      ),
+    );
+    const button = container.querySelector("button")!;
+    expect(button.textContent).toBe("@Alice");
+    await act(async () => button.click());
+    expect(openProfile).toHaveBeenCalledWith("original");
+  });
+
+  it("does not redirect deleted users or unbound text to a new owner of the name", async () => {
+    for (const mentions of [[{ name: "Alice", userId: "deleted" }], []]) {
+      await act(async () =>
+        root.render(
+          createElement(MentionText, {
+            text: "Thanks @Alice!",
+            mentions,
+            profiles,
+            onOpenProfile: vi.fn(),
+          }),
+        ),
+      );
+      expect(container.textContent).toBe("Thanks @Alice!");
+      expect(container.querySelector("button")).toBeNull();
+    }
   });
 });

@@ -1,10 +1,26 @@
 type BrandProps = {
   light?: boolean;
   compact?: boolean;
+  monogram?: boolean;
   className?: string;
 };
 
-export default function Brand({ light = false, compact = false, className = "" }: BrandProps) {
+export default function Brand({
+  light = false,
+  compact = false,
+  monogram = false,
+  className = "",
+}: BrandProps) {
+  if (monogram) {
+    return (
+      <span
+        aria-label="CodeCanvas"
+        className={`font-display text-2xl font-bold ${light ? "text-brand-foreground" : "text-foreground"} ${className}`}
+      >
+        C<span className={light ? "text-brand-accent" : "text-primary"}>C</span>
+      </span>
+    );
+  }
   return (
     <span className={`min-w-0 inline-flex items-center gap-3 ${className} *:min-w-0 max-w-full`}>
       <svg

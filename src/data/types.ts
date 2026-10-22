@@ -2,6 +2,9 @@ export type Category = "Education" | "Productivity" | "Games" | "Creative";
 
 export type CategoryFilter = Category | "All";
 
+/** Original mention label bound permanently to a profile ID. */
+export type Mention = { name: string; userId: string };
+
 export type User = {
   id: string;
   email: string;
@@ -9,6 +12,7 @@ export type User = {
 };
 
 export type AppItem = {
+  mentions?: Mention[];
   id: string;
   title: string;
   description: string;
@@ -127,6 +131,7 @@ export type Profile = {
 };
 
 export type Comment = {
+  mentions?: Mention[];
   isDeleted?: boolean;
   id: string;
   appId: string;

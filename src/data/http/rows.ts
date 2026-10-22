@@ -1,7 +1,7 @@
 // Database row shapes (snake_case, as returned by the API / Supabase)
 // and mappers to the app's camelCase domain types. The UI never imports this.
 
-import type { AppItem, Comment, Milestone, Profile, User } from "../types";
+import type { AppItem, Comment, Mention, Milestone, Profile, User } from "../types";
 
 export type ProfileRow = {
   id: string;
@@ -16,6 +16,7 @@ export type ProfileRow = {
 };
 
 export type AppRow = {
+  mentions?: Mention[];
   id: string;
   title: string;
   description: string;
@@ -35,6 +36,7 @@ export type AppRow = {
 };
 
 export type CommentRow = {
+  mentions?: Mention[];
   is_deleted?: boolean;
   id: string;
   app_id: string;
@@ -77,6 +79,7 @@ export function toApp(row: AppRow, commentsCount?: number): AppItem {
     id: row.id,
     title: row.title,
     description: row.description,
+    mentions: row.mentions,
     creator: row.creator,
     creatorId: row.creator_id ?? undefined,
     category: row.category,
@@ -96,6 +99,7 @@ export function toApp(row: AppRow, commentsCount?: number): AppItem {
 export function toComment(row: CommentRow): Comment {
   return {
     isDeleted: Boolean(row.is_deleted),
+    mentions: row.mentions,
     id: row.id,
     appId: row.app_id,
     authorId: row.author_id,

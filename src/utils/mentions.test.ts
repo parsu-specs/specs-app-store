@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { findMentionQuery, suggestMentionProfiles } from "./mentions";
+import {
+  captureMentions,
+  extractMentionIds,
+  findMentionQuery,
+  suggestMentionProfiles,
+} from "./mentions";
 import type { Profile } from "../data/types";
 
 const profile = (name: string, id = name): Profile => ({
@@ -48,5 +53,26 @@ describe("mention search", () => {
         "",
       ),
     ).toHaveLength(8);
+  });
+});
+
+describe("permanent mention bindings", () => {
+  it("retains the original user after rename and name reuse, including description edits", () => {
+    const saved = captureMentions("Built with @Alice", [profile("Alice", "original")]);
+    const current = [profile("Alicia", "original"), profile("Alice", "new-owner")];
+    expect(captureMentions("Built with @Alice and @Alicia!", current, saved)).toEqual([
+      { name: "Alice", userId: "original" },
+      { name: "Alicia", userId: "original" },
+    ]);
+    expect(captureMentions("Mention removed", current, saved)).toEqual([]);
+  });
+
+  it("captures whole names, punctuation and original casing without matching emails", () => {
+    const profiles = [profile("Bob"), profile("Bob Smith"), profile("A+B")];
+    expect(captureMentions("@bob smith helped @A+B; x@Bob.com @Bobcat", profiles)).toEqual([
+      { name: "bob smith", userId: "Bob Smith" },
+      { name: "A+B", userId: "A+B" },
+    ]);
+    expect(extractMentionIds("Thanks @Bob Smith for helping", profiles)).toEqual(["Bob Smith"]);
   });
 });

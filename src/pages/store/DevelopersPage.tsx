@@ -1,6 +1,7 @@
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { useState } from "react";
+import { ListBullets, MagnifyingGlass, SquaresFour } from "@phosphor-icons/react";
 import Avatar from "../../components/Avatar";
-import { ButtonLink } from "../../components/Button";
+import { Button, ButtonLink } from "../../components/Button";
 import Input from "../../components/Input";
 import TrophyMark from "../../components/TrophyMark";
 import { developerProfilePath } from "../routes";
@@ -19,11 +20,13 @@ export default function DevelopersPage({
   setDevQuery,
   trophies,
 }: Props) {
+  const [layout, setLayout] = useState<"grid" | "list">("grid");
+
   return (
     <>
       <section id="builders" className="scroll-mt-6">
-        <div className="mb-6">
-          <label className="relative block max-w-md">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <label className="relative block w-full max-w-md">
             <span className="sr-only">Search developers</span>
             <MagnifyingGlass
               size={20}
@@ -37,14 +40,36 @@ export default function DevelopersPage({
               placeholder="Search name or role…"
             />
           </label>
+          <div role="group" aria-label="Developer view" className="flex shrink-0 gap-2">
+            <Button
+              variant="outline-flat"
+              className="px-3 py-2"
+              aria-pressed={layout === "grid"}
+              onClick={() => setLayout("grid")}
+            >
+              <SquaresFour size={20} aria-hidden="true" />
+              Grid
+            </Button>
+            <Button
+              variant="outline-flat"
+              className="px-3 py-2"
+              aria-pressed={layout === "list"}
+              onClick={() => setLayout("list")}
+            >
+              <ListBullets size={20} aria-hidden="true" />
+              List
+            </Button>
+          </div>
         </div>
-        <div className="min-w-0 toon-card toon-paper bg-panel grid *:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-x-6 gap-y-8 rounded-lg p-4 pt-10 sm:p-8 sm:pt-12 max-w-full">
+        <div
+          className={`min-w-0 toon-card toon-paper bg-panel grid *:min-w-0 gap-4 rounded-lg p-4 pt-10 sm:p-8 sm:pt-12 max-w-full ${layout === "grid" ? "grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))]" : "grid-cols-1"}`}
+        >
           {filteredProfiles.map((p) => {
             const place = trophies.get(p.id);
             return (
               <article
                 key={p.id}
-                className={`min-w-0 ${place !== undefined ? "rounded-lg border-[3px] border-outline p-3" : ""} ${place === 1 ? "bg-podium-gold" : place === 2 ? "bg-podium-silver" : place === 3 ? "bg-podium-bronze" : ""}`}
+                className={`min-w-0 rounded-lg border-[3px] p-4 ${place !== undefined ? "border-outline" : "border-transparent"} ${place === 1 ? "bg-podium-gold" : place === 2 ? "bg-podium-silver" : place === 3 ? "bg-podium-bronze" : ""} ${layout === "list" ? "grid items-center gap-x-6 gap-y-2 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]" : ""}`}
               >
                 <div className="min-w-0 flex items-center gap-3 *:min-w-0 max-w-full">
                   <ButtonLink
@@ -61,23 +86,27 @@ export default function DevelopersPage({
                   </ButtonLink>
                   <h3 className="min-w-0 flex-1 wrap-break-word text-lg font-black">
                     <ButtonLink
-                      variant="plain"
+                      variant="text"
                       href={developerProfilePath(p.id)}
                       onClick={(e) => {
                         e.preventDefault();
                         openProfile(p.id);
                       }}
-                      className="underline-offset-4 hover:underline"
+                      className=""
                     >
                       {p.name}
                     </ButtonLink>
-                    {trophies.get(p.id) !== undefined && (
-                      <TrophyMark place={trophies.get(p.id) as 1 | 2 | 3} />
-                    )}
                   </h3>
+                  {place !== undefined && <TrophyMark minimal place={place as 1 | 2 | 3} />}
                 </div>
-                <p className="mt-2 text-sm text-muted">{p.role}</p>
-                <p className="mt-3 text-xs font-black uppercase">
+                <p
+                  className={`min-w-0 wrap-break-word text-sm text-muted ${layout === "grid" ? "mt-2" : ""}`}
+                >
+                  {p.role}
+                </p>
+                <p
+                  className={`text-xs font-black uppercase ${layout === "grid" ? "mt-3" : "md:text-right"}`}
+                >
                   {countFor(p)} project{countFor(p) === 1 ? "" : "s"} shared
                 </p>
               </article>

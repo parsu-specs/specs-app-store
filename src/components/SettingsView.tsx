@@ -1,7 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { ArrowCounterClockwise, Eye, EyeSlash, LockKey, Palette } from "@phosphor-icons/react";
 import { Button } from "./Button";
-import Input from "./Input";
+import Input, { Textarea } from "./Input";
 import AppearanceControl from "./AppearanceControl";
 import SoundControl from "./SoundControl";
 import { appearanceSnapshot, subscribeAppearance } from "../utils/appearance";
@@ -14,6 +14,93 @@ import type { Profile } from "../data/types";
 
 const isLocalMode =
   ((import.meta.env.VITE_DATA_SOURCE as string | undefined) ?? "local") === "local";
+
+function UserInfoForm({ profile, onChanged }: { profile: Profile; onChanged: () => void }) {
+  const { user, updateName, updateCachedProfile } = useAuth();
+  const [name, setName] = useState(profile.name);
+  const [bio, setBio] = useState(profile.bio);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const dirty = name !== profile.name || bio !== profile.bio;
+
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!user || saving) return;
+    setError(null);
+    setSaved(false);
+    if (!name.trim()) {
+      setError("Name is required.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const updated = await getProfileRepo().updateProfile(
+        user.id,
+        { name: name.trim(), bio: bio.trim() },
+        user.id,
+      );
+      if (updated.name !== user.name) {
+        try {
+          await updateName(updated.name);
+        } catch {
+          await getProfileRepo()
+            .updateProfile(user.id, { name: profile.name }, user.id)
+            .catch(() => undefined);
+          throw new Error("Could not update sign-in name. Try again.");
+        }
+      }
+      updateCachedProfile(updated);
+      setName(updated.name);
+      setBio(updated.bio);
+      setSaved(true);
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save user info.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={save} onChange={() => setSaved(false)} className="mt-4 space-y-4">
+      <fieldset disabled={saving} className="space-y-4">
+        <label className="block">
+          <span className="mb-2 block text-sm font-black">Display name</span>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoComplete="nickname"
+            maxLength={40}
+            required
+          />
+        </label>
+        <label className="block">
+          <span className="mb-2 block text-sm font-black">Bio</span>
+          <Textarea
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            maxLength={280}
+            showCharacterCount
+          />
+        </label>
+      </fieldset>
+      {error && (
+        <p role="alert" className="text-sm font-bold">
+          {error}
+        </p>
+      )}
+      {saved && (
+        <p role="status" className="text-sm font-bold">
+          User info saved.
+        </p>
+      )}
+      <Button type="submit" disabled={saving || !dirty}>
+        {saving ? "Saving…" : "Save user info"}
+      </Button>
+    </form>
+  );
+}
 
 /**
  * Device settings. Sound mute lives here (persisted per browser).
@@ -150,6 +237,19 @@ export default function SettingsView({
 
   return (
     <div className="space-y-6">
+      <section className="toon-card toon-paper bg-panel rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
+        <h2 className="text-2xl font-black">User info</h2>
+        <p className="mt-2 text-sm font-bold text-muted">
+          Update the information shown on your public profile.
+        </p>
+        {profile && profile.id === user?.id ? (
+          <UserInfoForm key={profile.id} profile={profile} onChanged={onChanged} />
+        ) : (
+          <p role="status" className="mt-4 text-sm font-bold text-muted">
+            {user ? "Loading user info…" : "Sign in to edit your user info."}
+          </p>
+        )}
+      </section>
       <section className="toon-card toon-paper bg-panel rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
         <div className="min-w-0 flex items-center gap-2 *:min-w-0 max-w-full">
           <LockKey size={22} weight="duotone" aria-hidden="true" />
