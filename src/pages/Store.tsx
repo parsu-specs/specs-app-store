@@ -490,11 +490,6 @@ export default function Store() {
               {view === "leaderboard" && <LeaderboardPage {...store} />}
 
               {view === "settings" && <SettingsPage {...store} />}
-
-              <footer className="mb-8 mt-12 border-t-2 border-dashed border-muted py-7 text-center text-sm font-bold text-muted">
-                CodeCanvas · Est. 2026 · Society of Programmers and Enthusiasts in Computer Science
-                (SPECS)
-              </footer>
             </div>
           </ErrorBoundary>
         </div>
