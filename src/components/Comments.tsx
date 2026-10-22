@@ -6,7 +6,7 @@ import TrophyMark from "./TrophyMark";
 import { Button } from "./Button";
 import MentionInput from "./MentionInput";
 import MentionText from "./MentionText";
-import MilestoneStamp, { MilestoneTimeProvider } from "./MilestoneStamp";
+import PostTimestamp, { PostTimeProvider } from "./PostTimestamp";
 import { getAppRepo } from "../data/factory";
 import { assertReplyDepth, MAX_COMMENT_LEVELS } from "../data/commentRules";
 import { profileForComment } from "../data/profileLinks";
@@ -68,7 +68,7 @@ function authorHeader(
           displayName
         )}
         {place !== undefined && <TrophyMark minimal place={place} size={16} />}
-        <MilestoneStamp createdAt={c.createdAt} subject="comment" />
+        <PostTimestamp createdAt={c.createdAt} subject="comment" />
       </div>
     </div>
   );
@@ -318,7 +318,7 @@ export default function Comments({
                 if (replyTo !== c.id) openReply(c);
               }}
               aria-expanded={replyTo === c.id}
-              className="min-w-0 flex min-h-10 items-center gap-2 rounded-lg px-2 text-xs font-black text-muted transition-colors hover:bg-background hover:text-primary *:min-w-0 max-w-full"
+              className="min-w-0 flex min-h-10 items-center gap-2 rounded-xl px-2 text-xs font-black text-muted transition-colors hover:bg-background hover:text-primary *:min-w-0 max-w-full"
             >
               <ChatCircleDots size={15} weight="duotone" />
               Reply
@@ -457,7 +457,7 @@ export default function Comments({
   };
 
   return (
-    <MilestoneTimeProvider>
+    <PostTimeProvider>
       <div className={stickyForm ? "flex min-h-0 flex-1 flex-col overflow-hidden" : "min-w-0"}>
         <div
           className={
@@ -487,6 +487,6 @@ export default function Comments({
           <div className="mt-4">{form}</div>
         )}
       </div>
-    </MilestoneTimeProvider>
+    </PostTimeProvider>
   );
 }

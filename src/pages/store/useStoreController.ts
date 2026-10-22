@@ -37,7 +37,7 @@ import type {
   Category,
   CategoryFilter,
   Comment,
-  Milestone,
+  FeedPost,
   NotificationItem,
   Profile,
 } from "../../data/types";
@@ -52,12 +52,12 @@ const categories: { label: CategoryFilter; Icon: typeof SquaresFour }[] = [
 ];
 
 type StoreView =
-  "discover" | "builders" | "feed" | "leaderboard" | "profile" | "project" | "settings";
+  "discover" | "developers" | "feeds" | "leaderboard" | "profile" | "project" | "settings";
 
 const routeForView: Record<Exclude<StoreView, "profile" | "project">, string> = {
   discover: ROUTES.discover,
-  builders: ROUTES.developers,
-  feed: ROUTES.feed,
+  developers: ROUTES.developers,
+  feeds: ROUTES.feeds,
   leaderboard: ROUTES.leaderboard,
   settings: ROUTES.settings,
 };
@@ -72,13 +72,12 @@ function parsePath(path: string): {
 } {
   const clean = normalizePathname(path || ROUTES.discover);
   if (clean === ROUTES.profile) return { view: "profile", profileId: "__me__", appId: null };
-  if (clean === ROUTES.developers) return { view: "builders", profileId: null, appId: null };
+  if (clean === ROUTES.developers) return { view: "developers", profileId: null, appId: null };
   const profileId = routeTail(clean, ROUTES.developers);
   if (profileId) return { view: "profile", profileId: decodeURIComponent(profileId), appId: null };
   const appId = routeTail(clean, ROUTES.apps) ?? routeTail(clean, ROUTES.discover);
   if (appId) return { view: "project", profileId: null, appId: decodeURIComponent(appId) };
-  if (clean === ROUTES.feed || clean === ROUTES.community)
-    return { view: "feed", profileId: null, appId: null };
+  if (clean === ROUTES.feeds) return { view: "feeds", profileId: null, appId: null };
   if (clean === ROUTES.leaderboard) return { view: "leaderboard", profileId: null, appId: null };
   if (clean === ROUTES.settings) return { view: "settings", profileId: null, appId: null };
   return { view: "discover", profileId: null, appId: null };
@@ -89,7 +88,7 @@ const copyForView: Partial<Record<StoreView, { title?: string; description?: str
     title: "Student projects",
     description: "Explore software built by the SPECS community.",
   },
-  builders: {
+  developers: {
     title: "Developers",
     description: "Open a profile to see their projects and feedback.",
   },
@@ -121,13 +120,13 @@ export default function useStoreController() {
   );
   const [profiles, setProfiles] = useState<Profile[]>(() => (myProfile ? [myProfile] : []));
   const [profileTick, setProfileTick] = useState(0);
-  const [milestones, setMilestones] = useState<Milestone[]>([]);
-  const [milestonesLoading, setMilestonesLoading] = useState(true);
-  const [milestonesError, setMilestonesError] = useState<string | null>(null);
-  const [mBody, setMBody] = useState("");
-  const [mAppId, setMAppId] = useState("");
-  const [mPosting, setMPosting] = useState(false);
-  const [mPostError, setMPostError] = useState<string | null>(null);
+  const [feedPosts, setFeedPosts] = useState<FeedPost[]>([]);
+  const [feedPostsLoading, setFeedPostsLoading] = useState(true);
+  const [feedPostsError, setFeedPostsError] = useState<string | null>(null);
+  const [feedPostBody, setFeedPostBody] = useState("");
+  const [feedPostAppId, setFeedPostAppId] = useState("");
+  const [feedPostSubmitting, setFeedPostSubmitting] = useState(false);
+  const [feedPostError, setFeedPostError] = useState<string | null>(null);
   const [cheerPending, setCheerPending] = useState<Set<string>>(new Set());
   const [openThreads, setOpenThreads] = useState<Set<string>>(new Set());
 
@@ -153,7 +152,7 @@ export default function useStoreController() {
       return false;
     }
   });
-  const [msQuery, setMsQuery] = useState("");
+  const [feedQuery, setFeedQuery] = useState("");
   const [category, setCategory] = useState<CategoryFilter>("All");
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
@@ -214,10 +213,14 @@ export default function useStoreController() {
   const filteredProfiles = devQueryLower
     ? profiles.filter((p) => `${p.name} ${p.role}`.toLowerCase().includes(devQueryLower))
     : profiles;
-  const msQueryLower = msQuery.trim().toLowerCase();
-  const filteredMilestones = msQueryLower
-    ? milestones.filter((m) => `${m.body} ${m.authorName}`.toLowerCase().includes(msQueryLower))
-    : milestones;
+  const feedQueryLower = feedQuery.trim().toLowerCase();
+  const filteredFeedPosts = feedQueryLower
+    ? feedPosts.filter((m) =>
+        `${m.body} ${profilesLookup.get(m.authorId)?.name ?? m.authorName}`
+          .toLowerCase()
+          .includes(feedQueryLower),
+      )
+    : feedPosts;
 
   // userId -> 1|2|3 for the current top three. Recomputed every render from
   // live state, so trophies appear, move, and disappear as ranks change.
@@ -261,56 +264,60 @@ export default function useStoreController() {
     };
   }, [user, profileTick, refreshProfile]);
 
-  // Bumped by the background poll below; threads + milestones rescan on it.
+  // Bumped by the background poll below; threads + feedPosts rescan on it.
   const [pollTick, setPollTick] = useState(0);
-  const milestoneReq = useRef(0);
-  const loadMilestones = useCallback(
+  const feedPostReq = useRef(0);
+  const loadFeedPosts = useCallback(
     async (quiet = false) => {
-      const req = ++milestoneReq.current;
+      const req = ++feedPostReq.current;
       if (!quiet) {
-        setMilestonesLoading(true);
-        setMilestonesError(null);
+        setFeedPostsLoading(true);
+        setFeedPostsError(null);
       }
       try {
-        const items = await getAppRepo().listMilestones(user?.id);
-        if (milestoneReq.current !== req) return;
-        setMilestones(items);
+        const items = await getAppRepo().listFeedPosts(user?.id);
+        if (feedPostReq.current !== req) return;
+        setFeedPosts(items);
       } catch (e) {
-        if (!quiet && milestoneReq.current === req)
-          setMilestonesError(e instanceof Error ? e.message : "Could not load updates.");
+        if (!quiet && feedPostReq.current === req)
+          setFeedPostsError(e instanceof Error ? e.message : "Could not load updates.");
       } finally {
-        if (!quiet && milestoneReq.current === req) setMilestonesLoading(false);
+        if (!quiet && feedPostReq.current === req) setFeedPostsLoading(false);
       }
     },
     [user?.id],
   );
 
   useEffect(() => {
-    void loadMilestones(pollTick > 0);
-  }, [loadMilestones, pollTick]);
+    void loadFeedPosts(pollTick > 0);
+  }, [loadFeedPosts, pollTick]);
 
-  const postMilestone = async (e: React.FormEvent) => {
+  const postFeedPost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !mBody.trim() || mPosting) return;
-    setMPosting(true);
-    setMPostError(null);
+    if (!user || !feedPostBody.trim() || feedPostSubmitting) return;
+    setFeedPostSubmitting(true);
+    setFeedPostError(null);
     try {
-      const created = await getAppRepo().postMilestone(user, mBody.trim(), mAppId || undefined);
-      setMilestones((items) => [created, ...items]);
-      setMBody("");
-      setMAppId("");
+      const created = await getAppRepo().postFeedPost(
+        user,
+        feedPostBody.trim(),
+        feedPostAppId || undefined,
+      );
+      setFeedPosts((items) => [created, ...items]);
+      setFeedPostBody("");
+      setFeedPostAppId("");
     } catch (err) {
-      setMPostError(err instanceof Error ? err.message : "Could not post update.");
+      setFeedPostError(err instanceof Error ? err.message : "Could not post update.");
     } finally {
-      setMPosting(false);
+      setFeedPostSubmitting(false);
     }
   };
 
-  const deleteMilestone = async (m: Milestone) => {
+  const deleteFeedPost = async (m: FeedPost) => {
     if (!user || m.authorId !== user.id) return;
-    await getAppRepo().deleteMilestone(m.id, user);
-    ++milestoneReq.current;
-    setMilestones((items) => items.filter((item) => item.id !== m.id));
+    await getAppRepo().deleteFeedPost(m.id, user);
+    ++feedPostReq.current;
+    setFeedPosts((items) => items.filter((item) => item.id !== m.id));
     setOpenThreads((current) => {
       const next = new Set(current);
       next.delete(m.id);
@@ -318,11 +325,11 @@ export default function useStoreController() {
     });
   };
 
-  const cheer = async (m: Milestone) => {
+  const cheer = async (m: FeedPost) => {
     if (!user || cheerPending.has(m.id)) return;
     setCheerPending((prev) => new Set(prev).add(m.id));
     const wasCheered = Boolean(m.viewerHasCheered);
-    setMilestones((items) =>
+    setFeedPosts((items) =>
       items.map((x) =>
         x.id === m.id
           ? {
@@ -334,10 +341,10 @@ export default function useStoreController() {
       ),
     );
     try {
-      const updated = await getAppRepo().toggleMilestoneCheer(m.id, user.id);
-      setMilestones((items) => items.map((x) => (x.id === m.id ? { ...x, ...updated } : x)));
+      const updated = await getAppRepo().toggleFeedPostCheer(m.id, user.id);
+      setFeedPosts((items) => items.map((x) => (x.id === m.id ? { ...x, ...updated } : x)));
     } catch {
-      setMilestones((items) => items.map((x) => (x.id === m.id ? m : x)));
+      setFeedPosts((items) => items.map((x) => (x.id === m.id ? m : x)));
     } finally {
       setCheerPending((prev) => {
         const next = new Set(prev);
@@ -381,11 +388,11 @@ export default function useStoreController() {
     const timer = window.setInterval(() => {
       if (document.hidden) return;
       void loadApps(true);
-      void loadMilestones(true);
+      void loadFeedPosts(true);
       setPollTick((t) => t + 1);
     }, 45_000);
     return () => window.clearInterval(timer);
-  }, [user?.id, loadApps, loadMilestones]);
+  }, [user?.id, loadApps, loadFeedPosts]);
 
   // ── Notifications (derived — no repo/backend changes) ───────────────────
   // Comment threads are scanned across my projects + the newest community
@@ -601,7 +608,7 @@ export default function useStoreController() {
       user,
       apps: fullApps,
       threads,
-      milestones,
+      feedPosts,
       voters: votersByApp,
       voterBaseline: voterBase,
       voteCycles,
@@ -616,7 +623,7 @@ export default function useStoreController() {
     user,
     fullApps,
     threads,
-    milestones,
+    feedPosts,
     votersByApp,
     voterBase,
     voteCycles,
@@ -932,17 +939,17 @@ export default function useStoreController() {
     likeCycles,
   ]);
 
-  const openFeed = useCallback(() => {
-    window.history.pushState({}, "", ROUTES.feed);
-    setView("feed");
+  const openFeeds = useCallback(() => {
+    window.history.pushState({}, "", ROUTES.feeds);
+    setView("feeds");
     setSelectedProfileId(null);
     setSelectedAppId(null);
     setProjectEdit(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
-  const signIn = async () => {
-    window.history.replaceState({}, "", ROUTES.root);
+  const handleSignOut = async () => {
+    window.history.replaceState({}, "", ROUTES.home);
     await signout();
   };
   const [confirmSignOut, setConfirmSignOut] = useState(false);
@@ -1047,15 +1054,15 @@ export default function useStoreController() {
     fullApps.find((a) => a.id === selectedAppId) ?? apps.find((a) => a.id === selectedAppId);
   const crumbs: Crumb[] = (() => {
     if (view === "discover") return [{ label: "discover", current: true }];
-    if (view === "builders")
+    if (view === "developers")
       return [
         { label: "discover", go: () => goPath(ROUTES.discover, "discover") },
         { label: "developers", current: true },
       ];
-    if (view === "feed")
+    if (view === "feeds")
       return [
         { label: "discover", go: () => goPath(ROUTES.discover, "discover") },
-        { label: "feed", current: true },
+        { label: "feeds", current: true },
       ];
     if (view === "leaderboard")
       return [
@@ -1070,7 +1077,7 @@ export default function useStoreController() {
     if (view === "profile")
       return [
         { label: "discover", go: () => goPath(ROUTES.discover, "discover") },
-        { label: "developers", go: () => goPath(ROUTES.developers, "builders") },
+        { label: "developers", go: () => goPath(ROUTES.developers, "developers") },
         { label: profileForCrumb?.name ?? "profile", current: true },
       ];
     return [
@@ -1431,8 +1438,8 @@ export default function useStoreController() {
     docsTab,
     downloadDocumentation,
     expandedId,
-    deleteMilestone,
-    filteredMilestones,
+    deleteFeedPost,
+    filteredFeedPosts,
     filteredProfiles,
     fullApps,
     goPasswordSettings,
@@ -1444,29 +1451,29 @@ export default function useStoreController() {
     imgError,
     importRepositoryFiles,
     loadApps,
-    loadMilestones,
+    loadFeedPosts,
     loadRepositoryFiles,
-    mAppId,
-    mBody,
-    mPostError,
-    mPosting,
+    feedPostAppId,
+    feedPostBody,
+    feedPostError,
+    feedPostSubmitting,
     markAllNotificationsRead,
     markNotificationRead,
-    milestones,
-    milestonesError,
-    milestonesLoading,
-    msQuery,
+    feedPosts,
+    feedPostsError,
+    feedPostsLoading,
+    feedQuery,
     myProfile,
     navClass,
     notificationsOpen,
     openApp,
     openAppFromProfile,
-    openFeed,
+    openFeeds,
     openMyProfile,
     openProfile,
     openThreads,
     pickImages,
-    postMilestone,
+    postFeedPost,
     profiles,
     profilesLookup,
     projectEdit,
@@ -1505,9 +1512,9 @@ export default function useStoreController() {
     setExpandedId,
     setFullApps,
     setHasPassword,
-    setMAppId,
-    setMBody,
-    setMsQuery,
+    setFeedPostAppId,
+    setFeedPostBody,
+    setFeedQuery,
     setNotificationsOpen,
     setProfileTick,
     setProjectEdit,
@@ -1524,7 +1531,7 @@ export default function useStoreController() {
     setUrl,
     setView,
     showForm,
-    signIn,
+    handleSignOut,
     snoozePasswordNudge,
     submit,
     submitError,

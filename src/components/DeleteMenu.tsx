@@ -48,7 +48,7 @@ export default function DeleteMenu({
             setError(null);
             setOpen(!open);
           }}
-          className="grid h-10 w-10 place-items-center rounded-lg text-muted hover:bg-background hover:text-foreground"
+          className="grid h-10 w-10 place-items-center rounded-xl text-muted hover:bg-background hover:text-foreground"
         >
           <DotsThreeVertical size={20} weight="bold" aria-hidden="true" />
         </Button>

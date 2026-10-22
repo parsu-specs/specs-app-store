@@ -90,7 +90,7 @@ function GoogleContinueButton({
       type="button"
       onClick={() => login()}
       disabled={disabled}
-      className="min-w-0 flex w-full items-center justify-center gap-3 rounded-xl bg-google-button px-5 py-3.5 text-base font-semibold text-metal-highlight transition hover:bg-black disabled:opacity-60 *:min-w-0 max-w-full"
+      className="min-w-0 flex w-full items-center justify-center gap-3 rounded-2xl bg-google-button px-5 py-3.5 text-base font-semibold text-metal-highlight transition hover:bg-black disabled:opacity-60 *:min-w-0 max-w-full"
     >
       <GoogleMark />
       {disabled ? "Connecting…" : "Continue with Google"}
@@ -277,7 +277,7 @@ export default function Login() {
     <div className="min-w-0 relative grid *:min-w-0 min-h-screen place-items-center px-5 py-14 max-w-full">
       <ButtonLink
         variant="plain"
-        href={ROUTES.root}
+        href={ROUTES.home}
         className="min-w-0 absolute left-5 top-6 flex items-center gap-2 font-black sm:left-10 *:min-w-0 max-w-full"
       >
         <ArrowLeft size={20} weight="bold" />
@@ -295,7 +295,7 @@ export default function Login() {
           <h1 className="mt-2 text-3xl font-black">Sign in to CodeCanvas</h1>
           <p className="mt-2 text-muted">Access projects shared by the SPECS community.</p>
         </div>
-        <div className="toon-card toon-paper rounded-lg bg-surface p-4 pt-10 sm:p-7 sm:p-9 sm:pt-11">
+        <div className="toon-card toon-paper rounded-2xl bg-surface p-4 pt-10 sm:p-7 sm:p-9 sm:pt-11">
           <div className="min-w-0 mb-6 flex items-center justify-between *:min-w-0 max-w-full">
             <h2 className="text-2xl font-black">
               {mode === "signup" ? "Create account" : "Sign in"}
@@ -415,7 +415,7 @@ export default function Login() {
                   type="button"
                   onClick={() => void supabaseGoogle()}
                   disabled={googleBusy}
-                  className="min-w-0 flex w-full items-center justify-center gap-3 rounded-xl bg-google-button px-5 py-3.5 text-base font-semibold text-metal-highlight transition hover:bg-black disabled:opacity-60 *:min-w-0 max-w-full"
+                  className="min-w-0 flex w-full items-center justify-center gap-3 rounded-2xl bg-google-button px-5 py-3.5 text-base font-semibold text-metal-highlight transition hover:bg-black disabled:opacity-60 *:min-w-0 max-w-full"
                 >
                   <GoogleMark />
                   {googleBusy ? "Connecting…" : "Continue with Google"}

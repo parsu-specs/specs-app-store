@@ -1,14 +1,12 @@
 import type { MouseEvent } from "react";
 
 export const ROUTES = {
-  root: "/",
-  landing: "/landing",
+  home: "/",
   about: "/about",
   signin: "/signin",
   discover: "/discover",
   developers: "/developers",
-  feed: "/feed",
-  community: "/community",
+  feeds: "/feeds",
   leaderboard: "/leaderboard",
   profile: "/profile",
   settings: "/settings",
@@ -24,9 +22,18 @@ export function developerProfilePath(profileId: string) {
 }
 
 export function normalizePathname(pathname: string) {
-  const clean = pathname.replace(/\/+$/g, "") || ROUTES.root;
-  if (clean === ROUTES.root) return ROUTES.root;
+  const clean = pathname.replace(/\/+$/g, "") || ROUTES.home;
+  if (clean === "/landing" || clean === "/home") return ROUTES.home;
+  if (["/feed", "/community", "/milestones"].includes(clean)) return ROUTES.feeds;
   return clean;
+}
+
+/** Resolve canonical URLs and authentication without changing the public home page. */
+export function resolveRoute(pathname: string, signedIn: boolean) {
+  const path = normalizePathname(pathname);
+  if (signedIn && path === ROUTES.signin) return ROUTES.discover;
+  if (!signedIn && isProtectedRoute(path)) return ROUTES.signin;
+  return path;
 }
 
 export function isProtectedRoute(pathname: string) {
@@ -37,8 +44,7 @@ export function isProtectedRoute(pathname: string) {
     clean === ROUTES.profile ||
     clean === ROUTES.settings ||
     clean === ROUTES.leaderboard ||
-    clean === ROUTES.feed ||
-    clean === ROUTES.community ||
+    clean === ROUTES.feeds ||
     clean === ROUTES.developers ||
     clean.startsWith(`${ROUTES.developers}/`) ||
     clean.startsWith(`${ROUTES.discover}/`) ||

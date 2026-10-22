@@ -21,7 +21,7 @@ import { ROUTES, navigateInternalLink } from "./routes";
 import useStoreController from "./store/useStoreController";
 import DiscoverPage from "./store/DiscoverPage";
 import DevelopersPage from "./store/DevelopersPage";
-import FeedPage from "./store/FeedPage";
+import FeedsPage from "./store/FeedsPage";
 import LeaderboardPage from "./store/LeaderboardPage";
 import ProfilePage from "./store/ProfilePage";
 import ProjectPage from "./store/ProjectPage";
@@ -44,7 +44,7 @@ export default function Store() {
     navClass,
     notificationsOpen,
     openApp,
-    openFeed,
+    openFeeds,
     openMyProfile,
     publishBonus,
     seenAt,
@@ -52,7 +52,7 @@ export default function Store() {
     setConfirmSignOut,
     setNotificationsOpen,
     setPublishBonus,
-    signIn,
+    handleSignOut,
     threadsLoading,
     trophies,
     unreadIds,
@@ -68,7 +68,7 @@ export default function Store() {
     <div className="min-h-screen overflow-x-clip">
       <aside className="fixed inset-x-0 top-0 z-40 h-21.25 border-b-[3px] border-outline bg-brand-surface px-3 py-5 text-brand-foreground sm:px-5 lg:inset-y-0 lg:left-0 lg:right-auto lg:flex lg:h-screen lg:w-70 lg:flex-col lg:border-b-0 lg:border-r-[3px] lg:p-7">
         <div className="hidden min-w-0 items-center justify-between *:min-w-0 max-w-full lg:flex">
-          <Brand light />
+          <Brand light text className="text-2xl!" />
           <AppearanceControl compact />
         </div>
         <nav
@@ -77,12 +77,12 @@ export default function Store() {
         >
           <ButtonLink
             variant="plain"
-            href={ROUTES.feed}
-            onClick={(event) => goTab(event, "feed")}
-            className={`${navClass("feed")} lg:order-3`}
+            href={ROUTES.feeds}
+            onClick={(event) => goTab(event, "feeds")}
+            className={`${navClass("feeds")} lg:order-3`}
           >
             <Newspaper size={22} weight="duotone" />
-            <span>Feed</span>
+            <span>Feeds</span>
           </ButtonLink>
           <ButtonLink
             variant="plain"
@@ -96,8 +96,8 @@ export default function Store() {
           <ButtonLink
             variant="plain"
             href={ROUTES.developers}
-            onClick={(event) => goTab(event, "builders")}
-            className={`${navClass("builders")} hidden lg:flex lg:order-2`}
+            onClick={(event) => goTab(event, "developers")}
+            className={`${navClass("developers")} hidden lg:flex lg:order-2`}
           >
             <UsersThree size={22} weight="duotone" />
             Developers
@@ -129,17 +129,17 @@ export default function Store() {
             variant="plain"
             href={ROUTES.about}
             onClick={navigateInternalLink}
-            className="flex w-full items-center justify-between rounded-lg px-4 py-2 text-sm hover:bg-surface/15"
+            className="flex w-full items-center justify-between rounded-xl px-4 py-2 text-sm hover:bg-surface/15"
           >
             <span>About</span> <ArrowSquareUpRight size={20} />
           </ButtonLink>
           <ButtonLink
             variant="plain"
-            href={ROUTES.landing}
+            href={ROUTES.home}
             onClick={navigateInternalLink}
-            className="flex w-full items-center justify-between rounded-lg px-4 py-2 text-sm hover:bg-surface/15"
+            className="flex w-full items-center justify-between rounded-xl px-4 py-2 text-sm hover:bg-surface/15"
           >
-            <span>Landing</span> <ArrowSquareUpRight size={20} />
+            <span>Home</span> <ArrowSquareUpRight size={20} />
           </ButtonLink>
         </nav>
       </aside>
@@ -155,7 +155,7 @@ export default function Store() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="toon-card my-auto w-full max-w-sm rounded-lg bg-surface p-6 text-center"
+              className="toon-card my-auto w-full max-w-sm rounded-2xl bg-surface p-6 text-center"
             >
               <SignOut size={28} weight="duotone" className="mx-auto" />
               <h2 className="mt-3 text-xl font-black">Sign out?</h2>
@@ -176,7 +176,7 @@ export default function Store() {
                   size="small"
                   onClick={() => {
                     setConfirmSignOut(false);
-                    void signIn();
+                    void handleSignOut();
                   }}
                 >
                   Yes, sign out
@@ -198,7 +198,7 @@ export default function Store() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="toon-card my-auto w-full max-w-sm rounded-lg bg-surface p-6 text-center"
+              className="toon-card my-auto w-full max-w-sm rounded-2xl bg-surface p-6 text-center"
             >
               <Trophy size={40} weight="duotone" className="mx-auto text-primary" />
               <h2 className="mt-3 text-xl font-black">Project published!</h2>
@@ -236,7 +236,7 @@ export default function Store() {
             role="alert"
             className="min-w-0 pointer-events-none fixed inset-x-0 bottom-24 z-100 flex justify-center px-4 *:min-w-0 max-w-full"
           >
-            <p className="toon-card rounded-xl bg-surface px-5 py-3 text-center text-sm font-black">
+            <p className="toon-card rounded-2xl bg-surface px-5 py-3 text-center text-sm font-black">
               {voteNotice}
             </p>
           </div>,
@@ -246,11 +246,11 @@ export default function Store() {
       <div className="min-w-0">
         <header className="fixed inset-x-0 top-0 z-60 flex h-21.25 items-center justify-between gap-3 border-b-[3px] border-outline bg-brand-surface px-3 sm:px-5 lg:left-70 lg:z-40 lg:gap-4 lg:bg-panel lg:px-8 lg:py-4">
           <div className="min-w-0 text-brand-foreground lg:hidden">
-            <div className="md:hidden">
-              <Brand light monogram />
+            <div className="block sm:hidden">
+              <Brand light monogram className="ml-2 text-2xl!" />
             </div>
-            <div className="hidden md:block">
-              <Brand light />
+            <div className="hidden sm:block">
+              <Brand light text className="text-2xl!" />
             </div>
           </div>
           <nav aria-label="Breadcrumb" className="hidden min-w-0 flex-1 text-sm lg:block">
@@ -269,7 +269,7 @@ export default function Store() {
                     <span
                       aria-current={c.current ? "page" : undefined}
                       title={c.label}
-                      className={`min-w-0 max-w-full wrap-anywhere px-2 py-0.5 font-black ${c.current ? "rounded-md border-2 border-outline bg-secondary" : ""}`}
+                      className={`min-w-0 max-w-full wrap-anywhere px-2 py-0.5 font-black ${c.current ? "rounded-lg border-2 border-outline bg-secondary" : ""}`}
                     >
                       {c.label}
                     </span>
@@ -296,7 +296,7 @@ export default function Store() {
                   open={notificationsOpen}
                   onOpenChange={changeNotificationsOpen}
                   onOpenApp={(appId) => openApp(appId)}
-                  onOpenFeed={openFeed}
+                  onOpenFeed={openFeeds}
                   onMarkAllRead={markAllNotificationsRead}
                   onMarkRead={markNotificationRead}
                   onDeleteAll={deleteAllNotifications}
@@ -374,9 +374,9 @@ export default function Store() {
                     type="button"
                     onClick={() => {
                       setAccountMenuOpen(false);
-                      goPath(ROUTES.developers, "builders");
+                      goPath(ROUTES.developers, "developers");
                     }}
-                    aria-current={view === "builders" ? "page" : undefined}
+                    aria-current={view === "developers" ? "page" : undefined}
                     className="min-h-11 justify-between! px-3 aria-[current=page]:bg-background aria-[current=page]:text-primary"
                   >
                     <span>Developers</span>
@@ -404,20 +404,20 @@ export default function Store() {
                       setAccountMenuOpen(false);
                       navigateInternalLink(event);
                     }}
-                    className="flex min-h-11 w-full items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-background"
+                    className="flex min-h-11 w-full items-center justify-between rounded-xl px-3 py-2 text-sm hover:bg-background"
                   >
                     <span>About</span> <ArrowSquareUpRight size={20} weight="duotone" />
                   </ButtonLink>
                   <ButtonLink
                     variant="plain"
-                    href={ROUTES.landing}
+                    href={ROUTES.home}
                     onClick={(event) => {
                       setAccountMenuOpen(false);
                       navigateInternalLink(event);
                     }}
-                    className="flex min-h-11 w-full items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-background"
+                    className="flex min-h-11 w-full items-center justify-between rounded-xl px-3 py-2 text-sm hover:bg-background"
                   >
-                    <span>Landing</span> <ArrowSquareUpRight size={20} weight="duotone" />
+                    <span>Home</span> <ArrowSquareUpRight size={20} weight="duotone" />
                   </ButtonLink>
                 </div>
                 <div className="border-t-2 border-dashed border-outline/15 pt-2">
@@ -461,9 +461,9 @@ export default function Store() {
 
               {view === "profile" && <ProfilePage {...store} />}
 
-              {view === "builders" && <DevelopersPage {...store} />}
+              {view === "developers" && <DevelopersPage {...store} />}
 
-              {view === "feed" && <FeedPage {...store} />}
+              {view === "feeds" && <FeedsPage {...store} />}
 
               {view === "leaderboard" && <LeaderboardPage {...store} />}
 

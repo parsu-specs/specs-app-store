@@ -7,7 +7,7 @@ import { getAppRepo } from "../data/factory";
 import type { Profile } from "../data/types";
 
 type VotersDialogProps = {
-  target?: "app" | "milestone";
+  target?: "app" | "feedPost";
   appId: string;
   appTitle: string;
   totalVotes: number;
@@ -99,7 +99,7 @@ export default function VotersDialog({
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="min-w-0 toon-card my-auto flex max-h-[85vh] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-lg bg-surface *:min-w-0"
+              className="min-w-0 toon-card my-auto flex max-h-[85vh] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-2xl bg-surface *:min-w-0"
             >
               <div className="min-w-0 flex shrink-0 items-center justify-between gap-3 border-b-[3px] border-outline p-4 *:min-w-0 max-w-full">
                 <h4 className="flex min-w-0 items-center gap-2 truncate text-lg font-black *:min-w-0 max-w-full">

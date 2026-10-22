@@ -26,7 +26,7 @@ const variantClassName: Record<InputVariant, string> = {
   ghost:
     "border-transparent bg-transparent shadow-none hover:border-transparent focus:border-primary active:border-primary",
   minimal:
-    "rounded-lg border-0 bg-transparent px-3 py-2 text-sm shadow-none hover:bg-background focus-visible:ring-4 focus-visible:ring-secondary disabled:cursor-not-allowed disabled:opacity-60",
+    "rounded-xl border-0 bg-transparent px-3 py-2 text-sm shadow-none hover:bg-background focus-visible:ring-4 focus-visible:ring-secondary disabled:cursor-not-allowed disabled:opacity-60",
 };
 
 export function getInputClassName(variant: InputVariant = "default", className?: string): string {

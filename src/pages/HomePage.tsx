@@ -9,20 +9,21 @@ import {
 import { ButtonLink } from "../components/Button";
 import SiteHeader from "../components/SiteHeader";
 import Footer from "../components/Footer";
+import { APP_INFO } from "../data/team";
 import { useAuth } from "../auth/AuthProvider";
 import { ROUTES, navigateInternalLink } from "./routes";
 
-export default function Landing() {
+export default function HomePage() {
   const { user } = useAuth();
   return (
     <div className="min-h-screen">
-      <SiteHeader page="landing" />
+      <SiteHeader page="home" />
       <div className="px-5 lg:px-10">
         <header className="min-w-0 mx-auto grid *:min-w-0 max-w-7xl gap-14 pb-16 pt-6 sm:pt-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,.85fr)] lg:items-center lg:pb-24 lg:pt-10">
           <div>
             <div className="min-w-0 inline-flex -rotate-2 items-center gap-2 border-2 border-dashed border-primary px-3 py-1 text-xs font-black uppercase text-primary mb-7 bg-surface *:min-w-0 max-w-full">
               <Sparkle size={17} weight="fill" />
-              SPECS student developer community
+              SPECS &middot; Computer science student organization
             </div>
             <h1 className="max-w-3xl text-4xl font-black leading-tight sm:text-6xl">
               Student software, built{" "}
@@ -32,10 +33,7 @@ export default function Landing() {
               </span>{" "}
               here.
             </h1>
-            <p className="mt-7 max-w-xl text-lg leading-8 text-body">
-              A campus community app store for sharing software, getting thoughtful feedback, and
-              finding collaborators across the SPECS community.
-            </p>
+            <p className="mt-7 max-w-xl text-lg leading-8 text-body">{APP_INFO.description}</p>
             <div className="min-w-0 mt-9 flex flex-wrap gap-5 *:min-w-0 max-w-full">
               <ButtonLink
                 href={user ? ROUTES.discover : ROUTES.signin}
@@ -62,7 +60,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="relative">
-            <div className="toon-card toon-paper sm:rotate-2 rounded-lg bg-info p-7 pt-10">
+            <div className="toon-card toon-paper sm:rotate-2 rounded-2xl bg-info p-7 pt-10">
               <div className="rounded-[2rem] border-[3px] border-outline bg-surface p-6">
                 <div className="min-w-0 flex items-center justify-between *:min-w-0 max-w-full">
                   <span className="rounded-full bg-success px-3 py-1 text-xs font-black">LIVE</span>
@@ -87,7 +85,10 @@ export default function Landing() {
           </div>
         </header>
 
-        <section id="discover" className="mx-auto max-w-7xl scroll-mt-8 py-14">
+        <section
+          id="discover"
+          className="mx-auto max-w-7xl scroll-mt-8 border-t-2 border-dashed border-divider py-14"
+        >
           <div className="text-center">
             <p className="text-xs font-black uppercase text-primary">How CodeCanvas works</p>
             <h2 className="mt-3 text-3xl font-black">A shared space for student software.</h2>
@@ -117,7 +118,7 @@ export default function Landing() {
             ].map((item, index) => (
               <article
                 key={item.n}
-                className={`toon-card toon-paper bg-panel rounded-lg p-6 pt-9 ${index === 0 ? "rotate-[-1deg]" : index === 1 ? "rotate-1" : "rotate-[-.5deg]"}`}
+                className={`toon-card toon-paper bg-panel rounded-2xl p-6 pt-9 ${index === 0 ? "rotate-[-1deg]" : index === 1 ? "rotate-1" : "rotate-[-.5deg]"}`}
               >
                 <span className="text-sm font-black">STEP {item.n}</span>
                 <h3 className="mt-8 text-2xl font-black">{item.t}</h3>

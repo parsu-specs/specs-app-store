@@ -89,7 +89,7 @@ export default function Popover({
             aria-label={label}
             tabIndex={-1}
             style={position}
-            className={`toon-card fixed z-110 flex min-w-0 max-w-[calc(100vw-2rem)] flex-col overflow-y-auto rounded-xl bg-surface text-foreground ${className}`}
+            className={`toon-card fixed z-110 flex min-w-0 max-w-[calc(100vw-2rem)] flex-col overflow-y-auto rounded-2xl bg-surface text-foreground ${className}`}
           >
             {children}
           </div>,

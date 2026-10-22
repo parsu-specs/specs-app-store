@@ -5,7 +5,7 @@ import type {
   Builder,
   Comment,
   ListAppsParams,
-  Milestone,
+  FeedPost,
   Profile,
   User,
 } from "./types";
@@ -61,11 +61,11 @@ export type AppRepo = {
   /** Remaining vote pause for the caller, in whole seconds (0 = not paused). */
   getVoteTimeoutSeconds(): Promise<number>;
   /**
-   * Profiles that upvoted a project or feed milestone, alphabetical by name. Only voters with
+   * Profiles that upvoted a project or feed feedPost, alphabetical by name. Only voters with
    * a resolvable profile are returned, so legacy seed counts may exceed the
    * list length — callers should treat the list as identities, not a count.
    */
-  listVoters(appId: string, target?: "app" | "milestone"): Promise<Profile[]>;
+  listVoters(appId: string, target?: "app" | "feedPost"): Promise<Profile[]>;
   listBuilders(): Promise<Builder[]>;
   listComments(appId: string, userId?: string): Promise<Comment[]>;
   addComment(appId: string, author: User, body: string, parentId?: string): Promise<Comment>;
@@ -81,10 +81,10 @@ export type AppRepo = {
    * notifications for comment authors. Empty input returns {}.
    */
   listCommentLikers(commentIds: string[]): Promise<Record<string, string[]>>;
-  listMilestones(userId?: string): Promise<Milestone[]>;
-  postMilestone(author: User, body: string, appId?: string): Promise<Milestone>;
-  deleteMilestone(milestoneId: string, requester: User): Promise<void>;
-  toggleMilestoneCheer(milestoneId: string, userId: string): Promise<Milestone>;
+  listFeedPosts(userId?: string): Promise<FeedPost[]>;
+  postFeedPost(author: User, body: string, appId?: string): Promise<FeedPost>;
+  deleteFeedPost(feedPostId: string, requester: User): Promise<void>;
+  toggleFeedPostCheer(feedPostId: string, userId: string): Promise<FeedPost>;
 };
 
 export type ProfilePatch = {

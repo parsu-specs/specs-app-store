@@ -119,7 +119,7 @@ export default function ImageViewer({
         onPointerUp={stopDragging}
         onPointerCancel={stopDragging}
         onLostPointerCapture={stopDragging}
-        className={`h-[min(50dvh,28rem)] min-w-0 overflow-auto overscroll-contain rounded-lg border-2 border-outline bg-black [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary ${zoom > 0 && !failed ? `touch-none select-none ${dragging ? "cursor-grabbing" : "cursor-grab"}` : ""}`}
+        className={`h-[min(50dvh,28rem)] min-w-0 overflow-auto overscroll-contain rounded-xl border-2 border-outline bg-black [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary ${zoom > 0 && !failed ? `touch-none select-none ${dragging ? "cursor-grabbing" : "cursor-grab"}` : ""}`}
       >
         {failed ? (
           <p

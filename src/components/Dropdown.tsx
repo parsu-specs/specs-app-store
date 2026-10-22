@@ -137,8 +137,8 @@ export default function Dropdown(props: DropdownProps) {
           style={centered ? undefined : (panel ?? undefined)}
           className={
             centered
-              ? "toon-card flex max-h-[85dvh] w-full max-w-sm flex-col overflow-hidden rounded-xl bg-surface"
-              : "toon-card fixed z-110 overflow-hidden rounded-xl bg-surface"
+              ? "toon-card flex max-h-[85dvh] w-full max-w-sm flex-col overflow-hidden rounded-2xl bg-surface"
+              : "toon-card fixed z-110 overflow-hidden rounded-2xl bg-surface"
           }
           onKeyDown={(event) => {
             if (!centered) return;
@@ -218,7 +218,7 @@ export default function Dropdown(props: DropdownProps) {
               return (
                 <li key={option.value} role={variant === "checkbox" ? undefined : "presentation"}>
                   {variant === "checkbox" ? (
-                    <label className="flex min-h-11 min-w-0 cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-black hover:bg-background focus-within:bg-background md:min-h-0">
+                    <label className="flex min-h-11 min-w-0 cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm font-black hover:bg-background focus-within:bg-background md:min-h-0">
                       <Checkbox checked={isSelected} onChange={() => pick(option.value)} />
                       <span className="min-w-0 flex-1 truncate">{option.label}</span>
                     </label>

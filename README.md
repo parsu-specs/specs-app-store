@@ -1,6 +1,6 @@
 # CodeCanvas by SPECS
 
-A campus community app store where student developers publish software, exchange feedback, find collaborators, and share progress.
+A community app store by SPECS, a computer science student organization, where student developers publish software, exchange feedback, find collaborators, and share progress.
 
 ## Getting started
 

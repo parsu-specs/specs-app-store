@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { formatCountdown, formatMilestoneAge, formatUploadStamp } from "./time";
+import { formatCountdown, formatRelativeAge, formatUploadStamp } from "./time";
 
 const NOW = Date.parse("2026-10-07T12:00:00.000Z");
 const ago = (ms: number) => new Date(NOW - ms).toISOString();
 
-describe("formatMilestoneAge", () => {
+describe("formatRelativeAge", () => {
   it.each([
     [0, "Just now"],
     [-60_000, "Just now"],
@@ -22,12 +22,12 @@ describe("formatMilestoneAge", () => {
     [365 * 86_400_000, "1 year ago"],
     [730 * 86_400_000, "2 years ago"],
   ])("formats %i milliseconds as %s", (age, expected) => {
-    expect(formatMilestoneAge(ago(age), NOW)).toBe(expected);
+    expect(formatRelativeAge(ago(age), NOW)).toBe(expected);
   });
 
   it("omits invalid timestamps", () => {
-    expect(formatMilestoneAge("", NOW)).toBeNull();
-    expect(formatMilestoneAge("not-a-date", NOW)).toBeNull();
+    expect(formatRelativeAge("", NOW)).toBeNull();
+    expect(formatRelativeAge("not-a-date", NOW)).toBeNull();
   });
 });
 

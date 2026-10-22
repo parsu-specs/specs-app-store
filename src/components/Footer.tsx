@@ -1,14 +1,14 @@
 import { ButtonLink } from "./Button";
 import Brand from "./Brand";
 import { useAuth } from "../auth/AuthProvider";
-import { CONTACT_EMAIL } from "../data/team";
+import { APP_INFO, CONTACT_EMAIL } from "../data/team";
 import { ROUTES, isProtectedRoute, navigateInternalLink } from "../pages/routes";
 
 const exploreLinks = [
-  { label: "Home", href: ROUTES.landing },
+  { label: "Home", href: ROUTES.home },
   { label: "Discover", href: ROUTES.discover },
   { label: "Developers", href: ROUTES.developers },
-  { label: "Feed", href: ROUTES.feed },
+  { label: "Feeds", href: ROUTES.feeds },
   { label: "Leaderboard", href: ROUTES.leaderboard },
   { label: "About", href: ROUTES.about },
 ];
@@ -21,13 +21,12 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="mt-16 border-t-[3px] border-outline bg-brand-surface text-brand-foreground">
+    <footer className="mt-16 border-t-2 border-dashed border-brand-foreground/25 bg-brand-surface text-brand-foreground">
       <div className="min-w-0 mx-auto grid *:min-w-0 max-w-7xl gap-10 px-5 py-12 sm:px-8 md:grid-cols-[minmax(0,1.2fr)_minmax(0,.8fr)_minmax(0,1fr)] lg:px-10">
         <div>
           <Brand light />
           <p className="mt-4 max-w-sm text-sm font-bold leading-6 opacity-90">
-            A campus community app store for sharing software, getting thoughtful feedback, and
-            finding collaborators across SPECS.
+            {APP_INFO.description}
           </p>
         </div>
         <nav aria-label="Footer">

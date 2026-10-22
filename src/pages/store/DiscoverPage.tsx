@@ -1,5 +1,6 @@
 import { LockKey, MagnifyingGlass, Plus, RocketLaunch, X } from "@phosphor-icons/react";
 import AppCard from "../../components/AppCard";
+import { PostTimeProvider } from "../../components/PostTimestamp";
 import NoticeBanner from "../../components/NoticeBanner";
 import { Button } from "../../components/Button";
 import Input from "../../components/Input";
@@ -69,7 +70,7 @@ export default function DiscoverPage(props: Props) {
     vote,
   } = props;
   return (
-    <>
+    <PostTimeProvider>
       {user && !appsLoading && !appsError && (
         <NoticeBanner
           icon={RocketLaunch}
@@ -154,7 +155,7 @@ export default function DiscoverPage(props: Props) {
         {appsLoading ? (
           <p className="font-bold text-muted">Loading projects…</p>
         ) : appsError ? (
-          <div className="toon-card toon-paper bg-panel rounded-lg p-10 text-center">
+          <div className="toon-card toon-paper bg-panel rounded-2xl p-10 text-center">
             <h3 className="mt-3 text-xl font-black">Could not load projects</h3>
             <p className="font-bold text-muted">{appsError}</p>
             <Button variant="secondary" onClick={() => void loadApps()} className="mt-5">
@@ -190,13 +191,13 @@ export default function DiscoverPage(props: Props) {
             ))}
           </div>
         ) : (
-          <div className="toon-card toon-paper bg-panel rounded-lg p-10 text-center">
+          <div className="toon-card toon-paper bg-panel rounded-2xl p-10 text-center">
             <MagnifyingGlass size={36} className="mx-auto" />
             <h3 className="mt-3 text-xl font-black">No projects found</h3>
             <p className="font-bold text-muted">Adjust your search or category filter.</p>
           </div>
         )}
       </section>
-    </>
+    </PostTimeProvider>
   );
 }

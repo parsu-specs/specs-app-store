@@ -24,7 +24,7 @@ export default function DevelopersPage({
 
   return (
     <>
-      <section id="builders" className="scroll-mt-6">
+      <section id="developers" className="scroll-mt-6">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <label className="relative block w-full max-w-md">
             <span className="sr-only">Search developers</span>
@@ -62,14 +62,14 @@ export default function DevelopersPage({
           </div>
         </div>
         <div
-          className={`min-w-0 toon-card toon-paper bg-panel grid *:min-w-0 gap-4 rounded-lg p-4 pt-10 sm:p-8 sm:pt-12 max-w-full ${layout === "grid" ? "grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))]" : "grid-cols-1"}`}
+          className={`min-w-0 toon-card toon-paper bg-panel grid *:min-w-0 gap-4 rounded-2xl p-4 pt-10 sm:p-8 sm:pt-12 max-w-full ${layout === "grid" ? "grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))]" : "grid-cols-1"}`}
         >
           {filteredProfiles.map((p) => {
             const place = trophies.get(p.id);
             return (
               <article
                 key={p.id}
-                className={`min-w-0 rounded-lg border-[3px] p-4 ${place !== undefined ? "border-outline" : "border-transparent"} ${place === 1 ? "bg-podium-gold" : place === 2 ? "bg-podium-silver" : place === 3 ? "bg-podium-bronze" : ""} ${layout === "list" ? "grid items-center gap-x-6 gap-y-2 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]" : ""}`}
+                className={`min-w-0 rounded-xl border-[3px] p-4 ${place !== undefined ? "border-outline" : "border-transparent"} ${place === 1 ? "bg-podium-gold" : place === 2 ? "bg-podium-silver" : place === 3 ? "bg-podium-bronze" : ""} ${layout === "list" ? "grid items-center gap-x-6 gap-y-2 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]" : ""}`}
               >
                 <div className="min-w-0 flex items-center gap-3 *:min-w-0 max-w-full">
                   <ButtonLink

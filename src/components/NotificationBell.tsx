@@ -192,7 +192,7 @@ export default function NotificationBell({
                     } *:min-w-0 max-w-full`}
                   >
                     <span
-                      className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${isUnread ? "bg-primary/15 text-primary" : "bg-background text-muted"}`}
+                      className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${isUnread ? "bg-primary/15 text-primary" : "bg-background text-muted"}`}
                     >
                       <Icon size={20} weight="duotone" aria-hidden="true" />
                     </span>

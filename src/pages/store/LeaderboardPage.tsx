@@ -90,7 +90,7 @@ export default function LeaderboardPage({
               role="tab"
               aria-selected={boardTab === tab}
               onClick={() => setBoardTab(tab)}
-              className={`rounded-md border-2 border-outline px-3 py-2 text-sm font-black capitalize transition-colors ${boardTab === tab ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary hover:text-foreground"}`}
+              className={`rounded-lg border-2 border-outline px-3 py-2 text-sm font-black capitalize transition-colors ${boardTab === tab ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary hover:text-foreground"}`}
             >
               {tab}
             </Button>
@@ -104,7 +104,7 @@ export default function LeaderboardPage({
               <li
                 key={entry.id}
                 value={index + 1}
-                className={`toon-card relative flex min-w-0 flex-col items-center rounded-lg px-2 py-5 text-center sm:px-4 sm:py-7 ${index === 0 ? "col-start-2 row-start-1 bg-podium-gold" : index === 1 ? "col-start-1 row-start-1 bg-podium-silver" : "col-start-3 row-start-1 bg-podium-bronze"}`}
+                className={`toon-card relative flex min-w-0 flex-col items-center rounded-2xl px-2 py-5 text-center sm:px-4 sm:py-7 ${index === 0 ? "col-start-2 row-start-1 bg-podium-gold" : index === 1 ? "col-start-1 row-start-1 bg-podium-silver" : "col-start-3 row-start-1 bg-podium-bronze"}`}
               >
                 <span className="mb-3 inline-flex">
                   <TrophyMark
@@ -144,7 +144,7 @@ export default function LeaderboardPage({
               {entries.slice(3).map((entry, index) => (
                 <li
                   key={entry.id}
-                  className="toon-card flex min-w-0 items-center gap-3 rounded-lg bg-surface p-3 sm:gap-4 sm:p-5"
+                  className="toon-card flex min-w-0 items-center gap-3 rounded-2xl bg-surface p-3 sm:gap-4 sm:p-5"
                 >
                   <span
                     aria-label={`Rank ${index + 4}`}
@@ -181,7 +181,7 @@ export default function LeaderboardPage({
           )}
         </>
       ) : (
-        <div className="toon-card toon-paper rounded-lg bg-panel p-10 text-center">
+        <div className="toon-card toon-paper rounded-2xl bg-panel p-10 text-center">
           <h3 className="text-xl font-black">No {boardTab} yet</h3>
           <p className="font-bold text-muted">
             Check back once builders {developers ? "join" : "share work"}.

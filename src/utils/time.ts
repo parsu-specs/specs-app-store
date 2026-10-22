@@ -3,7 +3,7 @@ const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
 
 /** Elapsed time for feed posts; months and years use 30 and 365 days. */
-export function formatMilestoneAge(iso: string, nowMs: number = Date.now()): string | null {
+export function formatRelativeAge(iso: string, nowMs: number = Date.now()): string | null {
   const timestamp = Date.parse(iso);
   if (!Number.isFinite(timestamp)) return null;
   const age = Math.max(0, nowMs - timestamp);

@@ -56,7 +56,7 @@ export default function ProfilePage({
             })()}
             onBack={() => {
               window.history.pushState({}, "", ROUTES.developers);
-              setView("builders");
+              setView("developers");
               setSelectedProfileId(null);
             }}
             onOpenApp={openAppFromProfile}

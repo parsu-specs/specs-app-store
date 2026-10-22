@@ -11,7 +11,7 @@ import {
 import Comments from "./Comments";
 import MentionText from "./MentionText";
 import TrophyMark from "./TrophyMark";
-import UploadStamp from "./UploadStamp";
+import PostTimestamp from "./PostTimestamp";
 import VotersDialog from "./VotersDialog";
 import { profileForApp } from "../data/profileLinks";
 import type { AppItem, Profile, User } from "../data/types";
@@ -92,7 +92,7 @@ export default function AppCard({
         pressPos.current = { x: e.clientX, y: e.clientY };
       }}
       onClick={openFromCard}
-      className="toon-card toon-paper bg-panel flex h-full w-full min-w-0 max-w-sm cursor-pointer flex-col rounded-lg p-4 *:min-w-0"
+      className="toon-card toon-paper bg-panel flex h-full w-full min-w-0 max-w-sm cursor-pointer flex-col rounded-2xl p-4 *:min-w-0"
     >
       <Button
         variant="plain"
@@ -101,7 +101,7 @@ export default function AppCard({
         className="block w-full"
       >
         {app.screenshots?.[0] ? (
-          <span className="relative block h-48 w-full overflow-hidden rounded-sm border-[3px] border-outline bg-inverse">
+          <span className="relative block h-48 w-full overflow-hidden rounded-xl border-[3px] border-outline bg-inverse">
             <img
               src={app.screenshots[0]}
               alt={`${app.title} thumbnail`}
@@ -112,7 +112,7 @@ export default function AppCard({
         ) : (
           <div
             style={{ backgroundColor: `var(--color-${app.color})` }}
-            className="min-w-0 bg-[repeating-linear-gradient(-45deg,transparent_0,transparent_12px,var(--color-cover-stripe)_12px,var(--color-cover-stripe)_24px)] flex h-48 items-center justify-center rounded-sm border-[3px] border-outline *:min-w-0 max-w-full"
+            className="min-w-0 bg-[repeating-linear-gradient(-45deg,transparent_0,transparent_12px,var(--color-cover-stripe)_12px,var(--color-cover-stripe)_24px)] flex h-48 items-center justify-center rounded-xl border-[3px] border-outline *:min-w-0 max-w-full"
           >
             <span className="rotate-[-4deg] text-4xl font-black">{app.title.charAt(0)}</span>
           </div>
@@ -133,7 +133,7 @@ export default function AppCard({
                   </ButtonChip>
                 ))}
             </div>
-            <UploadStamp createdAt={app.createdAt} />
+            {app.createdAt && <PostTimestamp createdAt={app.createdAt} subject="project" />}
           </div>
         </div>
         <div className="mt-2 text-xs leading-5">
@@ -245,7 +245,7 @@ export default function AppCard({
               <div
                 id={panelId}
                 onClick={(e) => e.stopPropagation()}
-                className="min-w-0 toon-card my-auto flex max-h-[85vh] min-h-0 w-full max-w-lg flex-col overflow-hidden rounded-lg bg-surface *:min-w-0"
+                className="min-w-0 toon-card my-auto flex max-h-[85vh] min-h-0 w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-surface *:min-w-0"
               >
                 <div className="min-w-0 flex shrink-0 items-center justify-between gap-3 border-b-[3px] border-outline p-4 *:min-w-0 max-w-full">
                   <h4 className="truncate text-lg font-black">

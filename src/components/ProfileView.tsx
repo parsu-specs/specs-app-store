@@ -19,6 +19,9 @@ import { getAppRepo, getProfileRepo } from "../data/factory";
 import { fileToThumbnailDataUrl } from "../utils/images";
 import { useScrollToForm } from "../utils/scroll";
 import { loadCachedProfile } from "../utils/viewerCache";
+import { confirmDisplayNameChange } from "../utils/displayName";
+import DisplayNameInput from "./DisplayNameInput";
+import { useDisplayNameConfirmation } from "./useDisplayNameConfirmation";
 import { PROFILE_THEMES } from "../data/types";
 import type { AppItem, Profile, User } from "../data/types";
 
@@ -59,6 +62,7 @@ export default function ProfileView({
   onProfileUpdated,
 }: ProfileViewProps) {
   const { updateName, updateCachedProfile } = useAuth();
+  const { confirm, confirmationModal } = useDisplayNameConfirmation();
   const [initialProfile] = useState(() =>
     currentUser?.id === profileId ? loadCachedProfile(profileId) : null,
   );
@@ -134,6 +138,7 @@ export default function ProfileView({
     const previousName = profile.name;
     const nextName = name.trim();
     try {
+      if (!(await confirmDisplayNameChange(getProfileRepo(), profile, nextName, confirm))) return;
       const updated = await getProfileRepo().updateProfile(
         profile.id,
         { name: nextName, role, bio, color, imageUrl, theme },
@@ -168,7 +173,7 @@ export default function ProfileView({
   if (loading && !profile) return <p className="font-bold text-muted">Loading developer…</p>;
   if (!profile) {
     return (
-      <div className="toon-card toon-paper bg-panel rounded-lg p-10 text-center">
+      <div className="toon-card toon-paper bg-panel rounded-2xl p-10 text-center">
         <h3 className="text-xl font-black">Developer not found</h3>
         <p className="font-bold text-muted">{error ?? "This profile does not exist."}</p>
         <Button variant="secondary" className="mt-5" onClick={onBack}>
@@ -192,7 +197,7 @@ export default function ProfileView({
       </Button>
 
       <div
-        className="toon-card toon-paper bg-panel mt-5 rounded-lg p-6 pt-10 sm:p-8 sm:pt-12"
+        className="toon-card toon-paper bg-panel mt-5 rounded-2xl p-6 pt-10 sm:p-8 sm:pt-12"
         style={
           pageTheme
             ? {
@@ -258,9 +263,12 @@ export default function ProfileView({
             onSubmit={(e) => void save(e)}
             className="min-w-0 mt-6 grid *:min-w-0 scroll-mt-28 gap-4 border-t-2 border-dashed border-divider pt-6 @min-[36rem]/content:grid-cols-2 max-w-full"
           >
+            {confirmationModal}
             <label>
               <span className="mb-2 block text-xs font-black uppercase">Display name</span>
-              <Input
+              <DisplayNameInput
+                profileId={profile.id}
+                currentName={profile.name}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 maxLength={40}
@@ -433,10 +441,10 @@ export default function ProfileView({
               variant="plain"
               key={app.id}
               onClick={() => onOpenApp(app.id)}
-              className="toon-card toon-paper bg-panel flex h-full w-full min-w-0 max-w-sm flex-col rounded-lg p-5 pt-9 text-left *:min-w-0"
+              className="toon-card toon-paper bg-panel flex h-full w-full min-w-0 max-w-sm flex-col rounded-2xl p-5 pt-9 text-left *:min-w-0"
             >
               {app.screenshots?.[0] ? (
-                <span className="relative block h-24 w-full overflow-hidden rounded-sm border-[3px] border-outline bg-inverse">
+                <span className="relative block h-24 w-full overflow-hidden rounded-xl border-[3px] border-outline bg-inverse">
                   <img
                     src={app.screenshots[0]}
                     alt=""
@@ -454,7 +462,7 @@ export default function ProfileView({
               ) : (
                 <div
                   style={{ backgroundColor: `var(--color-${app.color})` }}
-                  className="min-w-0 bg-[repeating-linear-gradient(-45deg,transparent_0,transparent_12px,var(--color-cover-stripe)_12px,var(--color-cover-stripe)_24px)] flex h-24 items-center justify-center rounded-sm border-[3px] border-outline *:min-w-0 max-w-full"
+                  className="min-w-0 bg-[repeating-linear-gradient(-45deg,transparent_0,transparent_12px,var(--color-cover-stripe)_12px,var(--color-cover-stripe)_24px)] flex h-24 items-center justify-center rounded-xl border-[3px] border-outline *:min-w-0 max-w-full"
                 >
                   <span className="rotate-[-4deg] text-3xl font-black">{app.title.charAt(0)}</span>
                 </div>
@@ -490,7 +498,7 @@ export default function ProfileView({
           ))}
         </div>
       ) : (
-        <div className="toon-card toon-paper bg-panel rounded-lg p-10 text-center">
+        <div className="toon-card toon-paper bg-panel rounded-2xl p-10 text-center">
           {isSelf && (
             <RocketLaunch
               size={40}

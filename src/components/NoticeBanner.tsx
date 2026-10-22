@@ -25,7 +25,7 @@ export default function NoticeBanner({
 }: NoticeBannerProps) {
   return (
     <div
-      className={`min-w-0 toon-card toon-paper flex flex-col flex-wrap items-start gap-4 rounded-lg p-6 sm:flex-row sm:items-center ${toneClasses[tone]} ${className} *:min-w-0 max-w-full`}
+      className={`min-w-0 toon-card toon-paper flex flex-col flex-wrap items-start gap-4 rounded-2xl p-6 sm:flex-row sm:items-center ${toneClasses[tone]} ${className} *:min-w-0 max-w-full`}
     >
       <Icon size={32} weight="duotone" className="shrink-0" />
       <div className="w-full min-w-[min(100%,20rem)] sm:w-auto sm:flex-1">

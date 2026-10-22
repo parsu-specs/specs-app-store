@@ -71,7 +71,7 @@ function DocsSection({ text, source }: { text: string; source?: string }) {
   };
 
   return (
-    <section className="toon-card toon-paper mt-8 rounded-lg bg-surface p-6 pt-10 sm:p-8 sm:pt-12">
+    <section className="toon-card toon-paper mt-8 rounded-2xl bg-surface p-6 pt-10 sm:p-8 sm:pt-12">
       <div className="min-w-0 mb-3 flex items-center gap-2 *:min-w-0 max-w-full">
         <BookOpen size={22} weight="duotone" />
         <h3 className="text-2xl font-black">Documentation</h3>
@@ -481,7 +481,7 @@ export default function ProjectView({
   if (loading) return <p className="font-bold text-muted">Loading project…</p>;
   if (error || !app) {
     return (
-      <div className="toon-card toon-paper bg-panel rounded-lg p-10 text-center">
+      <div className="toon-card toon-paper bg-panel rounded-2xl p-10 text-center">
         <h3 className="text-xl font-black">Project not found</h3>
         <p className="font-bold text-muted">{error ?? "This project does not exist."}</p>
         <Button variant="secondary" className="mt-5" onClick={onBack}>
@@ -507,9 +507,9 @@ export default function ProjectView({
             type="button"
             onClick={() => setLightbox(0)}
             aria-label={`View ${app.title} cover full size`}
-            className="block w-full cursor-zoom-in rounded-lg toon-card"
+            className="block w-full cursor-zoom-in rounded-2xl toon-card"
           >
-            <span className="relative block h-80 w-full overflow-hidden md:h-96 rounded-sm">
+            <span className="relative block h-80 w-full overflow-hidden md:h-96 rounded-xl">
               <img
                 src={cover}
                 alt={`${app.title} thumbnail`}
@@ -645,7 +645,7 @@ export default function ProjectView({
         <form
           ref={editFormRef}
           onSubmit={(e) => void saveEdit(e)}
-          className="min-w-0 toon-card toon-paper mt-8 grid *:min-w-0 scroll-mt-28 gap-5 rounded-lg bg-info p-6 pt-10 @min-[36rem]/content:grid-cols-2 max-w-full"
+          className="min-w-0 toon-card toon-paper mt-8 grid *:min-w-0 scroll-mt-28 gap-5 rounded-2xl bg-info p-6 pt-10 @min-[36rem]/content:grid-cols-2 max-w-full"
         >
           <div className="@min-[36rem]/content:col-span-2">
             <PencilSimple size={32} weight="duotone" />
@@ -935,11 +935,11 @@ export default function ProjectView({
                             Select all
                           </label>
                         </div>
-                        <div className="mt-2 max-h-64 space-y-1 overflow-y-auto rounded-lg border-2 border-divider p-2">
+                        <div className="mt-2 max-h-64 space-y-1 overflow-y-auto rounded-xl border-2 border-divider p-2">
                           {eRepositoryFiles.map((path) => (
                             <label
                               key={path}
-                              className="min-w-0 flex items-start gap-2 rounded-md px-2 py-1.5 text-sm font-bold hover:bg-background *:min-w-0 max-w-full"
+                              className="min-w-0 flex items-start gap-2 rounded-lg px-2 py-1.5 text-sm font-bold hover:bg-background *:min-w-0 max-w-full"
                             >
                               <Checkbox
                                 checked={eSelectedRepositoryFiles.includes(path)}
@@ -1066,7 +1066,7 @@ export default function ProjectView({
                 type="button"
                 onClick={() => setLightbox(i + 1)}
                 aria-label={`View ${app.title} screenshot ${i + 1} full size`}
-                className="toon-card bg-surface block w-full cursor-zoom-in overflow-hidden rounded-lg p-0 text-left"
+                className="toon-card bg-surface block w-full cursor-zoom-in overflow-hidden rounded-2xl p-0 text-left"
               >
                 <span className="relative block aspect-video w-full overflow-hidden bg-inverse">
                   <img
@@ -1110,7 +1110,7 @@ export default function ProjectView({
             role="alert"
             className="min-w-0 pointer-events-none fixed inset-x-0 bottom-24 z-100 flex justify-center px-4 *:min-w-0 max-w-full"
           >
-            <p className="toon-card rounded-xl bg-surface px-5 py-3 text-center text-sm font-black">
+            <p className="toon-card rounded-2xl bg-surface px-5 py-3 text-center text-sm font-black">
               {voteNotice}
             </p>
           </div>,
@@ -1122,7 +1122,7 @@ export default function ProjectView({
       ) : readmeLoading ? (
         <section
           aria-live="polite"
-          className="toon-card toon-paper bg-panel mt-8 rounded-lg p-6 pt-10 sm:p-8 sm:pt-12"
+          className="toon-card toon-paper bg-panel mt-8 rounded-2xl p-6 pt-10 sm:p-8 sm:pt-12"
         >
           <div className="min-w-0 mb-3 flex items-center gap-2 *:min-w-0 max-w-full">
             <BookOpen size={22} weight="duotone" />
@@ -1135,7 +1135,7 @@ export default function ProjectView({
       ) : readmeError ? (
         <section
           role="status"
-          className="toon-card toon-paper bg-panel mt-8 rounded-lg p-6 pt-10 sm:p-8 sm:pt-12"
+          className="toon-card toon-paper bg-panel mt-8 rounded-2xl p-6 pt-10 sm:p-8 sm:pt-12"
         >
           <div className="min-w-0 mb-3 flex items-center gap-2 *:min-w-0 max-w-full">
             <BookOpen size={22} weight="duotone" />
@@ -1144,7 +1144,7 @@ export default function ProjectView({
           <p className="font-bold text-muted">{readmeError}</p>
         </section>
       ) : app.url && isGitHubRepositoryUrl(app.url) ? (
-        <section className="toon-card toon-paper bg-panel mt-8 rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
+        <section className="toon-card toon-paper bg-panel mt-8 rounded-2xl p-6 pt-10 sm:p-8 sm:pt-12">
           <div className="min-w-0 mb-3 flex items-center gap-2 *:min-w-0 max-w-full">
             <BookOpen size={22} weight="duotone" />
             <h3 className="text-2xl font-black">No repository README found</h3>
@@ -1155,7 +1155,7 @@ export default function ProjectView({
         </section>
       ) : null}
 
-      <section className="toon-card mt-8 rounded-lg bg-surface p-6 sm:p-8">
+      <section className="toon-card mt-8 rounded-2xl bg-surface p-6 sm:p-8">
         <h3 className="text-2xl font-black">Feedback ({feedbackCount})</h3>
         <div className="mt-5">
           <Comments

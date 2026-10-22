@@ -1,10 +1,10 @@
-import type { AppItem, Comment, Milestone, NotificationItem, Profile, User } from "../data/types";
+import type { AppItem, Comment, FeedPost, NotificationItem, Profile, User } from "../data/types";
 
 /**
  * Derived notifications (no backend changes).
  *
  * The app has no notification table, so notifications are computed from data
- * the UI already reads: apps, comment threads, milestones, and voter lists.
+ * the UI already reads: apps, comment threads, feed posts, and voter lists.
  *
  * - comment: someone commented on one of my projects.
  * - reply: someone replied to one of my comments (any project).
@@ -20,7 +20,7 @@ import type { AppItem, Comment, Milestone, NotificationItem, Profile, User } fro
  *   also re-arms the tag (bumpCollabTag), so remove → re-add across edits
  *   notifies again even if the tagged dev never loaded the app mid-gap.
  * - project: a new community project (7d window, not mine).
- * - update: a recent community milestone (7d window, not mine).
+ * - update: a recent community feed post (7d window, not mine).
  *
  * Read state (read ids + voter presence) lives in localStorage per user.
  * Nothing here changes any repo contract or server schema.
@@ -200,7 +200,7 @@ export type NotificationInput = {
   apps: AppItem[];
   /** appId -> comments (already fetched by the caller, capped). */
   threads: Map<string, Comment[]>;
-  milestones: Milestone[];
+  feedPosts: FeedPost[];
   /** appId -> current voters (listVoters snapshots, owned apps only). */
   voters: Map<string, Profile[]>;
   /** Voter ids seen at the last snapshot, per owned app. */
@@ -292,7 +292,7 @@ export function buildNotifications(input: NotificationInput): NotificationItem[]
     user,
     apps,
     threads,
-    milestones,
+    feedPosts,
     voters,
     voterBaseline,
     voteCycles,
@@ -440,7 +440,7 @@ export function buildNotifications(input: NotificationInput): NotificationItem[]
   }
 
   // Feed posts (7d, not mine).
-  for (const m of milestones) {
+  for (const m of feedPosts) {
     if (m.authorId === user.id) continue;
     if (!validDate(m.createdAt)) continue;
     if (nowMs - Date.parse(m.createdAt) > COMMUNITY_WINDOW_MS) continue;

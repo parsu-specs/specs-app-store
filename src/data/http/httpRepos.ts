@@ -18,12 +18,12 @@ import { api, setApiToken } from "./api";
 import {
   toApp,
   toComment,
-  toMilestone,
+  toFeedPost,
   toProfile,
   toUser,
   type AppRow,
   type CommentRow,
-  type MilestoneRow,
+  type FeedPostRow,
   type ProfileRow,
 } from "./rows";
 
@@ -212,7 +212,7 @@ export function createHttpAppRepo(): AppRepo {
 
     async listVoters(appId: string, target = "app") {
       const { voters } = await api<{ voters: ProfileRow[] }>(
-        `/${target === "milestone" ? "milestones" : "apps"}/${encodeURIComponent(appId)}/voters`,
+        `/${target === "feedPost" ? "milestones" : "apps"}/${encodeURIComponent(appId)}/voters`,
       );
       return voters.map(toProfile).sort((a, b) => a.name.localeCompare(b.name));
     },
@@ -271,29 +271,30 @@ export function createHttpAppRepo(): AppRepo {
       return {};
     },
 
-    async listMilestones() {
-      const { milestones } = await api<{ milestones: MilestoneRow[] }>("/milestones");
-      return milestones.map(toMilestone);
+    // The deployed API retains its legacy milestone URLs and response fields.
+    async listFeedPosts() {
+      const { milestones: feedPosts } = await api<{ milestones: FeedPostRow[] }>("/milestones");
+      return feedPosts.map(toFeedPost);
     },
 
-    async postMilestone(_author: User, body: string, appId?: string) {
-      const { milestone } = await api<{ milestone: MilestoneRow }>("/milestones", {
+    async postFeedPost(_author: User, body: string, appId?: string) {
+      const { milestone: feedPost } = await api<{ milestone: FeedPostRow }>("/milestones", {
         method: "POST",
         body: JSON.stringify({ body, appId }),
       });
-      return toMilestone(milestone);
+      return toFeedPost(feedPost);
     },
 
-    async deleteMilestone(milestoneId: string, _requester: User): Promise<void> {
-      await api(`/milestones/${encodeURIComponent(milestoneId)}`, { method: "DELETE" });
+    async deleteFeedPost(feedPostId: string, _requester: User): Promise<void> {
+      await api(`/milestones/${encodeURIComponent(feedPostId)}`, { method: "DELETE" });
     },
 
-    async toggleMilestoneCheer(milestoneId: string, _userId: string) {
-      const { milestone } = await api<{ milestone: MilestoneRow }>(
-        `/milestones/${encodeURIComponent(milestoneId)}/cheer`,
+    async toggleFeedPostCheer(feedPostId: string, _userId: string) {
+      const { milestone: feedPost } = await api<{ milestone: FeedPostRow }>(
+        `/milestones/${encodeURIComponent(feedPostId)}/cheer`,
         { method: "POST" },
       );
-      return toMilestone(milestone);
+      return toFeedPost(feedPost);
     },
   };
 }

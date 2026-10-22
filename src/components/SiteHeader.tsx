@@ -4,15 +4,15 @@ import Brand from "./Brand";
 import AppearanceControl from "./AppearanceControl";
 import { ButtonLink } from "./Button";
 
-export default function SiteHeader({ page }: { page: "landing" | "about" }) {
+export default function SiteHeader({ page }: { page: "home" | "about" }) {
   const { user } = useAuth();
   return (
     <header className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 px-5 py-6 sm:flex-row sm:flex-wrap sm:items-center sm:px-8 lg:px-10">
       <ButtonLink
         variant="plain"
-        href={ROUTES.landing}
+        href={ROUTES.home}
         onClick={navigateInternalLink}
-        aria-label="CodeCanvas landing page"
+        aria-label="CodeCanvas home page"
       >
         <Brand />
       </ButtonLink>
@@ -23,7 +23,7 @@ export default function SiteHeader({ page }: { page: "landing" | "about" }) {
         <AppearanceControl compact />
         {(
           [
-            ["landing", "Home", ROUTES.landing],
+            ["home", "Home", ROUTES.home],
             ["about", "About", ROUTES.about],
           ] as const
         ).map(([id, label, href]) => (

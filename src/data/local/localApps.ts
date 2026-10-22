@@ -7,11 +7,11 @@ import type {
   Builder,
   Comment,
   ListAppsParams,
-  Milestone,
+  FeedPost,
   Profile,
   User,
 } from "../types";
-import { seedApps, seedBuilders, seedComments, seedMilestones } from "./seed";
+import { seedApps, seedBuilders, seedComments, seedFeedPosts } from "./seed";
 import {
   createLocalProfileRepo,
   freezeLegacyLocalMentions,
@@ -22,7 +22,8 @@ import { assertReplyDepth } from "../commentRules";
 const APPS_KEY = "cc.apps.v1";
 const VOTES_KEY = "cc.votes.v1";
 const COMMENTS_KEY = "cc.comments.v1";
-const MILESTONES_KEY = "cc.milestones.v1";
+// Keep the existing storage key so saved feed posts survive naming changes.
+const FEED_POSTS_KEY = "cc.milestones.v1";
 
 type VotesStore = Record<string, string[]>;
 type CommentsStore = Record<string, Comment[]>;
@@ -125,26 +126,26 @@ function saveComments(store: CommentsStore): void {
   localStorage.setItem(COMMENTS_KEY, JSON.stringify(store));
 }
 
-function loadMilestones(): Milestone[] {
+function loadFeedPosts(): FeedPost[] {
   try {
-    const raw = localStorage.getItem(MILESTONES_KEY);
+    const raw = localStorage.getItem(FEED_POSTS_KEY);
     if (!raw) {
-      localStorage.setItem(MILESTONES_KEY, JSON.stringify(seedMilestones));
-      return structuredClone(seedMilestones);
+      localStorage.setItem(FEED_POSTS_KEY, JSON.stringify(seedFeedPosts));
+      return structuredClone(seedFeedPosts);
     }
-    const parsed = JSON.parse(raw) as Milestone[];
-    if (!Array.isArray(parsed)) return structuredClone(seedMilestones);
+    const parsed = JSON.parse(raw) as FeedPost[];
+    if (!Array.isArray(parsed)) return structuredClone(seedFeedPosts);
     return parsed;
   } catch {
-    return structuredClone(seedMilestones);
+    return structuredClone(seedFeedPosts);
   }
 }
 
-function saveMilestones(milestones: Milestone[]): void {
-  localStorage.setItem(MILESTONES_KEY, JSON.stringify(milestones));
+function saveFeedPosts(feedPosts: FeedPost[]): void {
+  localStorage.setItem(FEED_POSTS_KEY, JSON.stringify(feedPosts));
 }
 
-function normalizeMilestone(m: Milestone): Milestone {
+function normalizeFeedPost(m: FeedPost): FeedPost {
   const cheeredBy = Array.isArray(m.cheeredBy) ? m.cheeredBy : [];
   return {
     ...m,
@@ -372,9 +373,9 @@ export function createLocalAppRepo(): AppRepo {
 
     async listVoters(appId: string, target = "app"): Promise<Profile[]> {
       await delay(80);
-      if (target === "milestone") {
-        const milestone = loadMilestones().find((m) => m.id === appId);
-        return getLocalProfilesByIds(milestone?.cheeredBy ?? []);
+      if (target === "feedPost") {
+        const feedPost = loadFeedPosts().find((m) => m.id === appId);
+        return getLocalProfilesByIds(feedPost?.cheeredBy ?? []);
       }
       const votes = loadVotes();
       const voterIds = Object.entries(votes)
@@ -413,7 +414,7 @@ export function createLocalAppRepo(): AppRepo {
       const apps = loadApps();
       const target = apps.find((a) => a.id === appId);
       const isFeedThread =
-        appId.startsWith("ms:") && loadMilestones().some((m) => m.id === appId.slice(3));
+        appId.startsWith("ms:") && loadFeedPosts().some((m) => m.id === appId.slice(3));
       if (!target && !isFeedThread) throw new NotFoundError("Project not found.");
       const store = loadComments();
       const thread = (store[appId] ?? []).map(normalizeComment);
@@ -443,10 +444,10 @@ export function createLocalAppRepo(): AppRepo {
       return { ...comment, viewerHasLiked: false };
     },
 
-    async listMilestones(userId?: string): Promise<Milestone[]> {
+    async listFeedPosts(userId?: string): Promise<FeedPost[]> {
       await delay(80);
-      return loadMilestones()
-        .map(normalizeMilestone)
+      return loadFeedPosts()
+        .map(normalizeFeedPost)
         .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
         .map((m) => ({
           ...m,
@@ -454,7 +455,7 @@ export function createLocalAppRepo(): AppRepo {
         }));
     },
 
-    async postMilestone(author: User, body: string, appId?: string): Promise<Milestone> {
+    async postFeedPost(author: User, body: string, appId?: string): Promise<FeedPost> {
       await delay(120);
       const text = body.trim();
       if (!text) throw new Error("Update cannot be empty.");
@@ -468,7 +469,7 @@ export function createLocalAppRepo(): AppRepo {
           : target.creator.toLowerCase() === author.name.toLowerCase();
         if (!owned) throw new Error("You can only link your own projects.");
       }
-      const milestone: Milestone = {
+      const feedPost: FeedPost = {
         id: newId(),
         authorId: author.id,
         authorName: author.name,
@@ -479,33 +480,33 @@ export function createLocalAppRepo(): AppRepo {
         cheeredBy: [],
         viewerHasCheered: false,
       };
-      const next = [milestone, ...loadMilestones()];
-      saveMilestones(next);
-      return milestone;
+      const next = [feedPost, ...loadFeedPosts()];
+      saveFeedPosts(next);
+      return feedPost;
     },
 
-    async deleteMilestone(milestoneId: string, requester: User): Promise<void> {
+    async deleteFeedPost(feedPostId: string, requester: User): Promise<void> {
       await delay(80);
-      const milestones = loadMilestones();
-      const target = milestones.find((m) => m.id === milestoneId);
+      const feedPosts = loadFeedPosts();
+      const target = feedPosts.find((m) => m.id === feedPostId);
       if (!target) throw new NotFoundError("Update not found.");
       if (target.authorId !== requester.id)
         throw new Error("You can only delete your own updates.");
-      saveMilestones(milestones.filter((m) => m.id !== milestoneId));
-      const { [`ms:${milestoneId}`]: _removed, ...threads } = loadComments();
+      saveFeedPosts(feedPosts.filter((m) => m.id !== feedPostId));
+      const { [`ms:${feedPostId}`]: _removed, ...threads } = loadComments();
       saveComments(threads);
     },
 
-    async toggleMilestoneCheer(milestoneId: string, userId: string): Promise<Milestone> {
+    async toggleFeedPostCheer(feedPostId: string, userId: string): Promise<FeedPost> {
       await delay(80);
-      const milestones = loadMilestones().map(normalizeMilestone);
-      const target = milestones.find((m) => m.id === milestoneId);
+      const feedPosts = loadFeedPosts().map(normalizeFeedPost);
+      const target = feedPosts.find((m) => m.id === feedPostId);
       if (!target) throw new NotFoundError("Update not found.");
       const cheered = new Set(target.cheeredBy ?? []);
       if (cheered.has(userId)) cheered.delete(userId);
       else cheered.add(userId);
-      const updated: Milestone = { ...target, cheeredBy: [...cheered], cheers: cheered.size };
-      saveMilestones(milestones.map((m) => (m.id === milestoneId ? updated : m)));
+      const updated: FeedPost = { ...target, cheeredBy: [...cheered], cheers: cheered.size };
+      saveFeedPosts(feedPosts.map((m) => (m.id === feedPostId ? updated : m)));
       return { ...updated, viewerHasCheered: cheered.has(userId) };
     },
 
@@ -582,5 +583,5 @@ export function resetLocalData(): void {
   localStorage.removeItem(APPS_KEY);
   localStorage.removeItem(VOTES_KEY);
   localStorage.removeItem(COMMENTS_KEY);
-  localStorage.removeItem(MILESTONES_KEY);
+  localStorage.removeItem(FEED_POSTS_KEY);
 }

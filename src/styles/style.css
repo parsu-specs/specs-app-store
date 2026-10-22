@@ -118,7 +118,7 @@ body:has([data-dropdown-portal]) {
 /* Shared card surfaces stay below utilities so component variants can override them. */
 @layer components {
   .toon-card {
-    @apply border-2 border-outline shadow-[4px_4px_0_var(--color-ink-shadow)] wrap-anywhere;
+    @apply rounded-2xl border-2 border-outline shadow-[4px_4px_0_var(--color-ink-shadow)] wrap-anywhere;
   }
 
   .toon-paper {

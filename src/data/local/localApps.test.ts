@@ -53,22 +53,22 @@ describe("feed update deletion", () => {
     for (const c of [parent, reply, nested]) {
       await repo.toggleCommentLike("ms:mine", c.id, "other");
     }
-    expect((await repo.listMilestones("other")).find((m) => m.id === "mine")).toMatchObject({
+    expect((await repo.listFeedPosts("other")).find((m) => m.id === "mine")).toMatchObject({
       cheers: 1,
       viewerHasCheered: true,
     });
 
-    await repo.deleteMilestone("mine", author);
+    await repo.deleteFeedPost("mine", author);
 
-    expect((await repo.listMilestones("other")).some((m) => m.id === "mine")).toBe(false);
+    expect((await repo.listFeedPosts("other")).some((m) => m.id === "mine")).toBe(false);
     expect(await repo.listComments("ms:mine", "other")).toEqual([]);
     expect(await repo.listCommentLikers([parent.id, reply.id, nested.id])).toEqual({});
   });
 
   it("removes an author's update and its thread, preserving other updates", async () => {
     const repo = createLocalAppRepo();
-    await repo.deleteMilestone("mine", author);
-    expect((await repo.listMilestones()).map((m) => m.id)).toEqual(["other"]);
+    await repo.deleteFeedPost("mine", author);
+    expect((await repo.listFeedPosts()).map((m) => m.id)).toEqual(["other"]);
     const threads = JSON.parse(store.get("cc.comments.v1")!);
     expect(threads["ms:mine"]).toBeUndefined();
     expect(threads["ms:other"]).toEqual([{ id: "keep", body: "Keep", mentions: [] }]);
@@ -76,7 +76,7 @@ describe("feed update deletion", () => {
 
   it("rejects deleting another user's update without changing stored data", async () => {
     const before = new Map(store);
-    await expect(createLocalAppRepo().deleteMilestone("other", author)).rejects.toThrow(
+    await expect(createLocalAppRepo().deleteFeedPost("other", author)).rejects.toThrow(
       "own updates",
     );
     expect(store).toEqual(before);
@@ -230,14 +230,14 @@ describe("feed upvote previews", () => {
       ]),
     );
     const repo = createLocalAppRepo();
-    expect((await repo.listVoters("mine", "milestone")).map((p) => p.id)).toEqual(["other"]);
-    await repo.toggleMilestoneCheer("mine", author.id);
-    expect((await repo.listVoters("mine", "milestone")).map((p) => p.id)).toEqual([
+    expect((await repo.listVoters("mine", "feedPost")).map((p) => p.id)).toEqual(["other"]);
+    await repo.toggleFeedPostCheer("mine", author.id);
+    expect((await repo.listVoters("mine", "feedPost")).map((p) => p.id)).toEqual([
       author.id,
       "other",
     ]);
-    await repo.toggleMilestoneCheer("mine", "other");
-    expect((await repo.listVoters("mine", "milestone")).map((p) => p.id)).toEqual([author.id]);
-    expect(await repo.listVoters("missing", "milestone")).toEqual([]);
+    await repo.toggleFeedPostCheer("mine", "other");
+    expect((await repo.listVoters("mine", "feedPost")).map((p) => p.id)).toEqual([author.id]);
+    expect(await repo.listVoters("missing", "feedPost")).toEqual([]);
   });
 });

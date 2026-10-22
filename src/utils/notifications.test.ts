@@ -8,7 +8,7 @@ import {
   saveNotificationState,
   type NotificationInput,
 } from "./notifications";
-import type { AppItem, Comment, Milestone, User } from "../data/types";
+import type { AppItem, Comment, FeedPost, User } from "../data/types";
 
 const NOW = Date.parse("2026-10-07T12:00:00.000Z");
 const H = (h: number) => new Date(NOW - h * 3_600_000).toISOString();
@@ -59,7 +59,7 @@ function baseInput(over: Partial<NotificationInput> = {}): NotificationInput {
     user: ann,
     apps: [],
     threads: new Map(),
-    milestones: [],
+    feedPosts: [],
     voters: new Map(),
     voterBaseline: {},
     voteCycles: {},
@@ -85,10 +85,10 @@ describe("buildNotifications", () => {
         ],
       ],
     ]);
-    const milestones: Milestone[] = [
+    const feedPosts: FeedPost[] = [
       { id: "m1", authorId: "u2", authorName: "Bob", body: "wall", createdAt: H(2) },
     ];
-    const kinds = buildNotifications(baseInput({ apps: [mine, fresh], threads, milestones })).map(
+    const kinds = buildNotifications(baseInput({ apps: [mine, fresh], threads, feedPosts })).map(
       (i) => i.kind,
     );
     expect(kinds).toEqual(["reply", "update", "comment", "project"]);

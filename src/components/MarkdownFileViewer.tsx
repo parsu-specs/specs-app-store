@@ -79,7 +79,7 @@ export default function MarkdownFileViewer({
           >
             <section
               onClick={(event) => event.stopPropagation()}
-              className="min-w-0 toon-card toon-paper my-auto flex max-h-[90vh] min-h-[min(28rem,80vh)] w-full max-w-4xl flex-col overflow-hidden rounded-lg bg-panel *:min-w-0"
+              className="min-w-0 toon-card toon-paper my-auto flex max-h-[90vh] min-h-[min(28rem,80vh)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-panel *:min-w-0"
             >
               <header className="min-w-0 flex shrink-0 items-center justify-between gap-4 border-b-[3px] border-outline bg-surface px-4 py-3 sm:px-6 *:min-w-0 max-w-full">
                 <div className="flex min-w-0 items-center gap-3 *:min-w-0 max-w-full">
@@ -136,14 +136,14 @@ export default function MarkdownFileViewer({
                 {error && (
                   <p
                     role="alert"
-                    className="mb-4 rounded-lg border-2 border-outline bg-accent/30 p-3 font-bold"
+                    className="mb-4 rounded-xl border-2 border-outline bg-accent/30 p-3 font-bold"
                   >
                     {error}
                   </p>
                 )}
 
                 {text ? (
-                  <article className="rounded-lg border-2 border-outline bg-surface p-4 sm:p-6">
+                  <article className="rounded-xl border-2 border-outline bg-surface p-4 sm:p-6">
                     <div className="min-w-0 mb-4 flex items-center gap-2 border-b-2 border-dashed border-divider pb-3 text-sm font-black uppercase text-muted *:min-w-0 max-w-full">
                       <FileText size={19} weight="duotone" aria-hidden="true" />
                       Document
@@ -151,7 +151,7 @@ export default function MarkdownFileViewer({
                     <Markdown text={text} fullWidth />
                   </article>
                 ) : (
-                  <div className="min-w-0 flex min-h-56 flex-col items-center justify-center rounded-lg border-2 border-dashed border-divider bg-surface/70 px-5 py-10 text-center *:min-w-0 max-w-full">
+                  <div className="min-w-0 flex min-h-56 flex-col items-center justify-center rounded-xl border-2 border-dashed border-divider bg-surface/70 px-5 py-10 text-center *:min-w-0 max-w-full">
                     <BookOpenText size={40} weight="duotone" aria-hidden="true" />
                     <h3 className="mt-3 text-xl font-black">
                       {loading ? "Reading your file…" : "Your document will appear here"}

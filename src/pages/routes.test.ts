@@ -5,12 +5,13 @@ import {
   developerProfilePath,
   isProtectedRoute,
   normalizePathname,
+  resolveRoute,
 } from "./routes";
 
 describe("routes", () => {
   it("normalizes trailing slashes and the root path", () => {
     expect(normalizePathname(`${ROUTES.discover}///`)).toBe(ROUTES.discover);
-    expect(normalizePathname("///")).toBe(ROUTES.root);
+    expect(normalizePathname("///")).toBe(ROUTES.home);
   });
 
   it("builds encoded application and developer paths", () => {
@@ -22,7 +23,28 @@ describe("routes", () => {
     expect(isProtectedRoute(ROUTES.discover)).toBe(true);
     expect(isProtectedRoute(appDetailsPath("app-1"))).toBe(true);
     expect(isProtectedRoute(developerProfilePath("profile-1"))).toBe(true);
-    expect(isProtectedRoute(ROUTES.community)).toBe(true);
-    expect(isProtectedRoute(ROUTES.landing)).toBe(false);
+    expect(isProtectedRoute("/community")).toBe(true);
+    expect(isProtectedRoute(ROUTES.home)).toBe(false);
+  });
+  it.each(["/", "/home", "/landing", "/landing/"])(
+    "keeps %s on public Home for every session",
+    (path) => {
+      expect(resolveRoute(path, false)).toBe(ROUTES.home);
+      expect(resolveRoute(path, true)).toBe(ROUTES.home);
+    },
+  );
+
+  it.each(["/feeds", "/feed", "/community", "/milestones", "/feed/"])(
+    "canonicalizes %s and protects Feeds",
+    (path) => {
+      expect(normalizePathname(path)).toBe(ROUTES.feeds);
+      expect(resolveRoute(path, true)).toBe(ROUTES.feeds);
+      expect(resolveRoute(path, false)).toBe(ROUTES.signin);
+    },
+  );
+
+  it("sends signed-in users from sign-in to Discover", () => {
+    expect(resolveRoute(ROUTES.signin, true)).toBe(ROUTES.discover);
+    expect(resolveRoute(ROUTES.discover, false)).toBe(ROUTES.signin);
   });
 });

@@ -1,13 +1,13 @@
 import React, { Suspense, lazy, useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
-import { ROUTES, isProtectedRoute, normalizePathname } from "./routes";
+import { ROUTES, isProtectedRoute, normalizePathname, resolveRoute } from "./routes";
 
 // Route-split: each page (and its heavy deps like markdown/GitHub readers)
 // loads on demand instead of inflating the first paint.
 const About = lazy(() => import("./About"));
 const Login = lazy(() => import("./Login"));
 const Store = lazy(() => import("./Store"));
-const Landing = lazy(() => import("./Landing"));
+const HomePage = lazy(() => import("./HomePage"));
 
 function PageLoader() {
   return (
@@ -42,24 +42,17 @@ export default function Main() {
   useEffect(() => {
     if (loading) return;
 
-    const current = currentPath();
-    const normalized = normalizePathname(current);
-    const destination = user
-      ? normalized === ROUTES.root || normalized === ROUTES.signin
-        ? ROUTES.discover
-        : null
-      : normalized === ROUTES.root
-        ? ROUTES.landing
-        : isProtectedRoute(normalized)
-          ? ROUTES.signin
-          : null;
+    const current = window.location.pathname;
+    const destination = resolveRoute(current, Boolean(user));
 
-    if (destination && destination !== normalized) {
-      window.history.replaceState({}, "", destination);
-      setPath(destination);
-    } else if (normalized !== current) {
-      setPath(normalized);
+    if (destination !== current) {
+      window.history.replaceState(
+        {},
+        "",
+        `${destination}${window.location.search}${window.location.hash}`,
+      );
     }
+    if (destination !== path) setPath(destination);
   }, [loading, path, user]);
 
   if (loading) return <PageLoader />;
@@ -68,11 +61,10 @@ export default function Main() {
 
   let page: React.ReactNode;
   if (normalizedPath === ROUTES.about) page = <About />;
-  else if (normalizedPath === ROUTES.landing || (normalizedPath === ROUTES.root && !user))
-    page = <Landing />;
+  else if (normalizedPath === ROUTES.home) page = <HomePage />;
   else if (user) page = <Store key={user.id} />;
   else if (isProtectedRoute(normalizedPath) || normalizedPath === ROUTES.signin) page = <Login />;
-  else page = <Landing />;
+  else page = <HomePage />;
 
   return (
     <main className="min-h-screen">

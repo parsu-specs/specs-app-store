@@ -2,6 +2,7 @@ type BrandProps = {
   light?: boolean;
   compact?: boolean;
   monogram?: boolean;
+  text?: boolean;
   className?: string;
 };
 
@@ -9,8 +10,19 @@ export default function Brand({
   light = false,
   compact = false,
   monogram = false,
+  text = false,
   className = "",
 }: BrandProps) {
+  if (text) {
+    return (
+      <span
+        className={`font-display text-base sm:text-xl font-bold ${light ? "text-brand-foreground" : "text-foreground"} ${className}`}
+      >
+        Code<span className={light ? "text-brand-accent" : "text-primary"}>Canvas</span>
+      </span>
+    );
+  }
+
   if (monogram) {
     return (
       <span

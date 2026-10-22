@@ -1,7 +1,7 @@
 // Database row shapes (snake_case, as returned by the API / Supabase)
 // and mappers to the app's camelCase domain types. The UI never imports this.
 
-import type { AppItem, Comment, Mention, Milestone, Profile, User } from "../types";
+import type { AppItem, Comment, Mention, FeedPost, Profile, User } from "../types";
 
 export type ProfileRow = {
   id: string;
@@ -49,7 +49,7 @@ export type CommentRow = {
   viewer_has_liked?: boolean;
 };
 
-export type MilestoneRow = {
+export type FeedPostRow = {
   id: string;
   author_id: string;
   author_name: string;
@@ -112,7 +112,7 @@ export function toComment(row: CommentRow): Comment {
   };
 }
 
-export function toMilestone(row: MilestoneRow): Milestone {
+export function toFeedPost(row: FeedPostRow): FeedPost {
   return {
     id: row.id,
     authorId: row.author_id,

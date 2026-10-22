@@ -1,4 +1,4 @@
-import type { AppItem, Builder, Comment, Milestone, Profile } from "../types";
+import type { AppItem, Builder, Comment, FeedPost, Profile } from "../types";
 
 export const seedApps: AppItem[] = [
   {
@@ -306,7 +306,7 @@ export const seedComments: Record<string, Comment[]> = {
   ],
 };
 
-export const seedMilestones: Milestone[] = [
+export const seedFeedPosts: FeedPost[] = [
   {
     id: "m-1",
     authorId: "mia-santos",

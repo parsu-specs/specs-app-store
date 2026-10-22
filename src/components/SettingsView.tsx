@@ -11,12 +11,16 @@ import { getAuthRepo, getProfileRepo } from "../data/factory";
 import { resetLocalData } from "../data/local/localApps";
 import { useAuth } from "../auth/AuthProvider";
 import type { Profile } from "../data/types";
+import { confirmDisplayNameChange } from "../utils/displayName";
+import DisplayNameInput from "./DisplayNameInput";
+import { useDisplayNameConfirmation } from "./useDisplayNameConfirmation";
 
 const isLocalMode =
   ((import.meta.env.VITE_DATA_SOURCE as string | undefined) ?? "local") === "local";
 
 function UserInfoForm({ profile, onChanged }: { profile: Profile; onChanged: () => void }) {
   const { user, updateName, updateCachedProfile } = useAuth();
+  const { confirm, confirmationModal } = useDisplayNameConfirmation();
   const [name, setName] = useState(profile.name);
   const [bio, setBio] = useState(profile.bio);
   const [saving, setSaving] = useState(false);
@@ -35,6 +39,7 @@ function UserInfoForm({ profile, onChanged }: { profile: Profile; onChanged: () 
     }
     setSaving(true);
     try {
+      if (!(await confirmDisplayNameChange(getProfileRepo(), profile, name, confirm))) return;
       const updated = await getProfileRepo().updateProfile(
         user.id,
         { name: name.trim(), bio: bio.trim() },
@@ -64,10 +69,13 @@ function UserInfoForm({ profile, onChanged }: { profile: Profile; onChanged: () 
 
   return (
     <form onSubmit={save} onChange={() => setSaved(false)} className="mt-4 space-y-4">
+      {confirmationModal}
       <fieldset disabled={saving} className="space-y-4">
         <label className="block">
           <span className="mb-2 block text-sm font-black">Display name</span>
-          <Input
+          <DisplayNameInput
+            profileId={profile.id}
+            currentName={profile.name}
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoComplete="nickname"
@@ -237,7 +245,7 @@ export default function SettingsView({
 
   return (
     <div className="space-y-6">
-      <section className="toon-card toon-paper bg-panel rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
+      <section className="toon-card toon-paper bg-panel rounded-2xl p-6 pt-10 sm:p-8 sm:pt-12">
         <h2 className="text-2xl font-black">User info</h2>
         <p className="mt-2 text-sm font-bold text-muted">
           Update the information shown on your public profile.
@@ -250,7 +258,7 @@ export default function SettingsView({
           </p>
         )}
       </section>
-      <section className="toon-card toon-paper bg-panel rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
+      <section className="toon-card toon-paper bg-panel rounded-2xl p-6 pt-10 sm:p-8 sm:pt-12">
         <div className="min-w-0 flex items-center gap-2 *:min-w-0 max-w-full">
           <LockKey size={22} weight="duotone" aria-hidden="true" />
           <h2 className="text-2xl font-black">Sign-in & password</h2>
@@ -261,7 +269,7 @@ export default function SettingsView({
           <PasswordForm mode={hasPassword ? "change" : "add"} onSaved={onPasswordUpdated} />
         )}
       </section>
-      <section className="toon-card toon-paper bg-panel rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
+      <section className="toon-card toon-paper bg-panel rounded-2xl p-6 pt-10 sm:p-8 sm:pt-12">
         <div className="min-w-0 flex items-center gap-2 *:min-w-0 max-w-full">
           <Palette size={22} weight="duotone" aria-hidden="true" />
           <h2 className="text-2xl font-black">Website theme</h2>
@@ -328,7 +336,7 @@ export default function SettingsView({
       <SoundControl />
 
       {isLocalMode && (
-        <section className="toon-card toon-paper bg-panel rounded-lg p-6 pt-10 sm:p-8 sm:pt-12">
+        <section className="toon-card toon-paper bg-panel rounded-2xl p-6 pt-10 sm:p-8 sm:pt-12">
           <div className="min-w-0 flex items-center gap-2 *:min-w-0 max-w-full">
             <ArrowCounterClockwise size={22} weight="duotone" aria-hidden="true" />
             <h2 className="text-2xl font-black">Demo data</h2>

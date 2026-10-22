@@ -145,7 +145,7 @@ export type Comment = {
   viewerHasLiked?: boolean;
 };
 
-export type Milestone = {
+export type FeedPost = {
   id: string;
   authorId: string;
   authorName: string;
@@ -161,7 +161,7 @@ export type NotificationKind =
   "comment" | "reply" | "vote" | "project" | "update" | "collab" | "like";
 
 export type NotificationItem = {
-  /** Stable id: `c:<commentId>`, `vote:<appId>`, `app:<appId>`, `m:<milestoneId>`. */
+  /** Stable id: `c:<commentId>`, `vote:<appId>`, `app:<appId>`, `m:<feedPostId>`. */
   id: string;
   kind: NotificationKind;
   title: string;

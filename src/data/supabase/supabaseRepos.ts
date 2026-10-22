@@ -29,11 +29,11 @@ import { getSupabase } from "./client";
 import {
   toApp,
   toComment,
-  toMilestone,
+  toFeedPost,
   toProfile,
   type AppRow,
   type CommentRow,
-  type MilestoneRow,
+  type FeedPostRow,
 } from "../http/rows";
 import { ROUTES } from "../../pages/routes";
 
@@ -198,7 +198,7 @@ export function createSupabaseAuthRepo(): AuthRepo {
   };
 }
 
-// ── Apps / comments / milestones ────────────────────────────────────────────
+// ── Apps / comments / feed posts ────────────────────────────────────────────
 
 type VoteMap = Map<string, boolean>;
 
@@ -259,7 +259,7 @@ function toCommentRow(row: Record<string, unknown>): CommentRow {
   };
 }
 
-function toMilestoneRow(row: Record<string, unknown>): MilestoneRow {
+function toFeedPostRow(row: Record<string, unknown>): FeedPostRow {
   return {
     id: String(row["id"]),
     author_id: String(row["author_id"] ?? ""),
@@ -475,9 +475,9 @@ export function createSupabaseAppRepo(): AppRepo {
     async listVoters(appId: string, target = "app") {
       const supabase = getSupabase();
       const { data: votes, error: votesError } = await supabase
-        .from(target === "milestone" ? "milestone_cheers" : "app_votes")
+        .from(target === "feedPost" ? "milestone_cheers" : "app_votes")
         .select("user_id")
-        .eq(target === "milestone" ? "milestone_id" : "app_id", appId);
+        .eq(target === "feedPost" ? "milestone_id" : "app_id", appId);
       if (votesError) throw new Error(votesError.message);
       const ids = [...new Set(((votes ?? []) as { user_id: string }[]).map((v) => v.user_id))];
       if (ids.length === 0) return [];
@@ -606,7 +606,8 @@ export function createSupabaseAppRepo(): AppRepo {
       return out;
     },
 
-    async listMilestones(userId?: string) {
+    // Preserve existing database tables and RPCs; expose feed terminology to the app.
+    async listFeedPosts(userId?: string) {
       const supabase = getSupabase();
       const { data, error } = await supabase
         .from("milestones")
@@ -614,7 +615,7 @@ export function createSupabaseAppRepo(): AppRepo {
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
       const rows = (data ?? []).map((r) =>
-        toMilestone(toMilestoneRow(r as Record<string, unknown>)),
+        toFeedPost(toFeedPostRow(r as Record<string, unknown>)),
       );
       const uid = (await authUid()) ?? userId ?? null;
       let cheered = new Set<string>();
@@ -634,7 +635,7 @@ export function createSupabaseAppRepo(): AppRepo {
       return rows.map((r) => ({ ...r, viewerHasCheered: cheered.has(r.id) }));
     },
 
-    async postMilestone(author: User, body: string, appId?: string) {
+    async postFeedPost(author: User, body: string, appId?: string) {
       const text = body.trim();
       if (!text) throw new Error("Update cannot be empty.");
       if (text.length > 280) throw new Error("Keep updates under 280 characters.");
@@ -665,16 +666,16 @@ export function createSupabaseAppRepo(): AppRepo {
         .single();
       if (error || !data) throw new Error(error?.message ?? "Could not post update.");
       return {
-        ...toMilestone(toMilestoneRow(data as Record<string, unknown>)),
+        ...toFeedPost(toFeedPostRow(data as Record<string, unknown>)),
         viewerHasCheered: false,
       };
     },
 
-    async deleteMilestone(milestoneId: string, requester: User): Promise<void> {
+    async deleteFeedPost(feedPostId: string, requester: User): Promise<void> {
       const { data, error } = await getSupabase()
         .from("milestones")
         .delete()
-        .eq("id", milestoneId)
+        .eq("id", feedPostId)
         .eq("author_id", requester.id)
         .select("id")
         .maybeSingle();
@@ -682,14 +683,14 @@ export function createSupabaseAppRepo(): AppRepo {
       if (!data) throw new Error("Update not found or you cannot delete it.");
     },
 
-    async toggleMilestoneCheer(milestoneId: string, _userId: string) {
+    async toggleFeedPostCheer(feedPostId: string, _userId: string) {
       const { data, error } = await getSupabase().rpc("toggle_milestone_cheer", {
-        p_milestone_id: milestoneId,
+        p_milestone_id: feedPostId,
       });
       if (error) throw new Error(error.message);
       const payload = data as { row: Record<string, unknown>; liked: boolean };
       if (!payload?.row) throw new NotFoundError("Update not found.");
-      return { ...toMilestone(toMilestoneRow(payload.row)), viewerHasCheered: payload.liked };
+      return { ...toFeedPost(toFeedPostRow(payload.row)), viewerHasCheered: payload.liked };
     },
   };
 }
@@ -745,7 +746,8 @@ export function createSupabaseProfileRepo(): ProfileRepo {
         .ilike("name", clean)
         .limit(1)
         .maybeSingle();
-      if (error || !data) return null;
+      if (error) throw new Error("Could not check display name availability. Try again.");
+      if (!data) return null;
       const row = data as Record<string, unknown>;
       return toProfile({
         id: String(row["id"]),

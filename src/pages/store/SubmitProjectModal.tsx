@@ -410,11 +410,11 @@ export default function SubmitProjectModal({
                           Select all
                         </label>
                       </div>
-                      <div className="scrollbar-minimal mt-2 max-h-64 space-y-1 overflow-y-auto rounded-lg border-2 border-divider p-2">
+                      <div className="scrollbar-minimal mt-2 max-h-64 space-y-1 overflow-y-auto rounded-xl border-2 border-divider p-2">
                         {repositoryFiles.map((path) => (
                           <label
                             key={path}
-                            className="min-w-0 flex items-start gap-2 rounded-md px-2 py-1.5 text-sm font-bold hover:bg-background *:min-w-0 max-w-full"
+                            className="min-w-0 flex items-start gap-2 rounded-lg px-2 py-1.5 text-sm font-bold hover:bg-background *:min-w-0 max-w-full"
                           >
                             <Checkbox
                               checked={selectedRepositoryFiles.includes(path)}
@@ -462,7 +462,7 @@ export default function SubmitProjectModal({
               {docs.length > 50000 && (
                 <div
                   role="status"
-                  className="min-w-0 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border-2 border-outline bg-secondary/40 p-3 *:min-w-0 max-w-full"
+                  className="min-w-0 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-outline bg-secondary/40 p-3 *:min-w-0 max-w-full"
                 >
                   <p className="text-sm font-bold">
                     This document is {docs.length.toLocaleString()} characters. It exceeds the

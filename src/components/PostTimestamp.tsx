@@ -1,13 +1,14 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { formatMilestoneAge } from "../utils/time";
+import { formatRelativeAge } from "../utils/time";
 import { Button } from "./Button";
+import { Clock } from "@phosphor-icons/react";
 
-const FeedTimeContext = createContext<number | null>(null);
+const PostTimeContext = createContext<number | null>(null);
 
-/** One clock for the feed; only timestamp consumers update on each tick. */
-export function MilestoneTimeProvider({ children }: { children: ReactNode }) {
-  const parentNow = useContext(FeedTimeContext);
+/** One clock for posts, comments, and projects; only timestamp consumers update on each tick. */
+export function PostTimeProvider({ children }: { children: ReactNode }) {
+  const parentNow = useContext(PostTimeContext);
   const hasParentClock = parentNow !== null;
   const [now, setNow] = useState(Date.now);
 
@@ -29,17 +30,17 @@ export function MilestoneTimeProvider({ children }: { children: ReactNode }) {
     };
   }, [hasParentClock]);
 
-  return <FeedTimeContext.Provider value={parentNow ?? now}>{children}</FeedTimeContext.Provider>;
+  return <PostTimeContext.Provider value={parentNow ?? now}>{children}</PostTimeContext.Provider>;
 }
 
-export default function MilestoneStamp({
+export default function PostTimestamp({
   createdAt,
-  subject = "milestone",
+  subject = "post",
 }: {
   createdAt: string;
   subject?: string;
 }) {
-  const now = useContext(FeedTimeContext);
+  const now = useContext(PostTimeContext);
   const [showExact, setShowExact] = useState(false);
   const exact = useMemo(() => {
     const date = new Date(createdAt);
@@ -47,14 +48,14 @@ export default function MilestoneStamp({
       ? { text: date.toLocaleString(), iso: date.toISOString() }
       : null;
   }, [createdAt]);
-  const relative = formatMilestoneAge(createdAt, now ?? Date.now());
+  const relative = formatRelativeAge(createdAt, now ?? Date.now());
   if (!exact || !relative) return null;
 
   return (
     <Button
       type="button"
       variant="text"
-      className="cursor-pointer text-left text-xs font-bold text-muted"
+      className="inline-flex items-center gap-1 cursor-pointer text-left text-xs font-bold text-muted"
       onClick={() => setShowExact((value) => !value)}
       aria-pressed={showExact}
       aria-label={
@@ -66,6 +67,7 @@ export default function MilestoneStamp({
         showExact ? "Click to show relative time" : `${exact.text} — click to show date and time`
       }
     >
+      <Clock size={14} weight="duotone" aria-hidden="true" />
       <time dateTime={exact.iso}>{showExact ? exact.text : relative}</time>
     </Button>
   );

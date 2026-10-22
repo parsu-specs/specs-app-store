@@ -1,9 +1,8 @@
 import { ButtonLink, Button } from "../components/Button";
 import { useState } from "react";
-import { EnvelopeSimple, Sparkle } from "@phosphor-icons/react";
+import { EnvelopeSimple, Binoculars, RocketLaunch, UsersThree } from "@phosphor-icons/react";
 import Avatar from "../components/Avatar";
 import ImageViewer from "../components/ImageViewer";
-import Brand from "../components/Brand";
 import Footer from "../components/Footer";
 import SiteHeader from "../components/SiteHeader";
 import { APP_INFO, CONTACT_EMAIL, TEAM } from "../data/team";
@@ -15,103 +14,137 @@ export default function About() {
     <div className="min-h-screen">
       <SiteHeader page="about" />
 
-      <header className="mx-auto max-w-6xl px-5 pb-4 pt-6 text-center sm:px-8 sm:pt-8 lg:pt-10">
-        <Brand className="min-w-0 mb-6 inline-flex *:min-w-0 max-w-full" />
-        <p className="min-w-0 inline-flex -rotate-2 items-center gap-2 border-2 border-dashed border-primary px-3 py-1 text-xs font-black uppercase text-primary mx-auto bg-surface max-w-full">
-          About the app
-        </p>
-        <h1 className="mx-auto mt-4 max-w-3xl text-4xl font-black sm:text-5xl">{APP_INFO.name}</h1>
-        <p className="mx-auto mt-3 max-w-2xl text-lg font-bold text-muted">{APP_INFO.tagline}</p>
-        <p className="mx-auto mt-5 max-w-3xl leading-8 text-body">{APP_INFO.description}</p>
-      </header>
+      <main className="mx-auto max-w-6xl px-5 pt-6 sm:px-8 sm:pt-8 lg:pt-10">
+        <header className="grid min-w-0 gap-8 pb-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-center lg:gap-16 lg:pb-16">
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase tracking-widest text-primary">
+              About {APP_INFO.name}
+            </p>
+            <h1 className="mt-4 max-w-2xl text-4xl font-black leading-tight sm:text-6xl">
+              A home for
+              <br className="hidden sm:block" />{" "}
+              <span className="text-primary">what you build.</span>
+            </h1>
+            <p className="mt-6 max-w-xl text-lg leading-8 text-body">{APP_INFO.description}</p>
+          </div>
+          <aside
+            className="toon-card toon-paper min-w-0 bg-secondary p-7 pt-10 sm:p-8 sm:pt-12"
+            aria-label="Our purpose"
+          >
+            <RocketLaunch
+              size={40}
+              weight="duotone"
+              className="text-foreground"
+              aria-hidden="true"
+            />
+            <p className="mt-5 text-2xl font-black leading-snug">
+              Small projects.
+              <br />
+              Shared possibilities.
+            </p>
+            <p className="mt-4 leading-7 text-body">
+              Built for the student who has an idea, a work in progress, or something ready to
+              share.
+            </p>
+            <p className="mt-6 border-t-2 border-dashed border-divider pt-4 text-xs font-black uppercase tracking-wider">
+              Student-made. Community-powered.
+            </p>
+          </aside>
+        </header>
 
-      <section className="mx-auto max-w-6xl px-5 py-10 sm:px-8" aria-label="Features">
-        <div className="mb-6 text-center">
-          <p className="text-xs font-black uppercase text-primary">What you can do here</p>
-          <h2 className="mt-1 text-2xl font-black">Everything in one place.</h2>
-        </div>
-        <div className="min-w-0 grid *:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-6 max-w-full">
-          {APP_INFO.features.map((f, i) => (
-            <article
-              key={f.title}
-              className={`toon-card toon-paper bg-panel rounded-lg p-6 pt-10 ${i % 3 === 0 ? "-rotate-1" : i % 3 === 1 ? "rotate-1" : "rotate-[-.5deg]"}`}
-            >
-              <h3 className="text-xl font-black">{f.title}</h3>
-              <p className="mt-2 leading-7 text-body">{f.body}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+        <section className="border-t-2 border-dashed border-divider py-12" aria-label="Features">
+          <div className="mb-8">
+            <p className="text-xs font-black uppercase text-primary">What you can do here</p>
+            <h2 className="mt-1 text-2xl font-black">From first idea to shared progress.</h2>
+          </div>
+          <div className="min-w-0 grid *:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-6 max-w-full">
+            {APP_INFO.features.map((f, i) => (
+              <article key={f.title} className="min-w-0 border-l-2 border-primary/30 pl-5 py-2">
+                <div className="mb-5 text-primary" aria-hidden="true">
+                  {i === 0 ? (
+                    <Binoculars size={30} weight="duotone" />
+                  ) : i === 1 ? (
+                    <RocketLaunch size={30} weight="duotone" />
+                  ) : (
+                    <UsersThree size={30} weight="duotone" />
+                  )}
+                </div>
+                <h3 className="text-xl font-black">{f.title}</h3>
+                <p className="mt-2 leading-7 text-body">{f.body}</p>
+              </article>
+            ))}
+          </div>
+        </section>
 
-      <section className="mx-auto max-w-6xl px-5 py-10 sm:px-8" aria-label="Team">
-        <div className="mb-6 text-center">
-          <p className="text-xs font-black uppercase text-primary">The builders</p>
-          <h2 className="mt-1 text-2xl font-black">Developers of the Specs App Store.</h2>
-        </div>
-        <div className="min-w-0 grid *:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-6 max-w-full">
-          {TEAM.map((member) => (
-            <article key={member.name} className="toon-card rounded-lg bg-surface p-6 text-center">
-              <div className="min-w-0 flex justify-center *:min-w-0 max-w-full">
-                {member.imageUrl ? (
-                  <Button
-                    variant="plain"
-                    type="button"
-                    onClick={() =>
-                      setLightbox({ src: member.imageUrl as string, name: member.name })
-                    }
-                    aria-label={`View ${member.name}'s photo full size`}
-                    title="View full size"
-                    className="rounded-full transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary"
-                  >
+        <section className="border-t-2 border-dashed border-divider py-12" aria-label="Team">
+          <div className="mb-8">
+            <p className="text-xs font-black uppercase text-primary">The builders</p>
+            <h2 className="mt-1 text-2xl font-black">Meet the people behind the canvas.</h2>
+          </div>
+          <div className="min-w-0 grid *:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-6 max-w-full">
+            {TEAM.map((member) => (
+              <article
+                key={member.name}
+                className="toon-card min-w-0 rounded-2xl bg-surface p-6 sm:p-8"
+              >
+                <div className="min-w-0 flex *:min-w-0 max-w-full">
+                  {member.imageUrl ? (
+                    <Button
+                      variant="plain"
+                      type="button"
+                      onClick={() =>
+                        setLightbox({ src: member.imageUrl as string, name: member.name })
+                      }
+                      aria-label={`View ${member.name}'s photo full size`}
+                      title="View full size"
+                      className="rounded-full transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary"
+                    >
+                      <Avatar
+                        name={member.name}
+                        color={member.color}
+                        imageUrl={member.imageUrl}
+                        size="xl"
+                      />
+                    </Button>
+                  ) : (
                     <Avatar
                       name={member.name}
                       color={member.color}
                       imageUrl={member.imageUrl}
                       size="xl"
                     />
-                  </Button>
-                ) : (
-                  <Avatar
-                    name={member.name}
-                    color={member.color}
-                    imageUrl={member.imageUrl}
-                    size="xl"
-                  />
-                )}
-              </div>
-              <h3 className="mt-4 text-xl font-black">{member.name}</h3>
-              <p className="mt-1 text-sm font-black uppercase text-primary">{member.role}</p>
-              <p className="mt-2 text-sm leading-6 text-muted">{member.bio}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+                  )}
+                </div>
+                <h3 className="mt-4 text-xl font-black">{member.name}</h3>
+                <p className="mt-1 text-sm font-black uppercase text-primary">{member.role}</p>
+                <p className="mt-2 text-sm leading-6 text-muted">{member.bio}</p>
+              </article>
+            ))}
+          </div>
+        </section>
 
-      <section className="mx-auto max-w-3xl px-5 py-10 sm:px-8" aria-label="Contact">
-        <div className="mb-6 text-center">
-          <p className="text-xs font-black uppercase text-primary">Contact</p>
-          <h2 className="mt-1 text-2xl font-black">Suggestions, concerns, or bug reports.</h2>
-          <p className="mt-2 font-bold text-muted">Reach us directly — we read everything.</p>
-        </div>
-        <div className="toon-card toon-paper rounded-lg bg-info p-6 pt-10 text-center sm:p-8 sm:pt-12">
-          <EnvelopeSimple size={40} weight="duotone" className="mx-auto text-primary" />
-          <p className="mt-4 font-bold text-body">Email us anytime at</p>
+        <section
+          className="toon-card mb-4 flex min-w-0 flex-col gap-6 rounded-2xl bg-info p-6 sm:p-8 md:flex-row md:items-center md:justify-between"
+          aria-labelledby="contact-heading"
+        >
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase tracking-wider text-primary">Get in touch</p>
+            <h2 id="contact-heading" className="mt-2 text-2xl font-black">
+              Help shape what comes next.
+            </h2>
+            <p className="mt-2 leading-7 text-body">
+              Have an idea, a question, or a bug to report? We'd love to hear it.
+            </p>
+          </div>
           <ButtonLink
-            variant="plain"
+            variant="secondary"
             href={`mailto:${CONTACT_EMAIL}`}
-            className="mt-1 inline-block break-all text-xl font-black text-primary underline decoration-2 underline-offset-4 sm:text-2xl"
+            className="max-w-full shrink-0"
           >
-            {CONTACT_EMAIL}
+            <EnvelopeSimple size={22} weight="duotone" aria-hidden="true" /> Email the team
           </ButtonLink>
-        </div>
-      </section>
-
-      <div
-        className="min-w-0 pointer-events-none flex justify-center *:min-w-0 max-w-full"
-        aria-hidden="true"
-      >
-        <Sparkle size={40} weight="duotone" className="text-accent" />
-      </div>
+        </section>
+      </main>
 
       {lightbox && (
         <ImageViewer
