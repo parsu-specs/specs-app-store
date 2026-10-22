@@ -1,4 +1,5 @@
 import { createPortal } from "react-dom";
+import { useEffect } from "react";
 import {
   Gear,
   MagnifyingGlass,
@@ -28,6 +29,26 @@ import ProjectPage from "./store/ProjectPage";
 import SettingsPage from "./store/SettingsPage";
 
 export default function Store() {
+  useEffect(() => {
+    const root = document.documentElement;
+    const themeColor = document.createElement("meta");
+    themeColor.name = "theme-color";
+    const syncThemeColor = () => {
+      themeColor.content = getComputedStyle(root).getPropertyValue("--color-primary").trim();
+    };
+    syncThemeColor();
+    document.head.appendChild(themeColor);
+    const observer = new MutationObserver(syncThemeColor);
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ["data-palette", "data-mode", "style"],
+    });
+    return () => {
+      observer.disconnect();
+      themeColor.remove();
+    };
+  }, []);
+
   const store = useStoreController();
   const {
     accountMenuOpen,
