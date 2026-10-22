@@ -5,6 +5,7 @@ import { useAuth } from "../auth/AuthProvider";
 import Brand from "../components/Brand";
 import { ButtonLink, Button } from "../components/Button";
 import Input from "../components/Input";
+import DisplayNameInput, { type DisplayNameStatus } from "../components/DisplayNameInput";
 import Turnstile from "../components/Turnstile";
 import { getAuthRepo, getProfileRepo } from "../data/factory";
 import { getSupabase } from "../data/supabase/client";
@@ -102,6 +103,7 @@ export default function Login() {
   const { signin, signup, signinWithGoogleAccount } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [name, setName] = useState("");
+  const [nameStatus, setNameStatus] = useState<DisplayNameStatus>("idle");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -127,6 +129,14 @@ export default function Login() {
     // Tokens are single-use: without a fresh one the server rejects the call.
     if (turnstileSiteKey && !captchaToken) {
       setError("Complete the human check first.");
+      return;
+    }
+    if (mode === "signup" && nameStatus === "taken") {
+      setError("That display name is already taken. Pick another.");
+      return;
+    }
+    if (mode === "signup" && nameStatus === "checking") {
+      setError("Checking display name availability…");
       return;
     }
     setBusy(true);
@@ -327,14 +337,16 @@ export default function Login() {
             {mode === "signup" && (
               <label className="block">
                 <span className="mb-2 block text-xs font-black uppercase">Display name</span>
-                <Input
+                <DisplayNameInput
                   value={name}
+                  profileId=""
+                  currentName=""
+                  onStatusChange={setNameStatus}
                   onChange={(e) => setName(e.target.value)}
                   type="text"
                   autoComplete="nickname"
                   maxLength={40}
                   placeholder="what should we call you?"
-
                   required
                 />
               </label>
@@ -402,7 +414,14 @@ export default function Login() {
                 {error}
               </p>
             )}
-            <Button type="submit" fullWidth>
+            <Button
+              type="submit"
+              fullWidth
+              disabled={
+                busy ||
+                (mode === "signup" && (nameStatus === "taken" || nameStatus === "checking"))
+              }
+            >
               {busy ? "Please wait…" : mode === "signup" ? "Create account" : "Continue"}{" "}
               <ArrowRight size={20} weight="bold" />
             </Button>

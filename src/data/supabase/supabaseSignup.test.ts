@@ -12,8 +12,23 @@ type SignUpResult = {
   error: { message: string } | null;
 };
 
+// The signup flow pre-checks display-name availability against profiles.
+function mockProfileNameLookup(profile: { id: string } | null) {
+  const maybeSingle = vi.fn().mockResolvedValue({ data: profile, error: null });
+  return {
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        ilike: vi.fn(() => ({
+          limit: vi.fn(() => ({ maybeSingle })),
+        })),
+      })),
+    })),
+  };
+}
+
 function mockSignUp(result: SignUpResult) {
   vi.mocked(getSupabase).mockReturnValue({
+    ...mockProfileNameLookup(null),
     auth: { signUp: vi.fn().mockResolvedValue(result) },
   } as never);
 }
@@ -84,6 +99,37 @@ describe("supabase signup duplicate detection", () => {
     });
     const user = await createSupabaseAuthRepo().signup("New", "new@x.com", "secret1");
     expect(user.id).toBe("u9");
+  });
+});
+
+describe("supabase signup display-name pre-check", () => {
+  it("rejects a name owned by an existing profile before calling auth.signUp", async () => {
+    const signUp = vi.fn();
+    vi.mocked(getSupabase).mockReturnValue({
+      ...mockProfileNameLookup({ id: "p1" }),
+      auth: { signUp },
+    } as never);
+    await expect(createSupabaseAuthRepo().signup("Ann", "a@x.com", "secret1")).rejects.toThrow(
+      "display name is already taken",
+    );
+    expect(signUp).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a failed availability lookup instead of signing up blind", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: { message: "boom" } });
+    vi.mocked(getSupabase).mockReturnValue({
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          ilike: vi.fn(() => ({
+            limit: vi.fn(() => ({ maybeSingle })),
+          })),
+        })),
+      })),
+      auth: { signUp: vi.fn() },
+    } as never);
+    await expect(createSupabaseAuthRepo().signup("Ann", "a@x.com", "secret1")).rejects.toThrow(
+      "Could not check display name availability",
+    );
   });
 });
 

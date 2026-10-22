@@ -63,6 +63,17 @@ export function createHttpAuthRepo(): AuthRepo {
     },
 
     async signup(name: string, email: string, password: string): Promise<User> {
+      // Pre-check with the same lookup the profile repo uses, so a taken
+      // display name is flagged before the server creates the account. The
+      // server still owns final validation.
+      let nameTaken = false;
+      try {
+        await api(`/profiles/by-name/${encodeURIComponent(name.trim())}`);
+        nameTaken = true; // The endpoint only resolves when the name exists.
+      } catch (e) {
+        if (!(e instanceof Error && e.message.includes("404"))) throw e;
+      }
+      if (nameTaken) throw new Error("That display name is already taken. Try another.");
       const { user, token } = await api<{
         user: { id: string; email: string; name: string };
         token: string;

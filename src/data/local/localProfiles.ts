@@ -19,7 +19,7 @@ function delay(ms = 80): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
-function loadProfiles(): Profile[] {
+export function loadProfiles(): Profile[] {
   try {
     const raw = localStorage.getItem(PROFILES_KEY);
     if (!raw) {

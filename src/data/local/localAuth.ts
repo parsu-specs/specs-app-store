@@ -1,4 +1,5 @@
 import { MOCK_USERS } from "../../auth/mockCredentials";
+import { loadProfiles } from "./localProfiles";
 import {
   AuthError,
   type AuthRepo,
@@ -150,6 +151,17 @@ export function createLocalAuthRepo(): AuthRepo {
       if (password.length < 6) throw new Error("Password must be at least 6 characters.");
       if (emailTaken(cleanEmail))
         throw new Error("That email is already registered. Sign in instead.");
+      // Display names are unique across the whole local identity domain:
+      // profiles (including seeds), already-created accounts, Google users,
+      // and renames stored in the override map. Profiles alone would miss the
+      // window right after signup, before ensureUserProfile adds the row.
+      const lowerName = cleanName.toLowerCase();
+      const nameClash =
+        loadProfiles().some((p) => p.name.trim().toLowerCase() === lowerName) ||
+        loadLocalUsers().some((u) => u.name.trim().toLowerCase() === lowerName) ||
+        Object.values(loadGoogleUsers()).some((r) => r.name.trim().toLowerCase() === lowerName) ||
+        Object.values(loadNameOverrides()).some((n) => n.trim().toLowerCase() === lowerName);
+      if (nameClash) throw new Error("That display name is already taken. Try another.");
       const salt = randomSalt();
       const account: LocalAccount = {
         id: `local-${randomSalt()}`,

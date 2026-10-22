@@ -3,13 +3,23 @@ import { Check, CircleNotch, X } from "@phosphor-icons/react";
 import Input from "./Input";
 import { getProfileRepo } from "../data/factory";
 
+export type DisplayNameStatus = "idle" | "checking" | "available" | "taken" | "error";
+
 type Props = Omit<ComponentProps<typeof Input>, "value"> & {
   value: string;
   profileId: string;
   currentName: string;
+  /** Reports availability changes so forms can block submit on "taken". */
+  onStatusChange?: (status: DisplayNameStatus) => void;
 };
 
-export default function DisplayNameInput({ value, profileId, currentName, ...props }: Props) {
+export default function DisplayNameInput({
+  value,
+  profileId,
+  currentName,
+  onStatusChange,
+  ...props
+}: Props) {
   const statusId = useId();
   const name = value.trim();
   const [result, setResult] = useState<{
@@ -46,6 +56,10 @@ export default function DisplayNameInput({ value, profileId, currentName, ...pro
       window.clearTimeout(timer);
     };
   }, [name, profileId, valid, unchanged]);
+
+  useEffect(() => {
+    onStatusChange?.(status);
+  }, [status, onStatusChange]);
 
   const message =
     status === "taken"

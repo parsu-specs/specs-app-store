@@ -62,3 +62,38 @@ it("debounces lookup and ignores a stale response after the name changes", async
   expect(container.querySelector("input")?.getAttribute("aria-invalid")).toBe("true");
   expect(container.textContent).toContain("already taken");
 });
+
+it("reports status changes to the parent through onStatusChange", async () => {
+  vi.useFakeTimers();
+  const report = vi.fn();
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  cleanup = () => {
+    act(() => root.unmount());
+    container.remove();
+  };
+  const render = (value: string) =>
+    act(() =>
+      root.render(
+        createElement(DisplayNameInput, {
+          value,
+          profileId: "",
+          currentName: "",
+          onChange: () => {},
+          onStatusChange: report,
+        }),
+      ),
+    );
+  lookup.mockResolvedValueOnce({ id: "someone-else" }).mockResolvedValueOnce(null);
+  render("Taken Name");
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(400);
+  });
+  expect(report).toHaveBeenLastCalledWith("taken");
+  render("Free Name");
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(400);
+  });
+  expect(report).toHaveBeenLastCalledWith("available");
+});

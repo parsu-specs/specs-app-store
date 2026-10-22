@@ -88,6 +88,17 @@ export function createSupabaseAuthRepo(): AuthRepo {
     ): Promise<User> {
       const cleanName = name.trim().slice(0, 40);
       if (!cleanName) throw new Error("Name is required.");
+      // Display names are unique across profiles: check before creating the
+      // auth account so nobody signs up with a doomed name. The unique index
+      // behind ensureUserProfile stays as the race-condition backstop.
+      const { data: clash, error: clashError } = await getSupabase()
+        .from("profiles")
+        .select("id")
+        .ilike("name", cleanName)
+        .limit(1)
+        .maybeSingle();
+      if (clashError) throw new Error("Could not check display name availability. Try again.");
+      if (clash) throw new Error("That display name is already taken. Try another.");
       const { data, error } = await getSupabase().auth.signUp({
         email: email.trim(),
         password,

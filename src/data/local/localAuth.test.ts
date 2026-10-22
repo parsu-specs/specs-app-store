@@ -50,6 +50,41 @@ describe("duplicate emails", () => {
   });
 });
 
+describe("duplicate display names", () => {
+  it("rejects a signup name already owned by a seed profile, case-insensitively", async () => {
+    const auth = createLocalAuthRepo();
+    await expect(auth.signup("Mia Santos", "new1@example.com", "secret123")).rejects.toThrow(
+      "That display name is already taken. Try another.",
+    );
+    await expect(auth.signup("MIA SANTOS", "new2@example.com", "secret123")).rejects.toThrow(
+      "That display name is already taken. Try another.",
+    );
+  });
+
+  it("rejects a name taken by an earlier signup before its profile row exists", async () => {
+    const auth = createLocalAuthRepo();
+    await auth.signup("Ann Lee", "ann@example.com", "secret123");
+    await expect(auth.signup("Ann Lee", "other@example.com", "secret123")).rejects.toThrow(
+      "That display name is already taken. Try another.",
+    );
+  });
+
+  it("rejects a name taken by a Google user, and still creates fresh names", async () => {
+    const auth = createLocalAuthRepo();
+    await auth.signinWithGoogleAccount({
+      sub: "g-9",
+      email: "nia@example.com",
+      name: "Nia Nguyen",
+      emailVerified: true,
+    });
+    await expect(auth.signup("Nia Nguyen", "x@example.com", "secret123")).rejects.toThrow(
+      "That display name is already taken. Try another.",
+    );
+    const user = await auth.signup("Brand New Name", "fresh@example.com", "secret123");
+    expect(user.name).toBe("Brand New Name");
+  });
+});
+
 describe("password recovery", () => {
   it("sets a new password for the signed-in email account", async () => {
     const auth = createLocalAuthRepo();
