@@ -15,10 +15,10 @@ import {
   LinkSimple,
   PencilSimple,
   Trash,
-  X,
 } from "@phosphor-icons/react";
 import Avatar from "./Avatar";
 import ImageViewer from "./ImageViewer";
+import SortableThumbnails from "./SortableThumbnails";
 import CollaboratorPicker from "./CollaboratorPicker";
 import Comments from "./Comments";
 import MentionInput from "./MentionInput";
@@ -770,32 +770,11 @@ export default function ProjectView({
               </p>
             )}
             {eShots.length > 0 && (
-              <div className="min-w-0 mt-3 grid *:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-3 max-w-full">
-                {eShots.map((src, i) => (
-                  <div key={src.slice(0, 32) + i} className="relative">
-                    <img
-                      src={src}
-                      alt={`Upload preview ${i + 1}`}
-                      className="h-24 w-full rounded-xl border-[3px] border-outline object-cover"
-                    />
-                    {i === 0 && (
-                      <span className="absolute left-2 top-2 rounded-full border-2 border-outline bg-secondary px-2 py-0.5 text-[10px] font-black">
-                        COVER
-                      </span>
-                    )}
-                    <Button
-                      variant="icon"
-                      size="compact"
-                      type="button"
-                      onClick={() => setEShots((prev) => prev.filter((_, j) => j !== i))}
-                      aria-label={`Remove image ${i + 1}`}
-                      className="absolute right-2 top-2"
-                    >
-                      <X size={14} weight="bold" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+              <SortableThumbnails
+                images={eShots}
+                onReorder={setEShots}
+                onRemove={(i) => setEShots((prev) => prev.filter((_, j) => j !== i))}
+              />
             )}
           </div>
           <div className="@min-[36rem]/content:col-span-2">

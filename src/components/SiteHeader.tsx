@@ -16,10 +16,10 @@ export default function SiteHeader() {
           aria-label="CodeCanvas home page"
         >
           <span className="block sm:hidden">
-            <Brand light monogram className="ml-2 text-2xl!" />
+            <Brand onPrimary monogram className="ml-2 text-2xl!" />
           </span>
           <span className="hidden sm:block">
-            <Brand light text className="text-2xl!" />
+            <Brand onPrimary text className="text-2xl!" />
           </span>
         </ButtonLink>
         <div className="flex shrink-0 items-center gap-2">

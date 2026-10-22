@@ -6,7 +6,6 @@ import {
   Images,
   LinkSimple,
   PencilSimple,
-  X,
 } from "@phosphor-icons/react";
 import MarkdownTextarea from "../../components/MarkdownTextarea";
 import PagedMarkdown from "../../components/PagedMarkdown";
@@ -14,6 +13,7 @@ import { Button, ButtonLabel } from "../../components/Button";
 import Input, { FileInput, Checkbox } from "../../components/Input";
 import Dropdown from "../../components/Dropdown";
 import Modal from "../../components/Modal";
+import SortableThumbnails from "../../components/SortableThumbnails";
 import CollaboratorPicker from "../../components/CollaboratorPicker";
 import MentionInput from "../../components/MentionInput";
 import { isGitHubRepositoryUrl } from "../../utils/readGitHubReadme";
@@ -242,36 +242,15 @@ export default function SubmitProjectModal({
             </p>
           )}
           {screenshots.length > 0 && (
-            <div className="min-w-0 mt-3 grid *:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-3 max-w-full">
-              {screenshots.map((src, i) => (
-                <div key={src.slice(0, 32) + i} className="relative">
-                  <img
-                    src={src}
-                    alt={`Upload preview ${i + 1}`}
-                    className="h-24 w-full rounded-xl border-[3px] border-outline object-cover"
-                  />
-                  {i === 0 && (
-                    <span className="absolute left-2 top-2 rounded-full border-2 border-outline bg-secondary px-2 py-0.5 text-[10px] font-black">
-                      COVER
-                    </span>
-                  )}
-                  <Button
-                    variant="icon"
-                    size="compact"
-                    type="button"
-                    onClick={() => setScreenshots((prev) => prev.filter((_, j) => j !== i))}
-                    aria-label={`Remove image ${i + 1}`}
-                    className="absolute right-2 top-2"
-                  >
-                    <X size={14} weight="bold" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+            <SortableThumbnails
+              images={screenshots}
+              onReorder={setScreenshots}
+              onRemove={(i) => setScreenshots((prev) => prev.filter((_, j) => j !== i))}
+            />
           )}
           <span className="mt-2 block text-xs text-body">
-            Any photo from your gallery (iPhone HEIC not yet supported), compressed on-device. First
-            image becomes the card cover.
+            Any photo from your gallery (iPhone HEIC not yet supported), compressed on-device. Drag
+            a thumbnail to reorder — the first image becomes the card cover.
           </span>
         </div>
         <div className="@min-[36rem]/content:col-span-2">
