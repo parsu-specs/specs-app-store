@@ -4,6 +4,7 @@ import type { GoogleAccount } from "../data/repositories";
 import type { Profile, User } from "../data/types";
 import { cacheProfile, loadCachedProfile, setActiveViewer } from "../utils/viewerCache";
 import { initializePalette, resolvePalette, setPalette } from "../utils/palette";
+import { debouncedFeedVotes, debouncedVotes } from "../utils/debouncedVotes";
 
 type AuthContext = {
   user: User | null;
@@ -36,6 +37,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const profileRequest = useRef<{ user: User; promise: Promise<void> } | null>(null);
 
   const changeSession = useCallback((session: User | null) => {
+    const previousId = userRef.current?.id;
+    if (previousId && previousId !== session?.id) {
+      debouncedVotes.cancelUser(previousId);
+      debouncedFeedVotes.cancelUser(previousId);
+    }
     profileRevision.current++;
     userRef.current = session;
     setActiveViewer(session?.id ?? null);
@@ -135,6 +141,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signout = async () => {
+    if (userRef.current) {
+      debouncedVotes.cancelUser(userRef.current.id);
+      debouncedFeedVotes.cancelUser(userRef.current.id);
+    }
     try {
       await getAuthRepo().signout();
     } finally {

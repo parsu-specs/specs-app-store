@@ -33,14 +33,19 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, E
   render(): React.ReactNode {
     if (this.state.error) {
       return (
-        <div role="alert" className="toon-card toon-paper bg-panel rounded-2xl p-10 text-center">
-          <WarningCircle size={36} weight="duotone" className="mx-auto text-danger" />
-          <h3 className="mt-3 text-xl font-black">This {this.props.name} section crashed</h3>
-          <p className="mt-1 font-bold text-muted">Your work is safe — try loading it again.</p>
-          <Button variant="secondary" size="small" onClick={this.retry} className="mt-5">
-            <ArrowCounterClockwise size={18} weight="bold" />
-            Try again
-          </Button>
+        <div className="flex min-h-[calc(100dvh-12rem)] items-center justify-center p-4">
+          <div
+            role="alert"
+            className="toon-card toon-paper w-full max-w-lg bg-panel rounded-2xl p-6 text-center sm:p-10"
+          >
+            <WarningCircle size={36} weight="duotone" className="mx-auto text-danger" />
+            <h3 className="mt-3 text-xl font-black">This {this.props.name} section crashed</h3>
+            <p className="mt-1 font-bold text-muted">Your work is safe, try loading it again.</p>
+            <Button variant="secondary" size="small" onClick={this.retry} className="mt-5">
+              <ArrowCounterClockwise size={18} weight="bold" />
+              Try again
+            </Button>
+          </div>
         </div>
       );
     }

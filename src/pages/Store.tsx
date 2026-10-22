@@ -1,6 +1,8 @@
+import ErrorNotice from "../components/ErrorNotice";
 import { createPortal } from "react-dom";
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Plus,
   Gear,
   MagnifyingGlass,
   Newspaper,
@@ -17,10 +19,12 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import NotificationBell from "../components/NotificationBell";
 import Avatar from "../components/Avatar";
 import TrophyMark from "../components/TrophyMark";
+import Modal from "../components/Modal";
 import Popover from "../components/Popover";
 import { Button, ButtonLink } from "../components/Button";
 import { ROUTES, navigateInternalLink } from "./routes";
 import useStoreController from "./store/useStoreController";
+import ProjectSubmissionPrompt from "./store/ProjectSubmissionPrompt";
 import DiscoverPage from "./store/DiscoverPage";
 import DevelopersPage from "./store/DevelopersPage";
 import FeedsPage from "./store/FeedsPage";
@@ -82,13 +86,40 @@ export default function Store() {
     view,
     visibleItems,
     voteNotice,
+    setVoteNotice,
   } = store;
+  const [dismissedPromptFor, setDismissedPromptFor] = useState<string | null>(null);
+  const [confirmPromptDismissal, setConfirmPromptDismissal] = useState(false);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
+  const promptStorageKey = `codecanvas:submission-prompt:${import.meta.env.VITE_SUPABASE_URL ?? "local"}:${user?.id ?? "visitor"}`;
+  const savedPromptDismissed = useMemo(() => {
+    try {
+      return localStorage.getItem(promptStorageKey) === "hidden";
+    } catch {
+      return false;
+    }
+  }, [promptStorageKey]);
+  const promptDismissed = savedPromptDismissed || Boolean(user && dismissedPromptFor === user.id);
+  const dismissPrompt = (permanent: boolean) => {
+    if (!user) return;
+    if (permanent) {
+      try {
+        localStorage.setItem(promptStorageKey, "hidden");
+      } catch {
+        // The prompt still stays dismissed for this session when storage is unavailable.
+      }
+    }
+    setDismissedPromptFor(user.id);
+    setConfirmPromptDismissal(false);
+    requestAnimationFrame(() => submitButtonRef.current?.focus());
+  };
+  const canSubmit = Boolean(user && !store.appsLoading && !store.appsError);
   const pageTitle = copyForView[view]?.title?.trim();
   const pageDescription = copyForView[view]?.description?.trim();
   const myTrophy = myProfile ? trophies.get(myProfile.id) : undefined;
   return (
     <div className="min-h-screen overflow-x-clip">
-      <aside className="fixed inset-x-0 top-0 z-40 h-21.25 border-b-[3px] border-outline bg-brand-surface px-3 py-5 text-brand-foreground sm:px-5 lg:inset-y-0 lg:left-0 lg:right-auto lg:flex lg:h-screen lg:w-70 lg:flex-col lg:border-b-0 lg:border-r-[3px] lg:p-7">
+      <aside className="fixed inset-x-0 top-0 z-40 h-21.25 border-b-[3px] border-outline bg-brand-surface px-3 py-5 text-brand-foreground sm:px-5 lg:inset-y-0 lg:left-0 lg:right-auto lg:flex lg:h-screen lg:w-70 lg:flex-col lg:overflow-y-auto lg:border-b-0 lg:border-r-[3px] lg:p-7">
         <div className="hidden min-w-0 items-center justify-between *:min-w-0 max-w-full lg:flex">
           <Brand light text className="text-2xl!" />
           <AppearanceControl compact />
@@ -143,28 +174,61 @@ export default function Store() {
             Settings
           </ButtonLink>
         </nav>
-        <nav
-          aria-label="Website"
-          className="mt-6 hidden border-t-2 border-dashed border-brand-foreground/25 pt-4 lg:mt-auto lg:block"
-        >
-          <ButtonLink
-            variant="plain"
-            href={ROUTES.about}
-            onClick={navigateInternalLink}
-            className="flex w-full items-center justify-between rounded-2xl px-4 py-2 text-sm hover:bg-surface/15"
+        <div className="hidden pt-6 lg:mt-auto lg:block">
+          {view === "discover" && canSubmit && !promptDismissed && (
+            <ProjectSubmissionPrompt
+              hasSubmittedProject={store.hasSubmittedProject}
+              showForm={store.showForm}
+              onSubmit={() => store.setShowForm(true)}
+              onDismiss={() => setConfirmPromptDismissal(true)}
+              className="mb-6"
+            />
+          )}
+          <nav
+            aria-label="Website"
+            className="border-t-2 border-dashed border-brand-foreground/25 pt-4"
           >
-            <span>About</span> <Info size={20} weight="duotone" aria-hidden="true" />
-          </ButtonLink>
-          <ButtonLink
-            variant="plain"
-            href={ROUTES.home}
-            onClick={navigateInternalLink}
-            className="flex w-full items-center justify-between rounded-2xl px-4 py-2 text-sm hover:bg-surface/15"
-          >
-            <span>Home</span> <House size={20} weight="duotone" aria-hidden="true" />
-          </ButtonLink>
-        </nav>
+            <ButtonLink
+              variant="plain"
+              href={ROUTES.about}
+              onClick={navigateInternalLink}
+              className="flex w-full items-center justify-between rounded-2xl px-4 py-2 text-sm hover:bg-surface/15"
+            >
+              <span>About</span> <Info size={20} weight="duotone" aria-hidden="true" />
+            </ButtonLink>
+            <ButtonLink
+              variant="plain"
+              href={ROUTES.home}
+              onClick={navigateInternalLink}
+              className="flex w-full items-center justify-between rounded-2xl px-4 py-2 text-sm hover:bg-surface/15"
+            >
+              <span>Home</span> <House size={20} weight="duotone" aria-hidden="true" />
+            </ButtonLink>
+          </nav>
+        </div>
       </aside>
+
+      {confirmPromptDismissal && (
+        <Modal
+          id="dismiss-submission-prompt"
+          title="Hide project reminder?"
+          description="You can still submit a project using the button beside projects."
+          onClose={() => setConfirmPromptDismissal(false)}
+        >
+          <p className="text-sm font-bold text-body">
+            Choose Later to hide it for this visit, or Never show again to remember your choice on
+            this device.
+          </p>
+          <div className="mt-5 flex flex-wrap justify-end gap-3">
+            <Button variant="surface" size="small" onClick={() => dismissPrompt(false)}>
+              Later
+            </Button>
+            <Button variant="primary" size="small" onClick={() => dismissPrompt(true)}>
+              Never show again
+            </Button>
+          </div>
+        </Modal>
+      )}
 
       {confirmSignOut &&
         createPortal(
@@ -252,18 +316,7 @@ export default function Store() {
           document.body,
         )}
 
-      {voteNotice &&
-        createPortal(
-          <div
-            role="alert"
-            className="min-w-0 pointer-events-none fixed inset-x-0 bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] z-100 flex justify-center px-4 *:min-w-0 max-w-full"
-          >
-            <p className="toon-card rounded-2xl bg-surface px-5 py-3 text-center text-sm font-black">
-              {voteNotice}
-            </p>
-          </div>,
-          document.body,
-        )}
+      {voteNotice && <ErrorNotice message={voteNotice} onDismiss={() => setVoteNotice(null)} />}
 
       <div className="min-w-0">
         <header className="fixed inset-x-0 top-0 z-60 flex h-21.25 items-center justify-between gap-3 border-b-[3px] border-outline bg-brand-surface px-3 sm:px-5 lg:left-70 lg:z-40 lg:gap-4 lg:bg-panel lg:px-8 lg:py-4">
@@ -470,6 +523,25 @@ export default function Store() {
                     <p className="mt-2 hidden max-w-2xl text-muted sm:block">{pageDescription}</p>
                   )}
                 </div>
+                {view === "discover" && canSubmit && promptDismissed && (
+                  <Button
+                    variant="primary"
+                    size="small"
+                    onClick={() => store.setShowForm(true)}
+                    aria-haspopup="dialog"
+                    aria-expanded={store.showForm}
+                    aria-controls="submit-project"
+                    ref={submitButtonRef}
+                    aria-label={
+                      store.hasSubmittedProject ? "Submit project" : "Submit first project"
+                    }
+                  >
+                    <Plus size={18} weight="bold" aria-hidden="true" />
+                    <span className="hidden lg:inline">
+                      {store.hasSubmittedProject ? "Submit project" : "Submit first project"}
+                    </span>
+                  </Button>
+                )}
               </div>
             </header>
           )}
@@ -477,7 +549,13 @@ export default function Store() {
             <div
               className={`@container/content mx-auto min-w-0 max-w-6xl wrap-anywhere ${pageTitle || pageDescription ? "mt-5 sm:mt-6" : ""}`}
             >
-              {view === "discover" && <DiscoverPage {...store} />}
+              {view === "discover" && (
+                <DiscoverPage
+                  {...store}
+                  promptDismissed={promptDismissed}
+                  onDismissPrompt={() => setConfirmPromptDismissal(true)}
+                />
+              )}
 
               {view === "project" && <ProjectPage {...store} />}
 

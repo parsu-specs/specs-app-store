@@ -1,5 +1,7 @@
+import ErrorNotice from "./ErrorNotice";
+import { debouncedVotes, VOTE_RATE_LIMIT_ENABLED } from "../utils/debouncedVotes";
 import React, { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+
 import {
   ArrowLeft,
   ArrowRight,
@@ -31,6 +33,7 @@ import Input, { Select, FileInput, Checkbox } from "./Input";
 import { getAppRepo, getProfileRepo } from "../data/factory";
 import { profileIdForApp } from "../data/profileLinks";
 import { fileToThumbnailDataUrl } from "../utils/images";
+import { optimisticVote } from "../utils/optimisticVote";
 import { enqueueVote } from "../utils/voteQueue";
 import { formatCountdown } from "../utils/time";
 import { extractMentionIds } from "../utils/mentions";
@@ -144,7 +147,7 @@ export default function ProjectView({
       try {
         const fetched = await getAppRepo().getApp(appId, currentUser?.id);
         if (cancelled) return;
-        setApp(fetched);
+        setApp(debouncedVotes.project(fetched, currentUser?.id));
         setFeedbackCount(fetched.comments);
         const dev = await (async () => {
           const pid = profileIdForApp(fetched, profiles);
@@ -217,6 +220,7 @@ export default function ProjectView({
   // in the database (vote_timeouts), so it must reappear without waiting for
   // the next rejected click. The server enforces it regardless.
   useEffect(() => {
+    if (!VOTE_RATE_LIMIT_ENABLED) return;
     if (!currentUser) {
       votePausedUntil.current = 0;
       return;
@@ -235,14 +239,36 @@ export default function ProjectView({
     };
   }, [currentUser?.id]);
 
+  useEffect(
+    () =>
+      debouncedVotes.subscribe((update) => {
+        if (update.userId !== currentUser?.id || update.appId !== appId) return;
+        setApp((prev) =>
+          prev?.id === update.appId
+            ? { ...prev, votes: update.votes, viewerHasVoted: update.viewerHasVoted }
+            : prev,
+        );
+        setVoting(update.pending);
+        if (update.error) flashVoteNotice(update.error);
+        if (update.saved) onChanged();
+      }),
+    [appId, currentUser?.id, onChanged],
+  );
+
   const vote = () => {
     if (!app || !currentUser) return;
     const me = currentUser;
     const targetId = app.id;
+    if (!VOTE_RATE_LIMIT_ENABLED) {
+      debouncedVotes.toggle(app, me.id, (liked) => getAppRepo().setVote(targetId, me.id, liked));
+      playVoteSound();
+      return;
+    }
     setVoting(true);
     // Same shared queue as the feed cards: card and detail votes for one
     // project serialize instead of double-flipping the server.
     enqueueVote(targetId, async () => {
+      const optimistic = optimisticVote(targetId);
       try {
         if (Date.now() < votePausedUntil.current) {
           const secs = await getAppRepo()
@@ -252,17 +278,9 @@ export default function ProjectView({
           flashVoteNotice(`Voting is paused — ${formatCountdown(left)} left.`);
           return;
         }
-        setApp((prev) =>
-          prev && prev.id === targetId
-            ? {
-                ...prev,
-                votes: Math.max(0, prev.votes + (prev.viewerHasVoted ? -1 : 1)),
-                viewerHasVoted: !prev.viewerHasVoted,
-              }
-            : prev,
-        );
+        setApp((prev) => (prev ? optimistic.apply(prev) : prev));
         const updated = await getAppRepo().toggleVote(targetId, me.id);
-        setApp(updated);
+        setApp((prev) => (prev?.id === targetId ? updated : prev));
         onChanged();
         if (updated.pauseStarted) {
           // Tripped the server's spam guard: vote rejected, server-side pause
@@ -276,20 +294,7 @@ export default function ProjectView({
           playVoteSound();
         }
       } catch (e) {
-        // Reconcile with the server (see Store vote): never a stale snapshot.
-        try {
-          setApp(await getAppRepo().getApp(targetId, me.id));
-        } catch {
-          setApp((prev) =>
-            prev && prev.id === targetId
-              ? {
-                  ...prev,
-                  votes: Math.max(0, prev.votes + (prev.viewerHasVoted ? -1 : 1)),
-                  viewerHasVoted: !prev.viewerHasVoted,
-                }
-              : prev,
-          );
-        }
+        setApp((prev) => (prev ? optimistic.revert(prev) : prev));
         const message = e instanceof Error ? e.message : "Could not vote. Try again.";
         if (/paus|slow down/i.test(message)) {
           const secs = await getAppRepo()
@@ -1104,18 +1109,7 @@ export default function ProjectView({
         />
       )}
 
-      {voteNotice &&
-        createPortal(
-          <div
-            role="alert"
-            className="min-w-0 pointer-events-none fixed inset-x-0 bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] z-100 flex justify-center px-4 *:min-w-0 max-w-full"
-          >
-            <p className="toon-card rounded-2xl bg-surface px-5 py-3 text-center text-sm font-black">
-              {voteNotice}
-            </p>
-          </div>,
-          document.body,
-        )}
+      {voteNotice && <ErrorNotice message={voteNotice} onDismiss={() => setVoteNotice(null)} />}
 
       {app.docs?.trim() ? (
         <DocsSection text={app.docs} />

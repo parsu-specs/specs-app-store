@@ -270,7 +270,7 @@ export default function FeedsPage({
                           variant="vote"
                           onClick={() => void cheer(m)}
                           aria-pressed={Boolean(m.viewerHasCheered)}
-                          disabled={!user || cheerPending.has(m.id)}
+                          disabled={!user}
                           aria-label={m.viewerHasCheered ? "Remove upvote" : "Upvote post"}
                         >
                           <Heart size={20} weight={m.viewerHasCheered ? "fill" : "duotone"} />

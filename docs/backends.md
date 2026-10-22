@@ -86,3 +86,22 @@ Legacy posts are backfilled against currently identifiable profile names without
 text. Mentions made before a previous rename cannot be reliably reconstructed without
 historical identity data. Browser storage snapshots legacy bindings before profile edits.
 Missing or deleted targets stay plain text and never redirect to another account.
+
+### Debounced upvotes
+
+Apply `supabase/migration_debounced_votes.sql` after the spam-vote and counter migrations
+(or deploy `supabase/migrations/20261022000200_debounced_votes.sql`) before shipping the UI.
+It adds `set_app_vote` and `set_milestone_cheer`, disables project and feed upvote throttling, and leaves the spam detection
+implementation and history intact. Comment like and posting limits stay enabled.
+
+Project cards and details share a 500 ms trailing debounce per user/project. Clicks update
+immediately; a burst ending at the confirmed state performs no write. Saves send an explicit
+liked/unliked state, serialize requests, and retain newer intent while a request is running.
+Feed upvotes use the same debounce. Failed saves restore the last confirmed state and show the error. Pending saves survive
+route changes within the app; closing the browser before the debounce finishes can discard them.
+
+To restore the previous limiter, change SQL `vote_rate_limit_enabled()` to return true and
+set `VOTE_RATE_LIMIT_ENABLED` in `src/utils/debouncedVotes.ts` to true.
+
+HTTP backends must also support `PUT /milestones/:id/cheer` with `{ liked: boolean }`,
+returning `{ milestone }` with the final counter and viewer state.

@@ -134,3 +134,19 @@ describe("supabase getVoteTimeoutSeconds", () => {
     await expect(createSupabaseAppRepo().getVoteTimeoutSeconds()).resolves.toBe(0);
   });
 });
+
+describe("supabase desired vote state", () => {
+  it.each([true, false])(
+    "sends explicit liked=%s without a fallible follow-up read",
+    async (liked) => {
+      const rpc = mockToggleVote({ row: appRow, liked });
+      const result = await createSupabaseAppRepo().setVote("a1", "u1", liked);
+      expect(rpc).toHaveBeenCalledExactlyOnceWith("set_app_vote", {
+        p_app_id: "a1",
+        p_liked: liked,
+      });
+      expect(result).toMatchObject({ votes: 7, viewerHasVoted: liked });
+      expect(getSupabase().from).not.toHaveBeenCalled();
+    },
+  );
+});

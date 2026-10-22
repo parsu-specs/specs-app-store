@@ -89,7 +89,7 @@ export const seedApps: AppItem[] = [
   {
     id: "6",
     title: "Team Tasks",
-    description: "Shared checklists for student project teams.",
+    description: "Shared checklists for project teams.",
     creator: "Jules Tan",
     creatorId: "jules-tan",
     category: "Productivity",

@@ -198,6 +198,14 @@ export function createHttpAppRepo(): AppRepo {
       await api(`/apps/${encodeURIComponent(appId)}`, { method: "DELETE" });
     },
 
+    async setVote(appId, _userId, liked) {
+      const { app } = await api<{ app: AppRow }>(`/apps/${encodeURIComponent(appId)}/vote`, {
+        method: "PUT",
+        body: JSON.stringify({ liked }),
+      });
+      return toApp(app);
+    },
+
     async toggleVote(appId: string, _userId: string) {
       const { app } = await api<{ app: AppRow }>(`/apps/${encodeURIComponent(appId)}/vote`, {
         method: "POST",
@@ -287,6 +295,14 @@ export function createHttpAppRepo(): AppRepo {
 
     async deleteFeedPost(feedPostId: string, _requester: User): Promise<void> {
       await api(`/milestones/${encodeURIComponent(feedPostId)}`, { method: "DELETE" });
+    },
+
+    async setFeedPostCheer(feedPostId: string, _userId: string, liked: boolean) {
+      const { milestone: feedPost } = await api<{ milestone: FeedPostRow }>(
+        `/milestones/${encodeURIComponent(feedPostId)}/cheer`,
+        { method: "PUT", body: JSON.stringify({ liked }) },
+      );
+      return toFeedPost(feedPost);
     },
 
     async toggleFeedPostCheer(feedPostId: string, _userId: string) {

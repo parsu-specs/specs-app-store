@@ -241,3 +241,29 @@ describe("feed upvote previews", () => {
     expect(await repo.listVoters("missing", "feedPost")).toEqual([]);
   });
 });
+
+describe("explicit vote state", () => {
+  it("sets and clears project votes idempotently", async () => {
+    const repo = createLocalAppRepo();
+    const project = await repo.createApp(
+      { title: "Demo", description: "Test", category: "Creative" },
+      author,
+    );
+    const liked = await repo.setVote(project.id, author.id, true);
+    expect(liked).toMatchObject({ votes: project.votes + 1, viewerHasVoted: true });
+    expect(await repo.setVote(project.id, author.id, true)).toEqual(liked);
+    const unliked = await repo.setVote(project.id, author.id, false);
+    expect(unliked).toMatchObject({ votes: project.votes, viewerHasVoted: false });
+    expect(await repo.setVote(project.id, author.id, false)).toEqual(unliked);
+  });
+
+  it("sets and clears feed upvotes without removing another user's vote", async () => {
+    const repo = createLocalAppRepo();
+    const liked = await repo.setFeedPostCheer("mine", author.id, true);
+    expect(liked).toMatchObject({ cheers: 2, viewerHasCheered: true });
+    expect(await repo.setFeedPostCheer("mine", author.id, true)).toEqual(liked);
+    const unliked = await repo.setFeedPostCheer("mine", author.id, false);
+    expect(unliked).toMatchObject({ cheers: 1, viewerHasCheered: false });
+    expect(await repo.setFeedPostCheer("mine", author.id, false)).toEqual(unliked);
+  });
+});

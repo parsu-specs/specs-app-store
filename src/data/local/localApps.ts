@@ -366,6 +366,26 @@ export function createLocalAppRepo(): AppRepo {
       return { ...updated, viewerHasVoted: !hasVoted };
     },
 
+    async setVote(appId: string, userId: string, liked: boolean): Promise<AppItem> {
+      await delay(80);
+      const apps = loadApps();
+      const votes = loadVotes();
+      const votedIds = new Set(votes[userId] ?? []);
+      const target = apps.find((a) => a.id === appId);
+      if (!target) throw new NotFoundError("Project not found.");
+      const hasVoted = votedIds.has(appId);
+      if (hasVoted === liked) return { ...target, viewerHasVoted: liked };
+      if (liked) votedIds.add(appId);
+      else votedIds.delete(appId);
+      const nextApps = apps.map((a) =>
+        a.id === appId ? { ...a, votes: Math.max(0, a.votes + (hasVoted ? -1 : 1)) } : a,
+      );
+      saveApps(nextApps);
+      saveVotes({ ...votes, [userId]: [...votedIds] });
+      const updated = nextApps.find((a) => a.id === appId)!;
+      return { ...updated, viewerHasVoted: liked };
+    },
+
     // No server throttles in local mode — never paused.
     async getVoteTimeoutSeconds(): Promise<number> {
       return 0;
@@ -505,6 +525,20 @@ export function createLocalAppRepo(): AppRepo {
       const cheered = new Set(target.cheeredBy ?? []);
       if (cheered.has(userId)) cheered.delete(userId);
       else cheered.add(userId);
+      const updated: FeedPost = { ...target, cheeredBy: [...cheered], cheers: cheered.size };
+      saveFeedPosts(feedPosts.map((m) => (m.id === feedPostId ? updated : m)));
+      return { ...updated, viewerHasCheered: cheered.has(userId) };
+    },
+
+    async setFeedPostCheer(feedPostId: string, userId: string, liked: boolean): Promise<FeedPost> {
+      await delay(80);
+      const feedPosts = loadFeedPosts().map(normalizeFeedPost);
+      const target = feedPosts.find((m) => m.id === feedPostId);
+      if (!target) throw new NotFoundError("Update not found.");
+      const cheered = new Set(target.cheeredBy ?? []);
+      if (cheered.has(userId) === liked) return { ...target, viewerHasCheered: liked };
+      if (liked) cheered.add(userId);
+      else cheered.delete(userId);
       const updated: FeedPost = { ...target, cheeredBy: [...cheered], cheers: cheered.size };
       saveFeedPosts(feedPosts.map((m) => (m.id === feedPostId ? updated : m)));
       return { ...updated, viewerHasCheered: cheered.has(userId) };

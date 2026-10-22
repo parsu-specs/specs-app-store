@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowCounterClockwise, Eye, EyeSlash, LockKey, Palette } from "@phosphor-icons/react";
 import { Button } from "./Button";
 import Input, { Textarea } from "./Input";
@@ -210,6 +210,7 @@ export default function SettingsView({
   const [palette, setPaletteState] = useState(() => loadPalette());
   const [paletteError, setPaletteError] = useState<string | null>(null);
   const [paletteSaving, setPaletteSaving] = useState(false);
+  const paletteInFlight = useRef(false);
   const [armReset, setArmReset] = useState(false);
 
   // Follow the account choice when it arrives (e.g. fresh sign in on a new
@@ -219,11 +220,13 @@ export default function SettingsView({
   }, [user?.id, profile?.palette]);
 
   const pickPalette = async (id: string) => {
+    if (paletteInFlight.current || id === palette) return;
     const previous = loadPalette();
     setPalette(id);
     setPaletteState(loadPalette());
     setPaletteError(null);
     if (!user) return;
+    paletteInFlight.current = true;
     setPaletteSaving(true);
     try {
       const updated = await getProfileRepo().updateProfile(user.id, { palette: id }, user.id);
@@ -234,6 +237,7 @@ export default function SettingsView({
       setPaletteState(previous);
       setPaletteError(e instanceof Error ? e.message : "Could not save palette.");
     } finally {
+      paletteInFlight.current = false;
       setPaletteSaving(false);
     }
   };

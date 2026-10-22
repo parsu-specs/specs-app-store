@@ -164,6 +164,7 @@ export default function ProfileView({
       // avatars), which otherwise keep the old profile until a reload.
       onProfileUpdated?.();
     } catch (e) {
+      setTheme(profile.theme ?? "");
       setSaveError(e instanceof Error ? e.message : "Could not save profile.");
     } finally {
       setSaving(false);
@@ -186,8 +187,9 @@ export default function ProfileView({
   const totalVotes = apps.reduce((n, a) => n + a.votes, 0);
   const totalFeedback = apps.reduce((n, a) => n + a.comments, 0);
   // Allowlisted theme only — never renders raw stored values into styles.
-  const pageTheme = (PROFILE_THEMES as readonly string[]).includes(profile.theme ?? "")
-    ? profile.theme
+  const previewTheme = editing ? theme : profile.theme;
+  const pageTheme = (PROFILE_THEMES as readonly string[]).includes(previewTheme ?? "")
+    ? previewTheme
     : undefined;
 
   return (

@@ -58,6 +58,8 @@ export type AppRepo = {
   updateApp(appId: string, author: User, patch: AppUpdate): Promise<AppItem>;
   deleteApp(appId: string, author: User): Promise<void>;
   toggleVote(appId: string, userId: string): Promise<VoteResult>;
+  /** Idempotently persist the final desired vote after the UI debounce. */
+  setVote(appId: string, userId: string, liked: boolean): Promise<AppItem>;
   /** Remaining vote pause for the caller, in whole seconds (0 = not paused). */
   getVoteTimeoutSeconds(): Promise<number>;
   /**
@@ -85,6 +87,7 @@ export type AppRepo = {
   postFeedPost(author: User, body: string, appId?: string): Promise<FeedPost>;
   deleteFeedPost(feedPostId: string, requester: User): Promise<void>;
   toggleFeedPostCheer(feedPostId: string, userId: string): Promise<FeedPost>;
+  setFeedPostCheer(feedPostId: string, userId: string, liked: boolean): Promise<FeedPost>;
 };
 
 export type ProfilePatch = {

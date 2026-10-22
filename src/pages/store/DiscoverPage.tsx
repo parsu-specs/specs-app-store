@@ -1,4 +1,5 @@
-import { LockKey, MagnifyingGlass, Plus, RocketLaunch, X } from "@phosphor-icons/react";
+import { LockKey, MagnifyingGlass } from "@phosphor-icons/react";
+import ProjectSubmissionPrompt from "./ProjectSubmissionPrompt";
 import AppCard from "../../components/AppCard";
 import { PostTimeProvider } from "../../components/PostTimestamp";
 import NoticeBanner from "../../components/NoticeBanner";
@@ -7,7 +8,7 @@ import Input from "../../components/Input";
 import SubmitProjectModal, { type SubmitProjectModalProps } from "./SubmitProjectModal";
 import type { StoreController } from "./useStoreController";
 
-type Props = SubmitProjectModalProps &
+type Props = { promptDismissed: boolean; onDismissPrompt: () => void } & SubmitProjectModalProps &
   Pick<
     StoreController,
     | "apps"
@@ -71,34 +72,14 @@ export default function DiscoverPage(props: Props) {
   } = props;
   return (
     <PostTimeProvider>
-      {user && !appsLoading && !appsError && (
-        <NoticeBanner
-          icon={RocketLaunch}
-          title={hasSubmittedProject ? "Share your next build" : "No projects submitted yet"}
-          description={
-            hasSubmittedProject
-              ? "Have something new? Share it with the SPECS community."
-              : "Your first project starts here. Share what you built and get feedback from the community."
-          }
-          tone={hasSubmittedProject ? "success" : "secondary"}
-          className="mb-6"
-        >
-          <Button
-            variant={hasSubmittedProject ? "surface" : "primary"}
-            size="small"
-            onClick={() => setShowForm(true)}
-            aria-haspopup="dialog"
-            aria-expanded={showForm}
-            aria-controls="submit-project"
-          >
-            {showForm ? <X size={20} weight="bold" /> : <Plus size={20} weight="bold" />}
-            {showForm
-              ? "Close form"
-              : hasSubmittedProject
-                ? "Submit project"
-                : "Submit your first project"}
-          </Button>
-        </NoticeBanner>
+      {user && !appsLoading && !appsError && !props.promptDismissed && (
+        <ProjectSubmissionPrompt
+          hasSubmittedProject={hasSubmittedProject}
+          showForm={showForm}
+          onSubmit={() => setShowForm(true)}
+          onDismiss={props.onDismissPrompt}
+          className="mb-5 lg:hidden"
+        />
       )}
       {showForm && <SubmitProjectModal {...props} />}
       <section id="apps" className="mt-2 scroll-mt-6">
@@ -119,7 +100,7 @@ export default function DiscoverPage(props: Props) {
           </NoticeBanner>
         )}
         <label className="relative mb-6 block">
-          <span className="sr-only">Search student projects</span>
+          <span className="sr-only">Search projects</span>
           <MagnifyingGlass
             size={20}
             weight="bold"

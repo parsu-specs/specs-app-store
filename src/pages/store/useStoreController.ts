@@ -1,3 +1,8 @@
+import {
+  debouncedFeedVotes,
+  debouncedVotes,
+  VOTE_RATE_LIMIT_ENABLED,
+} from "../../utils/debouncedVotes";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GameController, GraduationCap, Palette, SquaresFour, Wrench } from "@phosphor-icons/react";
 import { useAuth } from "../../auth/AuthProvider";
@@ -15,6 +20,7 @@ import {
 import { getAppRepo, getAuthRepo, getProfileRepo } from "../../data/factory";
 import { indexProfiles } from "../../data/profileLinks";
 import { fileToThumbnailDataUrl } from "../../utils/images";
+import { optimisticVote } from "../../utils/optimisticVote";
 import { enqueueVote } from "../../utils/voteQueue";
 import { cacheHasPassword, loadCachedHasPassword } from "../../utils/viewerCache";
 import { formatCountdown } from "../../utils/time";
@@ -85,7 +91,7 @@ function parsePath(path: string): {
 
 const copyForView: Partial<Record<StoreView, { title?: string; description?: string }>> = {
   discover: {
-    title: "Student projects",
+    title: "Discover",
     description: "Explore software built by the SPECS community.",
   },
   developers: {
@@ -99,10 +105,6 @@ const copyForView: Partial<Record<StoreView, { title?: string; description?: str
   settings: {
     title: "Settings",
     description: "Sounds and demo data live on this device.",
-  },
-  profile: {
-    title: "Projects and feedback",
-    description: "See what they built and what the community is saying.",
   },
 };
 
@@ -277,7 +279,15 @@ export default function useStoreController() {
       try {
         const items = await getAppRepo().listFeedPosts(user?.id);
         if (feedPostReq.current !== req) return;
-        setFeedPosts(items);
+        setFeedPosts(
+          items.map((post) => {
+            const vote = debouncedFeedVotes.project(
+              { id: post.id, votes: post.cheers ?? 0, viewerHasVoted: post.viewerHasCheered },
+              user?.id,
+            );
+            return { ...post, cheers: vote.votes, viewerHasCheered: vote.viewerHasVoted };
+          }),
+        );
       } catch (e) {
         if (!quiet && feedPostReq.current === req)
           setFeedPostsError(e instanceof Error ? e.message : "Could not load updates.");
@@ -325,8 +335,44 @@ export default function useStoreController() {
     });
   };
 
+  useEffect(
+    () =>
+      debouncedFeedVotes.subscribe((update) => {
+        if (update.userId !== user?.id) return;
+        setFeedPosts((items) =>
+          items.map((post) =>
+            post.id === update.appId
+              ? { ...post, cheers: update.votes, viewerHasCheered: update.viewerHasVoted }
+              : post,
+          ),
+        );
+        setCheerPending((prev) => {
+          const next = new Set(prev);
+          if (update.pending) next.add(update.appId);
+          else next.delete(update.appId);
+          return next;
+        });
+        if (update.error) setFeedPostsError(update.error);
+      }),
+    [user?.id],
+  );
+
   const cheer = async (m: FeedPost) => {
-    if (!user || cheerPending.has(m.id)) return;
+    if (!user) return;
+    if (!VOTE_RATE_LIMIT_ENABLED) {
+      const userId = user.id;
+      setFeedPostsError(null);
+      debouncedFeedVotes.toggle(
+        { id: m.id, votes: m.cheers ?? 0, viewerHasVoted: m.viewerHasCheered },
+        userId,
+        async (liked) => {
+          const saved = await getAppRepo().setFeedPostCheer(m.id, userId, liked);
+          return { id: saved.id, votes: saved.cheers ?? 0, viewerHasVoted: saved.viewerHasCheered };
+        },
+      );
+      return;
+    }
+    if (cheerPending.has(m.id)) return;
     setCheerPending((prev) => new Set(prev).add(m.id));
     const wasCheered = Boolean(m.viewerHasCheered);
     setFeedPosts((items) =>
@@ -365,8 +411,8 @@ export default function useStoreController() {
           getAppRepo().listApps({ query, category, userId: user?.id }),
           getAppRepo().listApps({ limit: 200, userId: user?.id }),
         ]);
-        setApps(filtered);
-        setFullApps(all);
+        setApps(filtered.map((app) => debouncedVotes.project(app, user?.id)));
+        setFullApps(all.map((app) => debouncedVotes.project(app, user?.id)));
       } catch (e) {
         if (!quiet) setAppsError(e instanceof Error ? e.message : "Could not load projects.");
       } finally {
@@ -1104,14 +1150,44 @@ export default function useStoreController() {
     }, 6000);
   };
 
+  useEffect(
+    () =>
+      debouncedVotes.subscribe((update) => {
+        if (update.userId !== user?.id) return;
+        const apply = (app: AppItem) =>
+          app.id === update.appId
+            ? { ...app, votes: update.votes, viewerHasVoted: update.viewerHasVoted }
+            : app;
+        setApps((items) => items.map(apply));
+        setFullApps((items) => items.map(apply));
+        setVotePending((prev) => {
+          const next = new Set(prev);
+          if (update.pending) next.add(update.appId);
+          else next.delete(update.appId);
+          return next;
+        });
+        if (update.error) flashVoteNotice(update.error);
+      }),
+    [user?.id],
+  );
+
   const vote = (id: string) => {
     if (!user) return;
     const me = user;
+    if (!VOTE_RATE_LIMIT_ENABLED) {
+      const app = fullApps.find((item) => item.id === id) ?? apps.find((item) => item.id === id);
+      if (app) {
+        debouncedVotes.toggle(app, me.id, (liked) => getAppRepo().setVote(id, me.id, liked));
+        playVoteSound();
+      }
+      return;
+    }
     setVotePending((prev) => new Set(prev).add(id));
     // Serialized per app (see voteQueue): every click toggles exactly once,
     // in order. Rapid clicks queue instead of vanishing into the pending
     // guard, so the heart always converges to click parity on both surfaces.
     enqueueVote(id, async () => {
+      const optimistic = optimisticVote(id);
       try {
         if (Date.now() < votePausedUntil.current) {
           const secs = await getAppRepo()
@@ -1121,16 +1197,8 @@ export default function useStoreController() {
           flashVoteNotice(`Voting is paused — ${formatCountdown(left)} left.`);
           return;
         }
-        const optimistic = (app: AppItem) =>
-          app.id === id
-            ? {
-                ...app,
-                votes: Math.max(0, app.votes + (app.viewerHasVoted ? -1 : 1)),
-                viewerHasVoted: !app.viewerHasVoted,
-              }
-            : app;
-        setApps((items) => items.map(optimistic));
-        setFullApps((items) => items.map(optimistic));
+        setApps((items) => items.map(optimistic.apply));
+        setFullApps((items) => items.map(optimistic.apply));
         const updated = await getAppRepo().toggleVote(id, me.id);
         setApps((items) => items.map((app) => (app.id === id ? updated : app)));
         setFullApps((items) => items.map((app) => (app.id === id ? updated : app)));
@@ -1148,25 +1216,8 @@ export default function useStoreController() {
           playVoteSound();
         }
       } catch (e) {
-        // Reconcile with the server instead of a stale snapshot: queued
-        // toggles or polls may have moved state since this click started.
-        try {
-          const fresh = await getAppRepo().getApp(id, me.id);
-          setApps((items) => items.map((app) => (app.id === id ? fresh : app)));
-          setFullApps((items) => items.map((app) => (app.id === id ? fresh : app)));
-        } catch {
-          // Last resort: flip the optimistic change back.
-          const revert = (app: AppItem) =>
-            app.id === id
-              ? {
-                  ...app,
-                  votes: Math.max(0, app.votes + (app.viewerHasVoted ? -1 : 1)),
-                  viewerHasVoted: !app.viewerHasVoted,
-                }
-              : app;
-          setApps((items) => items.map(revert));
-          setFullApps((items) => items.map(revert));
-        }
+        setApps((items) => items.map(optimistic.revert));
+        setFullApps((items) => items.map(optimistic.revert));
         // Rate-limit pauses land here too — say why the vote bounced, and
         // remember the pause so further clicks report time left, not toggles.
         const message = e instanceof Error ? e.message : "Could not vote. Try again.";
@@ -1194,6 +1245,7 @@ export default function useStoreController() {
   // in the database (vote_timeouts), so it must reappear without waiting for
   // the next rejected click.
   useEffect(() => {
+    if (!VOTE_RATE_LIMIT_ENABLED) return;
     if (!user) {
       votePausedUntil.current = 0;
       return;
@@ -1547,6 +1599,7 @@ export default function useStoreController() {
     visibleItems,
     vote,
     voteNotice,
+    setVoteNotice,
   };
 }
 

@@ -438,6 +438,17 @@ export function createSupabaseAppRepo(): AppRepo {
       if (error) throw new Error(error.message);
     },
 
+    async setVote(appId, _userId, liked) {
+      const { data, error } = await getSupabase().rpc("set_app_vote", {
+        p_app_id: appId,
+        p_liked: liked,
+      });
+      if (error) throw new Error(error.message);
+      const payload = data as { row: Record<string, unknown>; liked: boolean } | null;
+      if (!payload?.row) throw new NotFoundError("Project not found.");
+      return { ...toApp(toAppRow(payload.row)), viewerHasVoted: Boolean(payload.liked) };
+    },
+
     async toggleVote(appId: string, userId: string): Promise<VoteResult> {
       const { data, error } = await getSupabase().rpc("toggle_app_vote", { p_app_id: appId });
       if (error) throw new Error(error.message);
@@ -614,9 +625,7 @@ export function createSupabaseAppRepo(): AppRepo {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
-      const rows = (data ?? []).map((r) =>
-        toFeedPost(toFeedPostRow(r as Record<string, unknown>)),
-      );
+      const rows = (data ?? []).map((r) => toFeedPost(toFeedPostRow(r as Record<string, unknown>)));
       const uid = (await authUid()) ?? userId ?? null;
       let cheered = new Set<string>();
       if (uid && rows.length > 0) {
@@ -681,6 +690,17 @@ export function createSupabaseAppRepo(): AppRepo {
         .maybeSingle();
       if (error) throw new Error(error.message);
       if (!data) throw new Error("Update not found or you cannot delete it.");
+    },
+
+    async setFeedPostCheer(feedPostId: string, _userId: string, liked: boolean) {
+      const { data, error } = await getSupabase().rpc("set_milestone_cheer", {
+        p_milestone_id: feedPostId,
+        p_liked: liked,
+      });
+      if (error) throw new Error(error.message);
+      const payload = data as { row: Record<string, unknown>; liked: boolean };
+      if (!payload?.row) throw new NotFoundError("Update not found.");
+      return { ...toFeedPost(toFeedPostRow(payload.row)), viewerHasCheered: payload.liked };
     },
 
     async toggleFeedPostCheer(feedPostId: string, _userId: string) {
