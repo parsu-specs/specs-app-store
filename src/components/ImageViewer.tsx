@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useId, useRef, useState, type PointerEvent } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -15,7 +15,7 @@ type ImageViewerProps = {
   onClose: () => void;
 };
 
-const zoomClasses = ["h-full w-full", "h-[150%] w-[150%]", "h-[200%] w-[200%]"];
+const clampZoom = (value: number) => Math.max(0, Math.min(2, value));
 
 export default function ImageViewer({
   images,
@@ -29,6 +29,12 @@ export default function ImageViewer({
   const [failed, setFailed] = useState(false);
   const [dragging, setDragging] = useState(false);
   const viewport = useRef<HTMLDivElement>(null);
+  const touches = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<{ distance: number; zoom: number } | null>(null);
+  const touchDistance = () => {
+    const [a, b] = [...touches.current.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
   const drag = useRef<{
     pointerId: number;
     x: number;
@@ -39,11 +45,13 @@ export default function ImageViewer({
   const image = images[index];
 
   const stopDragging = (event: PointerEvent<HTMLDivElement>) => {
+    touches.current.delete(event.pointerId);
+    if (touches.current.size < 2) pinch.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId))
+      event.currentTarget.releasePointerCapture(event.pointerId);
     if (drag.current?.pointerId !== event.pointerId) return;
     drag.current = null;
     setDragging(false);
-    if (event.currentTarget.hasPointerCapture(event.pointerId))
-      event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
   const navigate = (direction: number) => {
@@ -75,17 +83,36 @@ export default function ImageViewer({
     return () => document.removeEventListener("keydown", onKey);
   }, [images.length]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const pointerId = drag.current?.pointerId;
     drag.current = null;
     setDragging(false);
     if (viewport.current) {
       if (pointerId !== undefined && viewport.current.hasPointerCapture(pointerId))
         viewport.current.releasePointerCapture(pointerId);
-      viewport.current.scrollTop = 0;
-      viewport.current.scrollLeft = 0;
+      viewport.current.scrollTop =
+        (viewport.current.scrollHeight - viewport.current.clientHeight) / 2;
+      viewport.current.scrollLeft =
+        (viewport.current.scrollWidth - viewport.current.clientWidth) / 2;
     }
   }, [index, zoom]);
+
+  useEffect(() => {
+    touches.current.clear();
+    pinch.current = null;
+  }, [index, failed]);
+
+  useEffect(() => {
+    const element = viewport.current;
+    if (!element) return;
+    const onWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey || failed) return;
+      event.preventDefault();
+      setZoom((current) => clampZoom(((1 + current / 2) * Math.exp(-event.deltaY * 0.01) - 1) * 2));
+    };
+    element.addEventListener("wheel", onWheel, { passive: false });
+    return () => element.removeEventListener("wheel", onWheel);
+  }, [failed]);
 
   if (!image) return null;
 
@@ -96,7 +123,19 @@ export default function ImageViewer({
         role="region"
         aria-label="Image preview"
         tabIndex={0}
+        style={{ touchAction: "none" }}
         onPointerDown={(event) => {
+          if (failed) return;
+          if (event.pointerType === "touch") {
+            touches.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+            event.currentTarget.setPointerCapture(event.pointerId);
+            if (touches.current.size === 2) {
+              pinch.current = { distance: touchDistance(), zoom };
+              drag.current = null;
+              setDragging(false);
+              return;
+            }
+          }
           if (zoom === 0 || failed || !event.isPrimary || event.button !== 0) return;
           event.preventDefault();
           event.currentTarget.focus({ preventScroll: true });
@@ -111,6 +150,17 @@ export default function ImageViewer({
           setDragging(true);
         }}
         onPointerMove={(event) => {
+          if (touches.current.has(event.pointerId)) {
+            touches.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+            if (pinch.current && touches.current.size === 2) {
+              const start = pinch.current;
+              if (start.distance > 0)
+                setZoom(
+                  clampZoom((((1 + start.zoom / 2) * touchDistance()) / start.distance - 1) * 2),
+                );
+              return;
+            }
+          }
           const start = drag.current;
           if (!start || start.pointerId !== event.pointerId) return;
           event.currentTarget.scrollLeft = start.left + start.x - event.clientX;
@@ -129,7 +179,7 @@ export default function ImageViewer({
             This image could not be loaded.
           </p>
         ) : (
-          <div className={zoomClasses[zoom]}>
+          <div style={{ height: `${100 + zoom * 50}%`, width: `${100 + zoom * 50}%` }}>
             <img
               key={image.src}
               src={image.src}
@@ -175,7 +225,7 @@ export default function ImageViewer({
             type="button"
             aria-label="Zoom out"
             disabled={zoom === 0 || failed}
-            onClick={() => setZoom((current) => current - 1)}
+            onClick={() => setZoom((current) => clampZoom(current - 1))}
             className="min-h-11 min-w-11"
           >
             <MagnifyingGlassMinus size={20} weight="bold" />
@@ -188,14 +238,14 @@ export default function ImageViewer({
             onClick={() => setZoom(0)}
             className="min-h-11"
           >
-            {zoom === 0 ? "Fit" : `${100 + zoom * 50}%`}
+            {zoom === 0 ? "Fit" : `${Math.round(100 + zoom * 50)}%`}
           </Button>
           <Button
             variant="icon"
             type="button"
             aria-label="Zoom in"
-            disabled={zoom === zoomClasses.length - 1 || failed}
-            onClick={() => setZoom((current) => current + 1)}
+            disabled={zoom === 2 || failed}
+            onClick={() => setZoom((current) => clampZoom(current + 1))}
             className="min-h-11 min-w-11"
           >
             <MagnifyingGlassPlus size={20} weight="bold" />

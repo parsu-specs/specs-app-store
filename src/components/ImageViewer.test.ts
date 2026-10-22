@@ -106,6 +106,81 @@ it("uses modal scroll locking, explicit dismissal, and focus restoration", async
   expect(document.activeElement).toBe(trigger);
 });
 
+it("centers each zoom change even after panning", async () => {
+  await open();
+  const viewport = document.querySelector<HTMLDivElement>('[aria-label="Image preview"]')!;
+  Object.defineProperties(viewport, {
+    clientWidth: { value: 400 },
+    clientHeight: { value: 300 },
+    scrollWidth: {
+      get: () =>
+        (400 *
+          parseFloat(
+            viewport.firstElementChild!.getAttribute("style")!.match(/width: ([\d.]+)%/)![1],
+          )) /
+        100,
+    },
+    scrollHeight: {
+      get: () =>
+        (300 *
+          parseFloat(
+            viewport.firstElementChild!.getAttribute("style")!.match(/height: ([\d.]+)%/)![1],
+          )) /
+        100,
+    },
+  });
+  await act(async () => button("Zoom in").click());
+  expect([viewport.scrollLeft, viewport.scrollTop]).toEqual([100, 75]);
+  viewport.scrollLeft = 0;
+  viewport.scrollTop = 0;
+  await act(async () => button("Zoom in").click());
+  expect([viewport.scrollLeft, viewport.scrollTop]).toEqual([200, 150]);
+  await act(async () => button("Fit image to view").click());
+  expect([viewport.scrollLeft, viewport.scrollTop]).toEqual([0, 0]);
+});
+
+it("pinches with two touch pointers and handles trackpad pinch within zoom bounds", async () => {
+  await open();
+  const viewport = document.querySelector<HTMLDivElement>('[aria-label="Image preview"]')!;
+  viewport.setPointerCapture = vi.fn();
+  viewport.hasPointerCapture = vi.fn(() => false);
+  const first = {
+    pointerType: "touch",
+    pointerId: 1,
+    isPrimary: true,
+    button: 0,
+    clientX: 0,
+    clientY: 0,
+  };
+  const second = { ...first, pointerId: 2, isPrimary: false, clientX: 100 };
+  await act(async () => Simulate.pointerDown(viewport, first));
+  await act(async () => Simulate.pointerDown(viewport, second));
+  await act(async () => Simulate.pointerMove(viewport, { ...second, clientX: 150 }));
+  expect(button("Fit image to view").textContent).toBe("150%");
+  await act(async () => Simulate.pointerMove(viewport, { ...second, clientX: 300 }));
+  expect(button("Fit image to view").textContent).toBe("200%");
+  await act(async () => Simulate.pointerMove(viewport, { ...second, clientX: 50 }));
+  expect(button("Fit image to view").textContent).toBe("Fit");
+  await act(async () => Simulate.pointerCancel(viewport, second));
+  await act(async () => Simulate.pointerMove(viewport, { ...first, clientX: 200 }));
+  expect(button("Fit image to view").textContent).toBe("Fit");
+  const wheel = new WheelEvent("wheel", {
+    ctrlKey: true,
+    deltaY: -1000,
+    bubbles: true,
+    cancelable: true,
+  });
+  await act(async () => {
+    viewport.dispatchEvent(wheel);
+  });
+  expect(wheel.defaultPrevented).toBe(true);
+  expect(button("Fit image to view").textContent).toBe("200%");
+  await act(async () =>
+    viewport.dispatchEvent(new WheelEvent("wheel", { deltaY: 1000, bubbles: true })),
+  );
+  expect(button("Fit image to view").textContent).toBe("200%");
+});
+
 it("drags zoomed images with pointer capture and stops on release, cancellation, and reset", async () => {
   await open();
   const viewport = document.querySelector<HTMLDivElement>('[aria-label="Image preview"]')!;
