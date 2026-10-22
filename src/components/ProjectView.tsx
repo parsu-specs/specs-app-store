@@ -1108,7 +1108,7 @@ export default function ProjectView({
         createPortal(
           <div
             role="alert"
-            className="min-w-0 pointer-events-none fixed inset-x-0 bottom-24 z-100 flex justify-center px-4 *:min-w-0 max-w-full"
+            className="min-w-0 pointer-events-none fixed inset-x-0 bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] z-100 flex justify-center px-4 *:min-w-0 max-w-full"
           >
             <p className="toon-card rounded-2xl bg-surface px-5 py-3 text-center text-sm font-black">
               {voteNotice}

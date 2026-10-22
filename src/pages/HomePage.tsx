@@ -7,8 +7,6 @@ import {
   UsersThree,
 } from "@phosphor-icons/react";
 import { ButtonLink } from "../components/Button";
-import SiteHeader from "../components/SiteHeader";
-import Footer from "../components/Footer";
 import { APP_INFO } from "../data/team";
 import { useAuth } from "../auth/AuthProvider";
 import { ROUTES, navigateInternalLink } from "./routes";
@@ -16,9 +14,8 @@ import { ROUTES, navigateInternalLink } from "./routes";
 export default function HomePage() {
   const { user } = useAuth();
   return (
-    <div className="min-h-screen">
-      <SiteHeader page="home" />
-      <div className="px-5 lg:px-10">
+    <div>
+      <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">
         <header className="min-w-0 mx-auto grid *:min-w-0 max-w-7xl gap-14 pb-16 pt-6 sm:pt-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,.85fr)] lg:items-center lg:pb-24 lg:pt-10">
           <div>
             <div className="min-w-0 inline-flex -rotate-2 items-center gap-2 border-2 border-dashed border-primary px-3 py-1 text-xs font-black uppercase text-primary mb-7 bg-surface *:min-w-0 max-w-full">
@@ -128,7 +125,6 @@ export default function HomePage() {
           </div>
         </section>
       </div>
-      <Footer />
     </div>
   );
 }

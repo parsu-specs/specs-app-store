@@ -72,7 +72,7 @@ export default function Store() {
           <AppearanceControl compact />
         </div>
         <nav
-          className="min-w-0 fixed inset-x-0 bottom-0 z-50 grid *:min-w-0 h-18 grid-cols-3 gap-1 border-t-2 border-outline bg-brand-surface p-2 sm:gap-2 lg:static lg:mt-12 lg:flex lg:h-auto lg:flex-col lg:gap-2 lg:border-0 lg:bg-transparent lg:p-0 lg:pr-1 max-w-full"
+          className="min-w-0 fixed inset-x-0 bottom-0 z-50 grid *:min-w-0 h-[calc(4.5rem+env(safe-area-inset-bottom,0px))] grid-cols-3 gap-1 bg-transparent px-[max(0.5rem,env(safe-area-inset-left,0px))] pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] text-foreground sm:gap-2 lg:static lg:mt-12 lg:flex lg:h-auto lg:flex-col lg:gap-2 lg:p-0 lg:pr-1 lg:text-brand-foreground max-w-full"
           aria-label="Main navigation"
         >
           <ButtonLink
@@ -234,7 +234,7 @@ export default function Store() {
         createPortal(
           <div
             role="alert"
-            className="min-w-0 pointer-events-none fixed inset-x-0 bottom-24 z-100 flex justify-center px-4 *:min-w-0 max-w-full"
+            className="min-w-0 pointer-events-none fixed inset-x-0 bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] z-100 flex justify-center px-4 *:min-w-0 max-w-full"
           >
             <p className="toon-card rounded-2xl bg-surface px-5 py-3 text-center text-sm font-black">
               {voteNotice}
@@ -438,7 +438,7 @@ export default function Store() {
             </div>
           </div>
         </header>
-        <div className="min-w-0 max-w-full px-4 pb-23 pt-27.25 sm:px-8 sm:pb-25 sm:pt-29.25 lg:ml-70 lg:p-10 lg:pt-31.25">
+        <div className="min-w-0 max-w-full px-4 pb-[calc(5.75rem+env(safe-area-inset-bottom,0px))] pt-27.25 sm:px-8 sm:pb-[calc(6.25rem+env(safe-area-inset-bottom,0px))] sm:pt-29.25 lg:ml-70 lg:p-10 lg:pt-31.25">
           {(pageTitle || pageDescription) && (
             <header id="discover" className="mx-auto max-w-6xl scroll-mt-5">
               <div className="min-w-0 flex flex-wrap items-center justify-between gap-3 *:min-w-0 max-w-full">

@@ -1,13 +1,19 @@
 import { ButtonLink, Button } from "../components/Button";
 import { useState } from "react";
 import {
-  EnvelopeSimple, Binoculars, RocketLaunch, UsersThree,
-  Compass, Palette, Code, Stack, ShieldCheck, CloudArrowUp,
+  EnvelopeSimple,
+  Binoculars,
+  RocketLaunch,
+  UsersThree,
+  Compass,
+  Palette,
+  Code,
+  Stack,
+  ShieldCheck,
+  CloudArrowUp,
 } from "@phosphor-icons/react";
 import Avatar from "../components/Avatar";
 import ImageViewer from "../components/ImageViewer";
-import Footer from "../components/Footer";
-import SiteHeader from "../components/SiteHeader";
 import { APP_INFO, CONTACT_EMAIL, TEAM } from "../data/team";
 
 const badgeIcons = {
@@ -23,10 +29,8 @@ export default function About() {
   const [lightbox, setLightbox] = useState<{ src: string; name: string } | null>(null);
 
   return (
-    <div className="min-h-screen">
-      <SiteHeader page="about" />
-
-      <main className="mx-auto max-w-6xl px-5 pt-6 sm:px-8 sm:pt-8 lg:pt-10">
+    <div>
+      <div className="mx-auto w-full max-w-7xl px-5 pt-6 sm:px-8 sm:pt-8 lg:px-10 lg:pt-10">
         <header className="grid min-w-0 gap-8 pb-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-center lg:gap-16 lg:pb-16">
           <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-widest text-primary">
@@ -170,7 +174,7 @@ export default function About() {
             <EnvelopeSimple size={22} weight="duotone" aria-hidden="true" /> Email the team
           </ButtonLink>
         </section>
-      </main>
+      </div>
 
       {lightbox && (
         <ImageViewer
@@ -179,8 +183,6 @@ export default function About() {
           onClose={() => setLightbox(null)}
         />
       )}
-
-      <Footer />
     </div>
   );
 }

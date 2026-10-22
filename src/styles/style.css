@@ -300,6 +300,7 @@ body:has([data-dropdown-portal]) {
   }
 
   html {
+    scrollbar-gutter: stable;
     color: var(--color-foreground);
     scrollbar-color: var(--color-primary) var(--color-outline);
     scrollbar-width: auto;

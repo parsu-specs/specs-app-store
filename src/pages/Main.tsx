@@ -4,10 +4,9 @@ import { ROUTES, isProtectedRoute, normalizePathname, resolveRoute } from "./rou
 
 // Route-split: each page (and its heavy deps like markdown/GitHub readers)
 // loads on demand instead of inflating the first paint.
-const About = lazy(() => import("./About"));
 const Login = lazy(() => import("./Login"));
 const Store = lazy(() => import("./Store"));
-const HomePage = lazy(() => import("./HomePage"));
+const PublicSite = lazy(() => import("./PublicSite"));
 
 function PageLoader() {
   return (
@@ -60,11 +59,11 @@ export default function Main() {
   const normalizedPath = normalizePathname(path);
 
   let page: React.ReactNode;
-  if (normalizedPath === ROUTES.about) page = <About />;
-  else if (normalizedPath === ROUTES.home) page = <HomePage />;
+  if (normalizedPath === ROUTES.about || normalizedPath === ROUTES.home)
+    page = <PublicSite page={normalizedPath === ROUTES.about ? "about" : "home"} />;
   else if (user) page = <Store key={user.id} />;
   else if (isProtectedRoute(normalizedPath) || normalizedPath === ROUTES.signin) page = <Login />;
-  else page = <HomePage />;
+  else page = <PublicSite page="home" />;
 
   return (
     <main className="min-h-screen">
