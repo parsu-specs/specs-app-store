@@ -1,3 +1,4 @@
+import { House, Info } from "@phosphor-icons/react";
 import { ButtonLink } from "../components/Button";
 import SiteHeader from "../components/SiteHeader";
 import Footer from "../components/Footer";
@@ -23,8 +24,13 @@ export default function PublicSite({ page }: { page: "home" | "about" }) {
             href={href}
             onClick={navigateInternalLink}
             aria-current={page === id ? "page" : undefined}
-            className={`rounded-2xl border-2 border-outline px-3 py-2 text-sm font-black transition-colors ${page === id ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary hover:text-foreground"}`}
+            className={`inline-flex items-center gap-2 rounded-2xl border-2 border-outline px-3 py-2 text-sm font-black transition-colors ${page === id ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary hover:text-foreground"}`}
           >
+            {id === "home" ? (
+              <House size={19} weight="duotone" aria-hidden="true" />
+            ) : (
+              <Info size={19} weight="duotone" aria-hidden="true" />
+            )}
             {label}
           </ButtonLink>
         ))}

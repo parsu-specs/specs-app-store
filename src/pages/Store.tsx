@@ -8,7 +8,8 @@ import {
   Trophy,
   User as UserIcon,
   UsersThree,
-  ArrowSquareUpRight,
+  House,
+  Info,
 } from "@phosphor-icons/react";
 import Brand from "../components/Brand";
 import AppearanceControl from "../components/AppearanceControl";
@@ -152,7 +153,7 @@ export default function Store() {
             onClick={navigateInternalLink}
             className="flex w-full items-center justify-between rounded-2xl px-4 py-2 text-sm hover:bg-surface/15"
           >
-            <span>About</span> <ArrowSquareUpRight size={20} />
+            <span>About</span> <Info size={20} weight="duotone" aria-hidden="true" />
           </ButtonLink>
           <ButtonLink
             variant="plain"
@@ -160,7 +161,7 @@ export default function Store() {
             onClick={navigateInternalLink}
             className="flex w-full items-center justify-between rounded-2xl px-4 py-2 text-sm hover:bg-surface/15"
           >
-            <span>Home</span> <ArrowSquareUpRight size={20} />
+            <span>Home</span> <House size={20} weight="duotone" aria-hidden="true" />
           </ButtonLink>
         </nav>
       </aside>
@@ -427,7 +428,7 @@ export default function Store() {
                     }}
                     className="flex min-h-11 w-full items-center justify-between rounded-xl px-3 py-2 text-sm hover:bg-background"
                   >
-                    <span>About</span> <ArrowSquareUpRight size={20} weight="duotone" />
+                    <span>About</span> <Info size={20} weight="duotone" aria-hidden="true" />
                   </ButtonLink>
                   <ButtonLink
                     variant="plain"
@@ -438,7 +439,7 @@ export default function Store() {
                     }}
                     className="flex min-h-11 w-full items-center justify-between rounded-xl px-3 py-2 text-sm hover:bg-background"
                   >
-                    <span>Home</span> <ArrowSquareUpRight size={20} weight="duotone" />
+                    <span>Home</span> <House size={20} weight="duotone" aria-hidden="true" />
                   </ButtonLink>
                 </div>
                 <div className="border-t-2 border-dashed border-outline/15 pt-2">

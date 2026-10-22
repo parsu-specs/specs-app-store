@@ -1,4 +1,4 @@
-﻿import { Heart, Trophy } from "@phosphor-icons/react";
+﻿import { Code, Heart, Trophy, UsersThree } from "@phosphor-icons/react";
 import TrophyMark from "../../components/TrophyMark";
 import Avatar from "../../components/Avatar";
 import { Button } from "../../components/Button";
@@ -85,13 +85,18 @@ export default function LeaderboardPage({
         <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="Leaderboard view">
           {(["developers", "projects"] as const).map((tab) => (
             <Button
-              variant="plain"
+              variant="filter"
               key={tab}
               role="tab"
               aria-selected={boardTab === tab}
               onClick={() => setBoardTab(tab)}
-              className={`rounded-lg border-2 border-outline px-3 py-2 text-sm font-black capitalize transition-colors ${boardTab === tab ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary hover:text-foreground"}`}
+              className="capitalize"
             >
+              {tab === "developers" ? (
+                <UsersThree size={19} weight="duotone" aria-hidden="true" />
+              ) : (
+                <Code size={19} weight="duotone" aria-hidden="true" />
+              )}
               {tab}
             </Button>
           ))}
