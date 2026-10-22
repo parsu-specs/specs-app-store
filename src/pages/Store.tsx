@@ -93,7 +93,7 @@ export default function Store() {
           <AppearanceControl compact />
         </div>
         <nav
-          className="min-w-0 fixed inset-x-0 bottom-[env(safe-area-inset-bottom,0px)] z-50 grid *:min-w-0 h-18 grid-cols-3 gap-1 border-t-2 border-outline bg-brand-surface p-2 sm:gap-2 lg:static lg:mt-12 lg:flex lg:h-auto lg:flex-col lg:gap-2 lg:border-0 lg:bg-transparent lg:p-0 lg:pr-1 max-w-full"
+          className="min-w-0 fixed inset-x-0 bottom-0 z-50 grid *:min-w-0 h-[calc(4.5rem+env(safe-area-inset-bottom,0px))] grid-cols-3 gap-1 border-t-2 border-outline bg-brand-surface p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] sm:gap-2 lg:static lg:mt-12 lg:flex lg:h-auto lg:flex-col lg:gap-2 lg:border-0 lg:bg-transparent lg:p-0 lg:pr-1 max-w-full"
           aria-label="Main navigation"
         >
           <ButtonLink
