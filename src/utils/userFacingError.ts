@@ -15,7 +15,7 @@ const safeMessages = new Set([
   "Could not load project.",
   "Could not load profile.",
   "Could not load comments.",
-  "Could not load voters.",
+  "Could not load likes.",
   "Could not load updates.",
   "Could not post comment.",
   "Could not post reply.",
@@ -25,8 +25,8 @@ const safeMessages = new Set([
   "Could not delete project.",
   "Could not read that file.",
   "Could not read those images.",
-  "Could not vote. Try again.",
-  "Could not save vote. Try again.",
+  "Could not like. Try again.",
+  "Could not save like. Try again.",
   "Complete the human check first.",
   "Human check failed to load. Check your connection and reload the page.",
   "Checking display name availability…",
@@ -79,6 +79,12 @@ const safeMessages = new Set([
 
 export function userFacingError(error: unknown, defaultMessage = fallback): string {
   const message = error instanceof Error ? error.message : typeof error === "string" ? error : "";
+  const legacyMessages: Record<string, string> = {
+    "Could not vote. Try again.": "Could not like. Try again.",
+    "Could not save vote. Try again.": "Could not save like. Try again.",
+    "Could not load voters.": "Could not load likes.",
+  };
+  if (legacyMessages[message]) return legacyMessages[message];
   if (safeMessages.has(message)) return message;
   if (
     message === "App link must start with http(s)://." ||
@@ -91,12 +97,13 @@ export function userFacingError(error: unknown, defaultMessage = fallback): stri
   if (message === "Password reset emails aren't available in the local demo.") {
     return "Password reset is unavailable in this demo.";
   }
-  if (/^Voting is paused — \d+:\d{2} left\.$/.test(message)) return message;
-  if (/^Spamming detected — voting is paused for \d+:\d{2}\.$/.test(message)) {
-    return "Voting is temporarily paused. Please wait before voting again.";
+  if (/^(?:Voting|Liking) is paused — \d+:\d{2} left\.$/.test(message))
+    return message.replace("Voting", "Liking");
+  if (/^Spamming detected — (?:voting|liking) is paused for \d+:\d{2}\.$/.test(message)) {
+    return "Liking is temporarily paused. Please wait before liking again.";
   }
-  if (/^Voting is paused for another \d+ minutes?\. Try again later\.$/.test(message)) {
-    return "Voting is temporarily paused. Please try again later.";
+  if (/^(?:Voting|Liking) is paused for another \d+ minutes?\. Try again later\.$/.test(message)) {
+    return "Liking is temporarily paused. Please try again later.";
   }
   if (/failed to fetch|network request failed|networkerror|load failed/i.test(message)) {
     return "We couldn't connect. Check your internet connection and try again.";

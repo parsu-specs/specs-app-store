@@ -1,6 +1,7 @@
 import { userFacingError } from "../utils/userFacingError";
 import React, { useEffect, useMemo, useState } from "react";
 import { ChatCircleDots, Heart, PaperPlaneTilt, User as UserIcon } from "@phosphor-icons/react";
+import VotersDialog from "./VotersDialog";
 import Avatar from "./Avatar";
 import DeleteMenu from "./DeleteMenu";
 import TrophyMark from "./TrophyMark";
@@ -221,20 +222,30 @@ export default function Comments({
   };
 
   const likeButton = (c: Comment, small = false) => (
-    <Button
-      variant="vote"
-      size={small ? "compact" : "default"}
-      type="button"
-      onClick={() => void toggleLike(c)}
-      aria-pressed={Boolean(c.viewerHasLiked)}
-      aria-label={c.viewerHasLiked ? "Unlike this comment" : "Like this comment"}
-      disabled={!currentUser || c.isDeleted || likePending.has(c.id)}
-      title={currentUser ? undefined : "Sign in to like"}
-      className={c.viewerHasLiked ? "" : "text-muted"}
-    >
-      <Heart size={small ? 15 : 16} weight={c.viewerHasLiked ? "fill" : "duotone"} />
-      {c.likes ?? 0}
-    </Button>
+    <span className="inline-flex items-center gap-2">
+      <Button
+        variant="vote"
+        size={small ? "compact" : "default"}
+        type="button"
+        onClick={() => void toggleLike(c)}
+        aria-pressed={Boolean(c.viewerHasLiked)}
+        aria-label={c.viewerHasLiked ? "Unlike this comment" : "Like this comment"}
+        disabled={!currentUser || c.isDeleted || likePending.has(c.id)}
+        title={currentUser ? undefined : "Sign in to like"}
+        className={c.viewerHasLiked ? "" : "text-muted"}
+      >
+        <Heart size={small ? 15 : 16} weight={c.viewerHasLiked ? "fill" : "duotone"} />
+      </Button>
+      {!c.isDeleted && (
+        <VotersDialog
+          target="comment"
+          appId={c.id}
+          appTitle={`comment by ${c.authorName}`}
+          totalVotes={c.likes ?? 0}
+          onOpenProfile={onOpenProfile}
+        />
+      )}
+    </span>
   );
 
   const form = (

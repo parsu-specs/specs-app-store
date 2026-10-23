@@ -1,4 +1,5 @@
 ﻿import { Code, Heart, Trophy, UsersThree } from "@phosphor-icons/react";
+import VotersDialog from "../../components/VotersDialog";
 import TrophyMark from "../../components/TrophyMark";
 import Avatar from "../../components/Avatar";
 import { Button } from "../../components/Button";
@@ -52,7 +53,19 @@ export default function LeaderboardPage({
         };
       });
   const ScoreIcon = developers ? Trophy : Heart;
-  const scoreLabel = developers ? "pts" : "votes";
+  const renderScore = (entry: (typeof entries)[number]) =>
+    developers ? (
+      <>
+        {entry.score} <span className="text-xs uppercase text-muted">pts</span>
+      </>
+    ) : (
+      <VotersDialog
+        appId={entry.id}
+        appTitle={entry.name}
+        totalVotes={entry.score}
+        onOpenProfile={openProfile}
+      />
+    );
   const renderDetail = (entry: (typeof entries)[number]) => {
     if (developers || !entry.profile) return entry.detail;
     const author = entry.profile;
@@ -76,8 +89,8 @@ export default function LeaderboardPage({
       <div className="mb-6">
         <p className="text-xs font-black uppercase text-primary">
           {developers
-            ? "Rank points = upvotes + 20 per published project"
-            : "Ranked by project upvotes"}
+            ? "Rank points = likes + 20 per published project"
+            : "Ranked by project likes"}
         </p>
         <h2 className="mt-1 text-2xl font-black">
           {developers ? "Top developers" : "Top projects"}
@@ -138,9 +151,7 @@ export default function LeaderboardPage({
                 <p className="mt-1 w-full wrap-break-word text-xs font-bold text-muted sm:text-sm">
                   {renderDetail(entry)}
                 </p>
-                <p className="mt-4 text-sm font-black sm:text-lg">
-                  {entry.score} <span className="text-xs uppercase text-muted">{scoreLabel}</span>
-                </p>
+                <p className="mt-4 text-sm font-black sm:text-lg">{renderScore(entry)}</p>
               </li>
             ))}
           </ol>
@@ -178,7 +189,7 @@ export default function LeaderboardPage({
                   </div>
                   <p className="flex shrink-0 items-center gap-1 text-sm font-black sm:gap-2 sm:text-base">
                     <ScoreIcon size={20} weight="duotone" className="hidden text-muted sm:block" />
-                    {entry.score} <span className="text-xs uppercase text-muted">{scoreLabel}</span>
+                    {renderScore(entry)}
                   </p>
                 </li>
               ))}

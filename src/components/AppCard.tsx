@@ -187,7 +187,12 @@ export default function AppCard({
         </p>
         <div className="min-w-0 flex min-h-8 flex-wrap items-center gap-3 border-t-2 border-dashed border-divider pt-4 *:min-w-0 max-w-full">
           <span className="min-w-0 flex items-center gap-2 *:min-w-0 max-w-full">
-            <Button variant="vote" onClick={() => onVote(app.id)} aria-pressed={voted}>
+            <Button
+              variant="vote"
+              onClick={() => onVote(app.id)}
+              aria-pressed={voted}
+              aria-label={voted ? "Unlike project" : "Like project"}
+            >
               <Heart size={20} weight={voted ? "fill" : "duotone"} />
             </Button>
             <VotersDialog

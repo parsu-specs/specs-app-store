@@ -1,4 +1,4 @@
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "../auth/authContext";
 import { ROUTES, navigateInternalLink } from "../pages/routes";
 import Brand from "./Brand";
 import AppearanceControl from "./AppearanceControl";

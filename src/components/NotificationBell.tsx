@@ -44,7 +44,7 @@ const KIND_ICON: Record<NotificationItem["kind"], typeof Bell> = {
 const KIND_LABEL: Record<NotificationItem["kind"], string> = {
   comment: "Comment",
   reply: "Reply",
-  vote: "Upvotes",
+  vote: "Likes",
   like: "Like",
   project: "New project",
   update: "Feed",
@@ -84,7 +84,7 @@ export default function NotificationBell({
     const when = new Date(arrived).toLocaleString();
     const uploaded = new Date(item.createdAt).toLocaleString();
     return item.kind === "vote"
-      ? `New upvotes ${when} · Project uploaded ${uploaded}`
+      ? `New likes ${when} · Project uploaded ${uploaded}`
       : item.kind === "like"
         ? `Liked your comment ${when}`
         : `Tagged as collaborator ${when} · Project uploaded ${uploaded}`;
@@ -169,7 +169,7 @@ export default function NotificationBell({
             <Bell size={28} weight="duotone" className="mx-auto text-muted" />
             <p className="mt-2 font-black">All caught up</p>
             <p className="mt-1 text-sm font-bold text-muted">
-              Comments, replies, upvotes, new projects, and Feed posts land here.
+              Comments, replies, likes, new projects, and Feed posts land here.
             </p>
           </div>
         ) : (

@@ -1,0 +1,7 @@
+/* Transparent borders preserve element dimensions and existing shadows. */
+:root[data-no-borders="enabled"],
+:root[data-no-borders="enabled"] *,
+:root[data-no-borders="enabled"] *::before,
+:root[data-no-borders="enabled"] *::after {
+  border-color: transparent !important;
+}

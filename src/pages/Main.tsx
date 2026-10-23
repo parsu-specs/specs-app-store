@@ -1,12 +1,13 @@
-import React, { Suspense, lazy, useEffect, useState } from "react";
-import { useAuth } from "../auth/AuthProvider";
+import React, { Suspense, useEffect, useState } from "react";
+import { lazyPage } from "../utils/lazyPage";
+import { useAuth } from "../auth/authContext";
 import { ROUTES, isProtectedRoute, normalizePathname, resolveRoute } from "./routes";
 
 // Route-split: each page (and its heavy deps like markdown/GitHub readers)
 // loads on demand instead of inflating the first paint.
-const Login = lazy(() => import("./Login"));
-const Store = lazy(() => import("./Store"));
-const PublicSite = lazy(() => import("./PublicSite"));
+const Login = lazyPage(() => import("./Login"));
+const Store = lazyPage(() => import("./Store"));
+const PublicSite = lazyPage(() => import("./PublicSite"));
 
 function PageLoader() {
   return (

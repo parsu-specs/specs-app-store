@@ -1,0 +1,23 @@
+/* Isolated opt-in overrides: keep rem sizing and leave layout tokens untouched. */
+@supports (font-size: calc(1rem + 0.125rem * progress(100vw, 20rem, 90rem))) {
+  :root[data-fluid-text="enabled"] {
+    --fluid-text-scale: calc(1 + 0.125 * progress(100vw, 20rem, 90rem));
+    --text-xs: calc(0.75rem * var(--fluid-text-scale));
+    --text-sm: calc(0.875rem * var(--fluid-text-scale));
+    --text-base: calc(1rem * var(--fluid-text-scale));
+    --text-lg: calc(1.125rem * var(--fluid-text-scale));
+    --text-xl: calc(1.25rem * var(--fluid-text-scale));
+    --text-2xl: calc(1.5rem * var(--fluid-text-scale));
+    --text-3xl: calc(1.875rem * var(--fluid-text-scale));
+    --text-4xl: calc(2.25rem * var(--fluid-text-scale));
+    --text-5xl: calc(3rem * var(--fluid-text-scale));
+    --text-6xl: calc(3.75rem * var(--fluid-text-scale));
+    --text-7xl: calc(4.5rem * var(--fluid-text-scale));
+    --text-8xl: calc(6rem * var(--fluid-text-scale));
+    --text-9xl: calc(8rem * var(--fluid-text-scale));
+  }
+
+  :root[data-fluid-text="enabled"] body {
+    font-size: var(--text-base);
+  }
+}

@@ -63,6 +63,15 @@ function sessionUser(id: string, email: string | undefined, name: unknown): User
 
 export function createSupabaseAuthRepo(): AuthRepo {
   return {
+    subscribeSession(onChange) {
+      const { data } = getSupabase().auth.onAuthStateChange((_event, session) => {
+        const user = session?.user;
+        // Keep this callback synchronous: awaiting Auth calls here can deadlock refresh.
+        onChange(user ? sessionUser(user.id, user.email, user.user_metadata?.["name"]) : null);
+      });
+      return () => data.subscription.unsubscribe();
+    },
+
     async getSession(): Promise<User | null> {
       const { data } = await getSupabase().auth.getSession();
       const user = data.session?.user;

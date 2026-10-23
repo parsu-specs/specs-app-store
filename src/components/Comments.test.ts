@@ -6,11 +6,11 @@ import { Simulate } from "react-dom/test-utils";
 import Comments from "./Comments";
 import MentionInput from "./MentionInput";
 import MentionText from "./MentionText";
-import { getAppRepo } from "../data/factory";
+import { getAppRepo, getProfileRepo } from "../data/factory";
 import { indexProfiles } from "../data/profileLinks";
 import type { Comment, Profile } from "../data/types";
 
-vi.mock("../data/factory", () => ({ getAppRepo: vi.fn() }));
+vi.mock("../data/factory", () => ({ getAppRepo: vi.fn(), getProfileRepo: vi.fn() }));
 
 const profiles: Profile[] = ["Alice", "Bob Smith", "Carla_23", "José"].map((name) => ({
   id: name,
@@ -254,4 +254,28 @@ describe("mentions after account changes", () => {
       expect(container.querySelector("button")).toBeNull();
     }
   });
+});
+
+it("previews comment likers without toggling the like", async () => {
+  const listCommentLikers = vi.fn().mockResolvedValue({ "comment-0": ["Bob Smith"] });
+  const toggleCommentLike = vi.fn();
+  vi.mocked(getAppRepo).mockReturnValue({
+    listComments: vi.fn().mockResolvedValue(comments),
+    listCommentLikers,
+    toggleCommentLike,
+  } as never);
+  vi.mocked(getProfileRepo).mockReturnValue({
+    listProfiles: vi.fn().mockResolvedValue(profiles),
+  } as never);
+  await renderComments();
+  expect(listCommentLikers).not.toHaveBeenCalled();
+  const trigger = container.querySelector<HTMLButtonElement>('[aria-haspopup="dialog"]')!;
+  await act(async () => trigger.click());
+  const dialog = document.querySelector('[role="dialog"]')!;
+  expect(dialog.textContent).toContain("Liked by (1)");
+  expect(dialog.textContent).toContain("Bob Smith");
+  expect(toggleCommentLike).not.toHaveBeenCalled();
+  await act(async () =>
+    document.querySelector<HTMLButtonElement>('[aria-label="Close likes"]')!.click(),
+  );
 });

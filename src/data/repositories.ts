@@ -27,6 +27,8 @@ export type GoogleAccount = {
 
 export type AuthRepo = {
   getSession(): Promise<User | null>;
+  /** Observe backend session changes; returns a cleanup function. */
+  subscribeSession?(onChange: (user: User | null) => void): () => void;
   signin(email: string, password: string, captchaToken?: string): Promise<User>;
   signup(name: string, email: string, password: string, captchaToken?: string): Promise<User>;
   signinWithGoogleAccount(account: GoogleAccount): Promise<GoogleSignInResult>;

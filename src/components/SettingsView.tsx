@@ -5,12 +5,17 @@ import { Button } from "./Button";
 import Input, { Textarea } from "./Input";
 import AppearanceControl from "./AppearanceControl";
 import SoundControl from "./SoundControl";
+import FluidTextControl from "../experiments/fluidText";
+import BoldTextControl from "../experiments/boldText";
+import NoBordersControl from "../experiments/noBorders";
+import SoftEdgesControl from "../experiments/softEdges";
+import GlassThemeControl from "../experiments/glassTheme";
 import { appearanceSnapshot, subscribeAppearance } from "../utils/appearance";
 import { palettesForMode } from "../utils/darkPalettes";
 import { loadPalette, PALETTES, resolvePalette, setPalette } from "../utils/palette";
 import { getAuthRepo, getProfileRepo } from "../data/factory";
 import { resetLocalData } from "../data/local/localApps";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "../auth/authContext";
 import type { Profile } from "../data/types";
 import { confirmDisplayNameChange } from "../utils/displayName";
 import DisplayNameInput from "./DisplayNameInput";
@@ -291,7 +296,6 @@ export default function SettingsView({
           {mode === "dark"
             ? "Rich dark surfaces with carefully chosen accents."
             : "Soft paper surfaces with playful color accents."}{" "}
-          Saved to your account, so it follows you to other browsers.
         </p>
         {paletteError && (
           <p role="alert" className="mt-2 text-sm font-bold">
@@ -339,6 +343,16 @@ export default function SettingsView({
         </div>
       </section>
       <SoundControl />
+      <section className="toon-card toon-paper rounded-2xl bg-panel p-6 pt-10 sm:p-8 sm:pt-12">
+        <h2 className="text-2xl font-black">Experimental</h2>
+        <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
+          <FluidTextControl />
+          <BoldTextControl />
+          <NoBordersControl />
+          <SoftEdgesControl />
+          <GlassThemeControl />
+        </div>
+      </section>
 
       {isLocalMode && (
         <section className="toon-card toon-paper bg-panel rounded-2xl p-6 pt-10 sm:p-8 sm:pt-12">
@@ -347,7 +361,7 @@ export default function SettingsView({
             <h2 className="text-2xl font-black">Demo data</h2>
           </div>
           <p className="mt-2 text-sm font-bold text-muted">
-            Clear locally stored projects, votes, feedback, and Feed posts on this browser. Your
+            Clear locally stored projects, likes, feedback, and Feed posts on this browser. Your
             account stays signed in.
           </p>
           {!armReset ? (

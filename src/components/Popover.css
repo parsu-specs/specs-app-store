@@ -1,0 +1,15 @@
+[data-popover-anchor] {
+  anchor-name: var(--popover-anchor);
+}
+
+[data-popover-auto-flip] {
+  position-anchor: var(--popover-anchor);
+  top: anchor(bottom);
+  left: anchor(left);
+  margin-top: 8px;
+  position-try-fallbacks:
+    flip-block,
+    flip-inline,
+    flip-block flip-inline;
+  max-height: calc(100dvh - 2rem);
+}

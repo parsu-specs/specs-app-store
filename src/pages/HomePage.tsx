@@ -8,7 +8,7 @@ import {
 } from "@phosphor-icons/react";
 import { ButtonLink } from "../components/Button";
 import { APP_INFO } from "../data/team";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "../auth/authContext";
 import { ROUTES, navigateInternalLink } from "./routes";
 
 export default function HomePage() {

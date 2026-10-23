@@ -124,7 +124,7 @@ describe("buildNotifications", () => {
     const bob = { id: "u2", name: "Bob", role: "r", bio: "", color: "sky", createdAt: H(9) };
     const voters = new Map([["mine", [bob]]]);
     const first = buildNotifications(baseInput({ apps: [mine], voters }));
-    expect(first.find((i) => i.kind === "vote")?.title).toBe("Bob upvoted App mine");
+    expect(first.find((i) => i.kind === "vote")?.title).toBe("Bob liked App mine");
 
     // A steady voter never re-fires.
     const steady = buildNotifications(

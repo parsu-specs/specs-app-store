@@ -8,7 +8,7 @@ import type { AppItem, Comment, FeedPost, NotificationItem, Profile, User } from
  *
  * - comment: someone commented on one of my projects.
  * - reply: someone replied to one of my comments (any project).
- * - vote: someone upvoted one of my projects (per-voter appearances from
+ * - vote: someone liked one of my projects (per-voter appearances from
  *   listVoters snapshots — an unvote followed by a re-vote notifies again
  *   under a fresh id, while a steady voter never re-fires; own votes never
  *   notify).
@@ -393,7 +393,7 @@ export function buildNotifications(input: NotificationInput): NotificationItem[]
       items.push({
         id: cycle === 0 ? `vote:${app.id}:${voter.id}` : `vote:${app.id}:${voter.id}#${cycle}`,
         kind: "vote",
-        title: `${name} upvoted ${app.title}`,
+        title: `${name} liked ${app.title}`,
         body: `${app.votes} total`,
         createdAt: app.createdAt,
         appId: app.id,

@@ -33,7 +33,7 @@ describe("userFacingError", () => {
   });
 
   it("preserves vote countdowns without allowing arbitrary pause messages", () => {
-    expect(userFacingError("Voting is paused — 4:30 left.")).toBe("Voting is paused — 4:30 left.");
+    expect(userFacingError("Voting is paused — 4:30 left.")).toBe("Liking is paused — 4:30 left.");
     expect(userFacingError("Voting is paused: database unavailable")).toBe(
       "Something went wrong. Please try again.",
     );

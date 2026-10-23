@@ -5,11 +5,11 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Heart } from "@phosphor-icons/react";
 import Avatar from "./Avatar";
-import { getAppRepo } from "../data/factory";
+import { getAppRepo, getProfileRepo } from "../data/factory";
 import type { Profile } from "../data/types";
 
 type VotersDialogProps = {
-  target?: "app" | "feedPost";
+  target?: "app" | "feedPost" | "comment";
   appId: string;
   appTitle: string;
   totalVotes: number;
@@ -27,6 +27,7 @@ export default function VotersDialog({
   totalVotes,
   onOpenProfile,
 }: VotersDialogProps) {
+  const reaction = "like";
   const [open, setOpen] = useState(false);
   const [voters, setVoters] = useState<Profile[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -38,13 +39,21 @@ export default function VotersDialog({
     let cancelled = false;
     setLoading(true);
     setError(null);
-    getAppRepo()
-      .listVoters(appId, target)
+    const load = async () => {
+      if (target !== "comment") return getAppRepo().listVoters(appId, target);
+      const likers = await getAppRepo().listCommentLikers([appId]);
+      const ids = new Set(likers[appId] ?? []);
+      if (!ids.size) return [];
+      return (await getProfileRepo().listProfiles())
+        .filter((profile) => ids.has(profile.id))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    };
+    load()
       .then((list) => {
         if (!cancelled) setVoters(list);
       })
       .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Could not load voters.");
+        if (!cancelled) setError(e instanceof Error ? e.message : "Could not load likes.");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -52,7 +61,7 @@ export default function VotersDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, appId, target, attempt]);
+  }, [open, appId, target, attempt, totalVotes]);
 
   useEffect(() => {
     if (!open) return;
@@ -77,17 +86,21 @@ export default function VotersDialog({
       <Button
         variant="text"
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={(event) => {
+          event.stopPropagation();
+          setOpen(true);
+        }}
         aria-haspopup="dialog"
         aria-expanded={open}
         title={
           totalVotes === 1
-            ? "See who upvoted (1 upvote)"
-            : `See who upvoted (${totalVotes} upvotes)`
+            ? `See who ${reaction}d (1 ${reaction})`
+            : `See who ${reaction}d (${totalVotes} ${reaction}s)`
         }
         className="text-sm"
       >
-        {totalVotes} upvotes
+        {totalVotes} {reaction}
+        {totalVotes === 1 ? "" : "s"}
       </Button>
 
       {open &&
@@ -95,7 +108,7 @@ export default function VotersDialog({
           <div
             role="dialog"
             aria-modal="true"
-            aria-label={`Voters for ${appTitle}`}
+            aria-label={`Likes for ${appTitle}`}
             onClick={() => setOpen(false)}
             className="min-w-0 fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-inverse/80 p-4 max-w-full"
           >
@@ -107,19 +120,20 @@ export default function VotersDialog({
                 <h4 className="flex min-w-0 items-center gap-2 truncate text-lg font-black *:min-w-0 max-w-full">
                   <Heart size={20} weight="duotone" aria-hidden="true" />
                   <span className="truncate">
-                    Upvoted by{voters !== null && ` (${voters.length})`}
+                    Liked by
+                    {voters !== null && ` (${voters.length})`}
                   </span>
                 </h4>
                 <CloseButton
                   type="button"
                   onClick={() => setOpen(false)}
-                  aria-label="Close voters"
+                  aria-label="Close likes"
                   autoFocus
                 />
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
                 {loading ? (
-                  <p className="text-sm font-bold text-muted">Loading voters…</p>
+                  <p className="text-sm font-bold text-muted">Loading likes…</p>
                 ) : error ? (
                   <div className="text-center">
                     <p role="alert" className="text-sm font-bold">
@@ -156,20 +170,21 @@ export default function VotersDialog({
                     </ul>
                     {totalVotes > voters.length && (
                       <p className="mt-3 text-center text-xs font-bold text-muted">
-                        {totalVotes} total upvotes · {voters.length} voter
-                        {voters.length === 1 ? "" : "s"} shown (older upvotes predate voter
+                        {totalVotes} total likes · {voters.length} profile
+                        {voters.length === 1 ? "" : "s"} shown (older reactions predate like
                         tracking).
                       </p>
                     )}
                   </>
                 ) : totalVotes > 0 ? (
                   <p className="text-center text-sm font-bold text-muted">
-                    {totalVotes} upvote{totalVotes === 1 ? "" : "s"}, but voter names aren&apos;t
-                    available for older upvotes.
+                    {totalVotes} {reaction}
+                    {totalVotes === 1 ? "" : "s"}, but names aren&apos;t available for older
+                    reactions.
                   </p>
                 ) : (
                   <p className="text-center text-sm font-bold text-muted">
-                    No upvotes yet. Be the first to vote.
+                    No {reaction}s yet. Be the first to like.
                   </p>
                 )}
               </div>

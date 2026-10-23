@@ -21,7 +21,7 @@ export default function SoundControl() {
         <h2 className="text-2xl font-black">Sounds</h2>
       </div>
       <p id={descriptionId} className="mt-2 text-sm font-bold text-muted">
-        Chimes for upvotes and new notifications. Stored on this device only.
+        Chimes for likes and new notifications. Stored on this device only.
       </p>
       <div className="mt-4 flex min-w-0 flex-wrap items-center gap-3">
         <Toggle

@@ -64,6 +64,29 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+it("maps auth session events and unsubscribes from the backend", () => {
+  let notify!: (event: string, session: unknown) => void;
+  const unsubscribe = vi.fn();
+  vi.mocked(getSupabase).mockReturnValue({
+    auth: {
+      onAuthStateChange: vi.fn((callback) => {
+        notify = callback;
+        return { data: { subscription: { unsubscribe } } };
+      }),
+    },
+  } as never);
+  const listener = vi.fn();
+  const cleanup = createSupabaseAuthRepo().subscribeSession!(listener);
+  notify("TOKEN_REFRESHED", {
+    user: { id: "u1", email: "a@example.com", user_metadata: { name: "Ann" } },
+  });
+  expect(listener).toHaveBeenLastCalledWith({ id: "u1", email: "a@example.com", name: "Ann" });
+  notify("SIGNED_OUT", null);
+  expect(listener).toHaveBeenLastCalledWith(null);
+  cleanup();
+  expect(unsubscribe).toHaveBeenCalledOnce();
+});
+
 describe("supabase signup duplicate detection", () => {
   it("rejects an already-registered email instead of fake success", async () => {
     // Supabase anti-enumeration shape: obfuscated user, zero identities.

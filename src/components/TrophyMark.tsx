@@ -50,13 +50,13 @@ export default function TrophyMark({
       className={`min-w-0 ml-1 inline-flex shrink-0 items-center align-middle transition-transform duration-150 hover:scale-125 ${minimal ? "" : tier.glowClassName} *:min-w-0 max-w-full`}
     >
       {minimal ? (
-        <div className="relative rotate-4 -translate-y-0.5">
-          <p
+        <span className="relative inline-flex rotate-4 -translate-y-0.5">
+          <span
             className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-7/12 font-black"
             style={{ color: tier.dark, fontSize: size * 0.3 }}
           >
             {place}
-          </p>
+          </span>
           <Trophy
             size={size}
             weight="duotone"
@@ -66,7 +66,7 @@ export default function TrophyMark({
               filter: `drop-shadow(1px 2px 1px ${tier.mid})`,
             }}
           />
-        </div>
+        </span>
       ) : (
         <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
           <defs>

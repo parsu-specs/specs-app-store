@@ -1,3 +1,4 @@
+import VotersDialog from "./VotersDialog";
 import { userFacingError } from "../utils/userFacingError";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -15,7 +16,7 @@ import MentionText from "./MentionText";
 import TrophyMark from "./TrophyMark";
 import { Button, ButtonLabel } from "./Button";
 import UploadStamp from "./UploadStamp";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "../auth/authContext";
 import { getAppRepo, getProfileRepo } from "../data/factory";
 import { fileToThumbnailDataUrl } from "../utils/images";
 import { useScrollToForm } from "../utils/scroll";
@@ -233,7 +234,7 @@ export default function ProfileView({
                   {apps.length} project{apps.length === 1 ? "" : "s"}
                 </span>
                 <span className="min-w-0 flex items-center gap-1 *:min-w-0 max-w-full">
-                  <Heart size={16} weight="duotone" /> {totalVotes} votes received
+                  <Heart size={16} weight="duotone" /> {totalVotes} likes received
                 </span>
                 <span className="min-w-0 flex items-center gap-1 *:min-w-0 max-w-full">
                   <ChatCircleDots size={16} weight="duotone" /> {totalFeedback} feedback
@@ -243,7 +244,7 @@ export default function ProfileView({
             {rankSummary && (
               <p className="mt-4 rounded-xl border-2 border-dashed border-divider p-3 text-sm font-bold text-muted">
                 Ranked #{rankSummary.rank} of {rankSummary.total} · {rankSummary.points}{" "}
-                {rankSummary.points === 1 ? "pt" : "pts"} — points are upvotes earned across all
+                {rankSummary.points === 1 ? "pt" : "pts"} — points are likes earned across all
                 shared projects.
               </p>
             )}
@@ -442,10 +443,8 @@ export default function ProfileView({
       ) : apps.length ? (
         <div className="min-w-0 grid *:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-6 max-w-full">
           {apps.map((app) => (
-            <Button
-              variant="plain"
+            <article
               key={app.id}
-              onClick={() => onOpenApp(app.id)}
               className="toon-card toon-paper bg-panel flex h-full w-full min-w-0 max-w-sm flex-col rounded-2xl p-5 pt-9 text-left *:min-w-0"
             >
               {app.screenshots?.[0] ? (
@@ -474,7 +473,11 @@ export default function ProfileView({
               )}
               <p className="mt-4 text-[10px] font-black uppercase text-primary">{app.category}</p>
               <h4 className="flex min-w-0 max-w-full flex-wrap items-center gap-2 text-lg font-black *:min-w-0">
-                <span className="min-w-0 max-w-full wrap-anywhere">{app.title}</span>
+                <span className="min-w-0 max-w-full wrap-anywhere">
+                  <Button variant="text" onClick={() => onOpenApp(app.id)}>
+                    {app.title}
+                  </Button>
+                </span>
                 {projectTrophies.get(app.id) !== undefined && (
                   <TrophyMark minimal place={projectTrophies.get(app.id) as 1 | 2 | 3} size={20} />
                 )}
@@ -490,7 +493,13 @@ export default function ProfileView({
               <div aria-hidden="true" className="flex-1" />
               <p className="min-w-0 mt-3 flex flex-wrap items-center gap-4 text-sm font-black max-w-full">
                 <span className="min-w-0 flex items-center gap-1 *:min-w-0 max-w-full">
-                  <Heart size={18} weight="duotone" /> {app.votes}
+                  <Heart size={18} weight="duotone" />
+                  <VotersDialog
+                    appId={app.id}
+                    appTitle={app.title}
+                    totalVotes={app.votes}
+                    onOpenProfile={onOpenProfile}
+                  />
                 </span>
                 <span className="min-w-0 flex items-center gap-1 *:min-w-0 max-w-full">
                   <ChatCircleDots size={18} weight="duotone" /> {app.comments}
@@ -499,7 +508,7 @@ export default function ProfileView({
               <div className="mt-1">
                 <UploadStamp createdAt={app.createdAt} />
               </div>
-            </Button>
+            </article>
           ))}
         </div>
       ) : (

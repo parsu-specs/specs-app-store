@@ -15,7 +15,7 @@ const { ROUTES } = await import("./routes");
 
 const signup = vi.hoisted(() => vi.fn());
 const lookup = vi.hoisted(() => vi.fn());
-vi.mock("../auth/AuthProvider", () => ({
+vi.mock("../auth/authContext", () => ({
   useAuth: () => ({
     signin: vi.fn(),
     signup,
@@ -55,9 +55,7 @@ function renderLogin() {
   };
   act(() => root.render(createElement(Login)));
   // Switch to the "Create account" tab.
-  const tabs = Array.from(
-    container.querySelectorAll('button[role="tab"]'),
-  ) as HTMLElement[];
+  const tabs = Array.from(container.querySelectorAll('button[role="tab"]')) as HTMLElement[];
   act(() => {
     tabs.find((b) => b.textContent === "Create account")!.click();
   });

@@ -1,6 +1,6 @@
 import { ButtonLink } from "./Button";
 import Brand from "./Brand";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "../auth/authContext";
 import { APP_INFO, CONTACT_EMAIL } from "../data/team";
 import { ROUTES, isProtectedRoute, navigateInternalLink } from "../pages/routes";
 

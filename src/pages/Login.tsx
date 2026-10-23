@@ -2,7 +2,7 @@ import { userFacingError } from "../utils/userFacingError";
 import React, { useEffect, useState } from "react";
 import { GoogleOAuthProvider, useGoogleLogin, type TokenResponse } from "@react-oauth/google";
 import { ArrowLeft, ArrowRight, Eye, EyeSlash, LockKey, Sparkle } from "@phosphor-icons/react";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "../auth/authContext";
 import Brand from "../components/Brand";
 import { ButtonLink, Button } from "../components/Button";
 import Input from "../components/Input";

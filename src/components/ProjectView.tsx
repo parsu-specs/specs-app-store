@@ -276,7 +276,7 @@ export default function ProjectView({
             .getVoteTimeoutSeconds()
             .catch(() => 0);
           const left = Math.max(secs, Math.ceil((votePausedUntil.current - Date.now()) / 1000));
-          flashVoteNotice(`Voting is paused — ${formatCountdown(left)} left.`);
+          flashVoteNotice(`Liking is paused — ${formatCountdown(left)} left.`);
           return;
         }
         setApp((prev) => (prev ? optimistic.apply(prev) : prev));
@@ -289,21 +289,21 @@ export default function ProjectView({
           const secs = updated.pausedSeconds ?? 0;
           votePausedUntil.current = Date.now() + (secs > 0 ? secs * 1000 : 5 * 60_000);
           flashVoteNotice(
-            `Spamming detected — voting is paused for ${formatCountdown(secs > 0 ? secs : 300)}.`,
+            `Spamming detected — liking is paused for ${formatCountdown(secs > 0 ? secs : 300)}.`,
           );
         } else {
           playVoteSound();
         }
       } catch (e) {
         setApp((prev) => (prev ? optimistic.revert(prev) : prev));
-        const message = e instanceof Error ? e.message : "Could not vote. Try again.";
+        const message = e instanceof Error ? e.message : "Could not like. Try again.";
         if (/paus|slow down/i.test(message)) {
           const secs = await getAppRepo()
             .getVoteTimeoutSeconds()
             .catch(() => 0);
           const windowMs = secs > 0 ? secs * 1000 : 5 * 60_000;
           votePausedUntil.current = Date.now() + windowMs;
-          flashVoteNotice(secs > 0 ? `Voting is paused — ${formatCountdown(secs)} left.` : message);
+          flashVoteNotice(secs > 0 ? `Liking is paused — ${formatCountdown(secs)} left.` : message);
         } else {
           flashVoteNotice(message);
         }
@@ -591,10 +591,11 @@ export default function ProjectView({
               variant="vote"
               onClick={() => void vote()}
               aria-pressed={Boolean(app.viewerHasVoted)}
+              aria-label={app.viewerHasVoted ? "Unlike project" : "Like project"}
               disabled={!currentUser}
             >
               <Heart size={20} weight={app.viewerHasVoted ? "fill" : "duotone"} />
-              {app.votes} upvotes
+              {app.votes} {app.votes === 1 ? "like" : "likes"}
             </Button>
             <span className="min-w-0 flex items-center gap-1 text-sm font-black *:min-w-0 max-w-full">
               <ChatCircleDots size={20} weight="duotone" />

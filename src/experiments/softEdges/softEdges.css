@@ -1,0 +1,12 @@
+/* Keep layout widths and foreground text unchanged; soften decorative tokens. */
+:root[data-soft-edges="enabled"] {
+  --color-outline: color-mix(in srgb, var(--color-foreground) 40%, transparent);
+  --color-divider: color-mix(in srgb, var(--color-foreground) 22%, transparent);
+  --color-divider-strong: color-mix(in srgb, var(--color-foreground) 32%, transparent);
+  --color-ink-shadow: color-mix(in srgb, var(--color-foreground) 12%, transparent);
+}
+
+/* Replace the hard offset shadows while retaining Tailwind's focus ring layers. */
+:root[data-soft-edges="enabled"] :is(.toon-card, [class*="shadow-["]) {
+  --tw-shadow: 0 4px 14px -4px var(--color-ink-shadow) !important;
+}

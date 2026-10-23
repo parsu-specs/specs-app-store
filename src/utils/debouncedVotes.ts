@@ -60,7 +60,7 @@ export function createDebouncedVotes() {
       const app = await entry.save(desired);
       if (entries.get(key) !== entry) return;
       if (Boolean(app.viewerHasVoted) !== desired) {
-        throw new Error("Could not save vote. Try again.");
+        throw new Error("Could not save like. Try again.");
       }
       entry.app = app;
       emit(entry, { saved: true });
@@ -68,7 +68,7 @@ export function createDebouncedVotes() {
       if (entries.get(key) !== entry) return;
       // Roll back this failed intent immediately; preserve clicks made during the request.
       if (entry.version === version) entry.desired = Boolean(entry.app.viewerHasVoted);
-      emit(entry, { error: error instanceof Error ? error.message : "Could not vote. Try again." });
+      emit(entry, { error: error instanceof Error ? error.message : "Could not like. Try again." });
     } finally {
       entry.running = false;
       if (entries.get(key) === entry) {

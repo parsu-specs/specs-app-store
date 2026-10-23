@@ -1,0 +1,44 @@
+/* Glass belongs to foreground surfaces; leave the page canvas unchanged. */
+@supports ((backdrop-filter: blur(6px)) or (-webkit-backdrop-filter: blur(6px))) {
+  :root[data-glass-theme="enabled"] :is(.toon-card, header.fixed, aside.fixed) {
+    --glass-tint: var(--color-panel);
+    background-color: color-mix(in srgb, var(--glass-tint) 32%, transparent);
+    -webkit-backdrop-filter: blur(6px) saturate(125%);
+    backdrop-filter: blur(6px) saturate(125%);
+  }
+
+  /* Retain brand tint behind the navigation's contrasting text. */
+  :root[data-glass-theme="enabled"] :is(header.fixed, aside.fixed) {
+    --glass-tint: var(--color-brand-surface);
+    background-color: color-mix(in srgb, var(--glass-tint) 52%, transparent);
+  }
+
+  @media (min-width: 64rem) {
+    :root[data-glass-theme="enabled"] header.fixed[class~="lg:bg-panel"] {
+      --glass-tint: var(--color-panel);
+      background-color: color-mix(in srgb, var(--glass-tint) 32%, transparent);
+    }
+  }
+
+  /* Let the modal's glass show through its internal surface sections. */
+  :root[data-glass-theme="enabled"]
+    [aria-modal="true"]
+    .bg-surface:not(.toon-card, input, textarea, select, button) {
+    background-color: color-mix(in srgb, var(--color-surface) 18%, transparent);
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    :root[data-glass-theme="enabled"] :is(.toon-card, header.fixed, aside.fixed) {
+      background-color: var(--glass-tint);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+
+    :root[data-glass-theme="enabled"]
+      [aria-modal="true"]
+      .bg-surface:not(.toon-card, input, textarea, select, button) {
+      background-color: var(--color-surface);
+    }
+  }
+}
+

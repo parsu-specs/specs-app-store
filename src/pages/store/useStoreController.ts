@@ -5,7 +5,7 @@ import {
 } from "../../utils/debouncedVotes";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GameController, GraduationCap, Palette, SquaresFour, Wrench } from "@phosphor-icons/react";
-import { useAuth } from "../../auth/AuthProvider";
+import { useAuth } from "../../auth/authContext";
 import {
   NOTIF_SCAN_APP_LIMIT,
   arrivalKeyOf,
@@ -208,7 +208,7 @@ export default function useStoreController() {
     [fullApps],
   );
 
-  // Rank points: sum of upvotes across every project a developer shared.
+  // Rank points: sum of likes across every project a developer shared.
   const rankedDevelopers = useMemo(() => rankDevelopers(profiles, fullApps), [profiles, fullApps]);
 
   const devQueryLower = devQuery.trim().toLowerCase();
@@ -1136,7 +1136,7 @@ export default function useStoreController() {
   const [votePending, setVotePending] = useState<Set<string>>(new Set());
   const [voteNotice, setVoteNotice] = useState<string | null>(null);
   const voteNoticeTimer = useRef<number | null>(null);
-  // Epoch-ms until which voting is paused (set when the server says so).
+  // Epoch-ms until which liking is paused (set when the server says so).
   // Clicks inside the window ask the server for the live remainder instead
   // of firing toggles that would only bounce.
   const votePausedUntil = useRef(0);
@@ -1194,7 +1194,7 @@ export default function useStoreController() {
             .getVoteTimeoutSeconds()
             .catch(() => 0);
           const left = Math.max(secs, Math.ceil((votePausedUntil.current - Date.now()) / 1000));
-          flashVoteNotice(`Voting is paused — ${formatCountdown(left)} left.`);
+          flashVoteNotice(`Liking is paused — ${formatCountdown(left)} left.`);
           return;
         }
         setApps((items) => items.map(optimistic.apply));
@@ -1210,7 +1210,7 @@ export default function useStoreController() {
           const secs = updated.pausedSeconds ?? 0;
           votePausedUntil.current = Date.now() + (secs > 0 ? secs * 1000 : 5 * 60_000);
           flashVoteNotice(
-            `Spamming detected — voting is paused for ${formatCountdown(secs > 0 ? secs : 300)}.`,
+            `Spamming detected — liking is paused for ${formatCountdown(secs > 0 ? secs : 300)}.`,
           );
         } else {
           playVoteSound();
@@ -1220,14 +1220,14 @@ export default function useStoreController() {
         setFullApps((items) => items.map(optimistic.revert));
         // Rate-limit pauses land here too — say why the vote bounced, and
         // remember the pause so further clicks report time left, not toggles.
-        const message = e instanceof Error ? e.message : "Could not vote. Try again.";
+        const message = e instanceof Error ? e.message : "Could not like. Try again.";
         if (/paus|slow down/i.test(message)) {
           const secs = await getAppRepo()
             .getVoteTimeoutSeconds()
             .catch(() => 0);
           const windowMs = secs > 0 ? secs * 1000 : 5 * 60_000;
           votePausedUntil.current = Date.now() + windowMs;
-          flashVoteNotice(secs > 0 ? `Voting is paused — ${formatCountdown(secs)} left.` : message);
+          flashVoteNotice(secs > 0 ? `Liking is paused — ${formatCountdown(secs)} left.` : message);
         } else {
           flashVoteNotice(message);
         }

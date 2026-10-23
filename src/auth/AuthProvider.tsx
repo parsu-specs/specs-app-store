@@ -1,4 +1,5 @@
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { authContext } from "./authContext";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { getAuthRepo, getProfileRepo } from "../data/factory";
 import type { GoogleAccount } from "../data/repositories";
 import type { Profile, User } from "../data/types";
@@ -6,37 +7,28 @@ import { cacheProfile, loadCachedProfile, setActiveViewer } from "../utils/viewe
 import { initializePalette, resolvePalette, setPalette } from "../utils/palette";
 import { debouncedFeedVotes, debouncedVotes } from "../utils/debouncedVotes";
 
-type AuthContext = {
-  user: User | null;
-  loading: boolean;
-  profile: Profile | null;
-  refreshProfile: () => Promise<void>;
-  updateCachedProfile: (profile: Profile) => void;
-  signin: (email: string, password: string, captchaToken?: string) => Promise<boolean>;
-  signup: (
-    name: string,
-    email: string,
-    password: string,
-    captchaToken?: string,
-  ) => Promise<string | null>;
-  signinWithGoogleAccount: (
-    account: GoogleAccount,
-  ) => Promise<{ ok: boolean; user?: User; picture?: string; error?: string }>;
-  signout: () => Promise<void>;
-  updateName: (name: string) => Promise<void>;
-};
-
-const ctx = createContext<AuthContext | undefined>(undefined);
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
   const userRef = useRef<User | null>(null);
+  const sessionRevision = useRef(0);
   const profileRevision = useRef(0);
   const profileRequest = useRef<{ user: User; promise: Promise<void> } | null>(null);
 
   const changeSession = useCallback((session: User | null) => {
+    sessionRevision.current++;
+    const previous = userRef.current;
+    if (
+      previous &&
+      session &&
+      previous.id === session.id &&
+      previous.email === session.email &&
+      previous.name === session.name
+    ) {
+      // Token refreshes must not reset cached presentation or pending edits.
+      return;
+    }
     const previousId = userRef.current?.id;
     if (previousId && previousId !== session?.id) {
       debouncedVotes.cancelUser(previousId);
@@ -90,19 +82,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Restore session via repo so a future HTTP backend needs no UI change.
   useEffect(() => {
     let cancelled = false;
-    getAuthRepo()
+    const revision = sessionRevision.current;
+    const repo = getAuthRepo();
+    const unsubscribe = repo.subscribeSession?.((session) => {
+      if (cancelled) return;
+      changeSession(session);
+      setLoading(false);
+    });
+    repo
       .getSession()
       .then((session) => {
-        if (!cancelled) changeSession(session);
+        if (!cancelled && sessionRevision.current === revision) changeSession(session);
       })
       .catch(() => {
-        if (!cancelled) changeSession(null);
+        if (!cancelled && sessionRevision.current === revision) changeSession(null);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
+      unsubscribe?.();
     };
   }, [changeSession]);
 
@@ -162,7 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <ctx.Provider
+    <authContext.Provider
       value={{
         user,
         loading,
@@ -177,12 +177,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }}
     >
       {children}
-    </ctx.Provider>
+    </authContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const v = useContext(ctx);
-  if (!v) throw new Error("useAuth must be used within AuthProvider");
-  return v;
 };
