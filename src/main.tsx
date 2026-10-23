@@ -7,12 +7,14 @@ import "@fontsource/nunito/latin-900.css";
 import App from "./App";
 import "./styles/style.css";
 import { initializeAppearance } from "./utils/appearance";
+import { initializeFavicon } from "./utils/favicon";
 import { initializePinchZoom } from "./utils/pinchZoom";
 import { initializePalette } from "./utils/palette";
 import { viewerSettingKey } from "./utils/viewerCache";
 
 initializePalette();
 initializeAppearance();
+initializeFavicon();
 initializePinchZoom();
 window.addEventListener("storage", (event) => {
   if (event.key === viewerSettingKey("cc.palette.v1") || event.key === null) initializePalette();
