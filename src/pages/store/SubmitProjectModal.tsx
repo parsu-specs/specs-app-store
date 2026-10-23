@@ -1,3 +1,4 @@
+import { userFacingError } from "../../utils/userFacingError";
 import {
   ArrowRight,
   BookOpenText,
@@ -238,7 +239,7 @@ export default function SubmitProjectModal({
           </ButtonLabel>
           {imgError && (
             <p role="alert" className="mt-2 text-sm font-bold">
-              {imgError}
+              {userFacingError(imgError)}
             </p>
           )}
           {screenshots.length > 0 && (
@@ -368,7 +369,7 @@ export default function SubmitProjectModal({
                   </Button>
                   {repositoryFilesError && (
                     <p role="alert" className="mt-3 text-sm font-bold text-foreground">
-                      {repositoryFilesError}
+                      {userFacingError(repositoryFilesError)}
                     </p>
                   )}
                   {repositoryFiles.length > 0 && (
@@ -474,7 +475,7 @@ export default function SubmitProjectModal({
             role="alert"
             className="@min-[36rem]/content:col-span-2 text-sm font-bold text-foreground"
           >
-            {submitError}
+            {userFacingError(submitError)}
           </p>
         )}
         <Button

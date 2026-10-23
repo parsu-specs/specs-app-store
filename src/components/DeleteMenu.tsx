@@ -1,3 +1,4 @@
+import { userFacingError } from "../utils/userFacingError";
 import { useId, useState } from "react";
 import { DotsThreeVertical, Trash } from "@phosphor-icons/react";
 import { Button } from "./Button";
@@ -70,7 +71,7 @@ export default function DeleteMenu({
           role="alert"
           className="border-t-2 border-dashed border-divider/60 px-3 py-2 text-xs font-bold"
         >
-          {error}
+          {userFacingError(error)}
         </p>
       )}
     </Popover>

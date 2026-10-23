@@ -1,6 +1,6 @@
+import { CloseButton } from "./CloseButton";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { X } from "@phosphor-icons/react";
 import { Button } from "./Button";
 
 type ModalProps = {
@@ -126,16 +126,11 @@ export default function Modal({
               </p>
             )}
           </div>
-          <Button
-            variant="icon"
-            size="small"
+          <CloseButton
             onClick={() => (confirmingClose ? setConfirmingClose(false) : requestClose())}
             disabled={closeDisabled}
             aria-label={confirmingClose ? "Keep editing" : `Close ${title.toLowerCase()}`}
-            className="min-h-11 min-w-11 shrink-0"
-          >
-            <X size={20} weight="bold" />
-          </Button>
+          />
         </div>
         <div className="scrollbar-minimal @container/content min-h-0 min-w-0 overflow-y-auto overscroll-contain p-4 sm:p-6">
           <div hidden={confirmingClose}>{children}</div>

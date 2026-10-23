@@ -1,7 +1,9 @@
+import { userFacingError } from "../utils/userFacingError";
+import { CloseButton } from "./CloseButton";
 import { Button } from "./Button";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Heart, X } from "@phosphor-icons/react";
+import { Heart } from "@phosphor-icons/react";
 import Avatar from "./Avatar";
 import { getAppRepo } from "../data/factory";
 import type { Profile } from "../data/types";
@@ -108,17 +110,12 @@ export default function VotersDialog({
                     Upvoted by{voters !== null && ` (${voters.length})`}
                   </span>
                 </h4>
-                <Button
-                  variant="icon"
-                  size="small"
+                <CloseButton
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label="Close voters"
                   autoFocus
-                  className=""
-                >
-                  <X size={16} weight="bold" />
-                </Button>
+                />
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
                 {loading ? (
@@ -126,7 +123,7 @@ export default function VotersDialog({
                 ) : error ? (
                   <div className="text-center">
                     <p role="alert" className="text-sm font-bold">
-                      {error}
+                      {userFacingError(error)}
                     </p>
                     <Button
                       variant="text"

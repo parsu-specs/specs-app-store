@@ -1,3 +1,4 @@
+import { userFacingError } from "../utils/userFacingError";
 import React, { useEffect, useState } from "react";
 import { GoogleOAuthProvider, useGoogleLogin, type TokenResponse } from "@react-oauth/google";
 import { ArrowLeft, ArrowRight, Eye, EyeSlash, LockKey, Sparkle } from "@phosphor-icons/react";
@@ -401,7 +402,7 @@ export default function Login() {
                 />
                 {captchaError && (
                   <p role="alert" className="mt-2 text-center text-sm font-bold">
-                    {captchaError}
+                    {userFacingError(captchaError)}
                   </p>
                 )}
               </div>
@@ -411,15 +412,14 @@ export default function Login() {
                 role="alert"
                 className="rounded-xl border-[3px] border-outline bg-accent/50 px-4 py-3 text-sm font-bold"
               >
-                {error}
+                {userFacingError(error)}
               </p>
             )}
             <Button
               type="submit"
               fullWidth
               disabled={
-                busy ||
-                (mode === "signup" && (nameStatus === "taken" || nameStatus === "checking"))
+                busy || (mode === "signup" && (nameStatus === "taken" || nameStatus === "checking"))
               }
             >
               {busy ? "Please wait…" : mode === "signup" ? "Create account" : "Continue"}{" "}
@@ -444,7 +444,7 @@ export default function Login() {
                     role="alert"
                     className="w-full rounded-xl border-[3px] border-outline bg-accent/50 px-4 py-3 text-sm font-bold"
                   >
-                    {googleError}
+                    {userFacingError(googleError)}
                   </p>
                 )}
               </div>
@@ -462,7 +462,7 @@ export default function Login() {
                     role="alert"
                     className="w-full rounded-xl border-[3px] border-outline bg-accent/50 px-4 py-3 text-sm font-bold"
                   >
-                    {googleError}
+                    {userFacingError(googleError)}
                   </p>
                 )}
               </div>
@@ -523,7 +523,7 @@ export default function Login() {
                       role="alert"
                       className="rounded-xl border-[3px] border-outline bg-accent/50 px-4 py-3 text-sm font-bold"
                     >
-                      {resetError}
+                      {userFacingError(resetError)}
                     </p>
                   )}
                   <Button type="submit" fullWidth disabled={resetBusy}>
@@ -571,7 +571,7 @@ export default function Login() {
                       role="alert"
                       className="rounded-xl border-[3px] border-outline bg-accent/50 px-4 py-3 text-sm font-bold"
                     >
-                      {resetError}
+                      {userFacingError(resetError)}
                     </p>
                   )}
                   <div className="min-w-0 flex flex-wrap gap-3 *:min-w-0 max-w-full">

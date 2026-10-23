@@ -1,3 +1,4 @@
+import { userFacingError } from "../../utils/userFacingError";
 import { LockKey, MagnifyingGlass } from "@phosphor-icons/react";
 import ProjectSubmissionPrompt from "./ProjectSubmissionPrompt";
 import AppCard from "../../components/AppCard";
@@ -138,7 +139,7 @@ export default function DiscoverPage(props: Props) {
         ) : appsError ? (
           <div className="toon-card toon-paper bg-panel rounded-2xl p-10 text-center">
             <h3 className="mt-3 text-xl font-black">Could not load projects</h3>
-            <p className="font-bold text-muted">{appsError}</p>
+            <p className="font-bold text-muted">{userFacingError(appsError)}</p>
             <Button variant="secondary" onClick={() => void loadApps()} className="mt-5">
               Retry
             </Button>

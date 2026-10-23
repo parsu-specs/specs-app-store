@@ -1,3 +1,4 @@
+import { CloseButton } from "./CloseButton";
 import { useId } from "react";
 import {
   ArrowRight,
@@ -8,7 +9,6 @@ import {
   Sparkle,
   ThumbsUp,
   UsersThree,
-  X,
 } from "@phosphor-icons/react";
 import UploadStamp from "./UploadStamp";
 import { arrivalKeyOf } from "../utils/notifications";
@@ -129,15 +129,11 @@ export default function NotificationBell({
             {unread > 0 ? `${unread} unread updates` : "You're all caught up"}
           </p>
         </div>
-        <Button
-          variant="icon"
+        <CloseButton
           type="button"
           onClick={() => onOpenChange(false)}
           aria-label="Close notifications"
-          className="h-10 w-10 shrink-0"
-        >
-          <X size={18} weight="bold" />
-        </Button>
+        />
       </div>
       {items.length > 0 && (
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-y-2 border-dashed border-divider/60 px-3 py-2">

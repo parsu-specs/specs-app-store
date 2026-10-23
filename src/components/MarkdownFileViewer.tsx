@@ -1,6 +1,8 @@
+import { userFacingError } from "../utils/userFacingError";
+import { CloseButton } from "./CloseButton";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { BookOpenText, FileText, UploadSimple, X } from "@phosphor-icons/react";
+import { BookOpenText, FileText, UploadSimple } from "@phosphor-icons/react";
 import { Button, ButtonLabel } from "./Button";
 import Markdown from "./Markdown";
 import { FileInput } from "./Input";
@@ -95,17 +97,12 @@ export default function MarkdownFileViewer({
                     )}
                   </div>
                 </div>
-                <Button
-                  variant="icon"
-                  size="default"
+                <CloseButton
                   ref={closeButtonRef}
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label="Close Markdown file viewer"
-                  className=""
-                >
-                  <X size={18} weight="bold" />
-                </Button>
+                />
               </header>
 
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-7">
@@ -138,7 +135,7 @@ export default function MarkdownFileViewer({
                     role="alert"
                     className="mb-4 rounded-xl border-2 border-outline bg-accent/30 p-3 font-bold"
                   >
-                    {error}
+                    {userFacingError(error)}
                   </p>
                 )}
 

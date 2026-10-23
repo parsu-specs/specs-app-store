@@ -1,3 +1,4 @@
+import { userFacingError } from "../utils/userFacingError";
 import ErrorNotice from "./ErrorNotice";
 import { debouncedVotes, VOTE_RATE_LIMIT_ENABLED } from "../utils/debouncedVotes";
 import React, { useEffect, useRef, useState } from "react";
@@ -488,7 +489,9 @@ export default function ProjectView({
     return (
       <div className="toon-card toon-paper bg-panel rounded-2xl p-10 text-center">
         <h3 className="text-xl font-black">Project not found</h3>
-        <p className="font-bold text-muted">{error ?? "This project does not exist."}</p>
+        <p className="font-bold text-muted">
+          {error ? userFacingError(error) : "This project does not exist."}
+        </p>
         <Button variant="secondary" className="mt-5" onClick={onBack}>
           <ArrowLeft size={18} weight="bold" /> Back
         </Button>
@@ -766,7 +769,7 @@ export default function ProjectView({
             </ButtonLabel>
             {eImgError && (
               <p role="alert" className="mt-2 text-sm font-bold">
-                {eImgError}
+                {userFacingError(eImgError)}
               </p>
             )}
             {eShots.length > 0 && (
@@ -898,7 +901,7 @@ export default function ProjectView({
                     </Button>
                     {eRepositoryFilesError && (
                       <p role="alert" className="mt-3 text-sm font-bold text-foreground">
-                        {eRepositoryFilesError}
+                        {userFacingError(eRepositoryFilesError)}
                       </p>
                     )}
                     {eRepositoryFiles.length > 0 && (
@@ -975,7 +978,7 @@ export default function ProjectView({
           </div>
           {eError && (
             <p role="alert" className="text-sm font-bold @min-[36rem]/content:col-span-2">
-              {eError}
+              {userFacingError(eError)}
             </p>
           )}
           <div className="min-w-0 flex flex-wrap gap-3 @min-[36rem]/content:col-span-2 *:min-w-0 max-w-full">
@@ -1114,7 +1117,7 @@ export default function ProjectView({
             <BookOpen size={22} weight="duotone" />
             <h3 className="text-2xl font-black">Repository README unavailable</h3>
           </div>
-          <p className="font-bold text-muted">{readmeError}</p>
+          <p className="font-bold text-muted">{userFacingError(readmeError)}</p>
         </section>
       ) : app.url && isGitHubRepositoryUrl(app.url) ? (
         <section className="toon-card toon-paper bg-panel mt-8 rounded-2xl p-6 pt-10 sm:p-8 sm:pt-12">

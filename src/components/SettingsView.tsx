@@ -1,3 +1,4 @@
+import { userFacingError } from "../utils/userFacingError";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowCounterClockwise, Eye, EyeSlash, LockKey, Palette } from "@phosphor-icons/react";
 import { Button } from "./Button";
@@ -95,7 +96,7 @@ function UserInfoForm({ profile, onChanged }: { profile: Profile; onChanged: () 
       </fieldset>
       {error && (
         <p role="alert" className="text-sm font-bold">
-          {error}
+          {userFacingError(error)}
         </p>
       )}
       {saved && (
@@ -172,7 +173,7 @@ function PasswordForm({ mode, onSaved }: { mode: "add" | "change"; onSaved: () =
       </label>
       {error && (
         <p role="alert" className="text-sm font-bold">
-          {error}
+          {userFacingError(error)}
         </p>
       )}
       {done && (
@@ -294,7 +295,7 @@ export default function SettingsView({
         </p>
         {paletteError && (
           <p role="alert" className="mt-2 text-sm font-bold">
-            {paletteError}
+            {userFacingError(paletteError)}
           </p>
         )}
         <div

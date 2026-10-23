@@ -1,6 +1,7 @@
+import { CloseButton } from "./CloseButton";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { CaretDown, Check, X } from "@phosphor-icons/react";
+import { CaretDown, Check } from "@phosphor-icons/react";
 import { Button } from "./Button";
 import { Checkbox, getInputClassName } from "./Input";
 
@@ -162,15 +163,10 @@ export default function Dropdown(props: DropdownProps) {
           {centered && (
             <div className="flex shrink-0 items-center justify-between gap-3 border-b-2 border-outline p-3">
               <h3 className="min-w-0 text-sm font-black">{label}</h3>
-              <Button
-                variant="icon"
-                size="small"
+              <CloseButton
                 aria-label={variant === "checkbox" ? "Done selecting" : "Close selection"}
                 onClick={() => close(true)}
-                className="min-h-11 min-w-11"
-              >
-                <X size={18} weight="bold" aria-hidden="true" />
-              </Button>
+              />
             </div>
           )}
           <ul

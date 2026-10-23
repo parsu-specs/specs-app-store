@@ -1,9 +1,10 @@
-﻿import { useEffect, useState } from "react";
+import { userFacingError } from "../../utils/userFacingError";
+import { CloseButton } from "../../components/CloseButton";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   ChatCircleDots,
   Heart,
-  X,
   LinkSimple,
   MagnifyingGlass,
   Newspaper,
@@ -184,7 +185,7 @@ export default function FeedsPage({
             </div>
             {feedPostError && (
               <p role="alert" className="mt-3 text-sm font-bold">
-                {feedPostError}
+                {userFacingError(feedPostError)}
               </p>
             )}
           </form>
@@ -210,7 +211,7 @@ export default function FeedsPage({
           ) : feedPostsError ? (
             <div className="toon-card bg-surface mt-4 rounded-2xl p-8 text-center">
               <h3 className="text-xl font-black">Could not load the feed</h3>
-              <p className="font-bold text-muted">{feedPostsError}</p>
+              <p className="font-bold text-muted">{userFacingError(feedPostsError)}</p>
               <Button variant="secondary" onClick={() => void loadFeedPosts()} className="mt-5">
                 Retry
               </Button>
@@ -349,16 +350,12 @@ export default function FeedsPage({
                   Feedback ({commentCounts[`ms:${activeThread.id}`] ?? 0}) &middot; Update by{" "}
                   {activeAuthorName}
                 </h4>
-                <Button
-                  variant="icon"
-                  size="small"
+                <CloseButton
                   type="button"
                   onClick={() => toggleThread(activeThread.id)}
                   aria-label="Close comments"
                   autoFocus
-                >
-                  <X size={16} weight="bold" />
-                </Button>
+                />
               </div>
               <div className="flex min-h-0 flex-1 flex-col">
                 <Comments

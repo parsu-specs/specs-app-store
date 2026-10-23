@@ -1,3 +1,4 @@
+import { userFacingError } from "../utils/userFacingError";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -176,7 +177,9 @@ export default function ProfileView({
     return (
       <div className="toon-card toon-paper bg-panel rounded-2xl p-10 text-center">
         <h3 className="text-xl font-black">Developer not found</h3>
-        <p className="font-bold text-muted">{error ?? "This profile does not exist."}</p>
+        <p className="font-bold text-muted">
+          {error ? userFacingError(error) : "This profile does not exist."}
+        </p>
         <Button variant="secondary" className="mt-5" onClick={onBack}>
           <ArrowLeft size={18} weight="bold" /> Back
         </Button>
@@ -400,7 +403,7 @@ export default function ProfileView({
             </div>
             {saveError && (
               <p role="alert" className="text-sm font-bold @min-[36rem]/content:col-span-2">
-                {saveError}
+                {userFacingError(saveError)}
               </p>
             )}
             <Button
@@ -434,7 +437,7 @@ export default function ProfileView({
         </p>
       ) : error ? (
         <p role="alert" className="font-bold text-muted">
-          {error}
+          {userFacingError(error)}
         </p>
       ) : apps.length ? (
         <div className="min-w-0 grid *:min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-6 max-w-full">
@@ -519,7 +522,7 @@ export default function ProfileView({
           </p>
           {isSelf && (
             <Button className="mt-5" onClick={onSubmitProject}>
-              <Plus size={18} weight="bold" /> Submit your first project
+              <Plus size={18} weight="bold" /> Submit project
             </Button>
           )}
         </div>

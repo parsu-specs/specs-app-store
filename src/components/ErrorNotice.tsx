@@ -1,7 +1,7 @@
+import { userFacingError } from "../utils/userFacingError";
+import { CloseButton } from "./CloseButton";
 import { useRef } from "react";
 import { createPortal } from "react-dom";
-import { X } from "@phosphor-icons/react";
-import { Button } from "./Button";
 
 export default function ErrorNotice({
   message,
@@ -34,17 +34,8 @@ export default function ErrorNotice({
           touchStart.current = null;
         }}
       >
-        <p className="min-w-0 flex-1">{message}</p>
-        <Button
-          type="button"
-          variant="icon"
-          size="compact-icon"
-          className="hidden lg:inline-flex"
-          aria-label="Dismiss notification"
-          onClick={onDismiss}
-        >
-          <X size={18} weight="bold" />
-        </Button>
+        <p className="min-w-0 flex-1">{userFacingError(message)}</p>
+        <CloseButton type="button" aria-label="Dismiss notification" onClick={onDismiss} />
       </div>
     </div>,
     document.body,

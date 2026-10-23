@@ -122,7 +122,6 @@ export default function Store() {
       <aside className="fixed inset-x-0 top-0 z-40 h-21.25 border-b-[3px] border-outline bg-brand-surface px-3 py-5 text-brand-foreground sm:px-5 lg:inset-y-0 lg:left-0 lg:right-auto lg:flex lg:h-screen lg:w-70 lg:flex-col lg:overflow-y-auto lg:border-b-0 lg:border-r-[3px] lg:p-7">
         <div className="hidden min-w-0 items-center justify-between *:min-w-0 max-w-full lg:flex">
           <Brand light text className="text-2xl!" />
-          <AppearanceControl compact />
         </div>
         <nav
           className="min-w-0 fixed inset-x-0 bottom-0 z-50 grid *:min-w-0 h-[calc(4.5rem+env(safe-area-inset-bottom,0px))] grid-cols-3 gap-1 border-t-2 border-outline bg-brand-surface p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] sm:gap-2 lg:static lg:mt-12 lg:flex lg:h-auto lg:flex-col lg:gap-2 lg:border-0 lg:bg-transparent lg:p-0 lg:pr-1 max-w-full"
@@ -359,7 +358,7 @@ export default function Store() {
           </nav>
           <div className="relative min-w-0 max-w-full shrink-0 lg:max-w-[45%]">
             <div className="relative flex min-w-0 max-w-full items-center gap-2 *:min-w-0">
-              <div className="shrink-0 lg:hidden">
+              <div className="shrink-0">
                 <AppearanceControl compact />
               </div>
               {user && (
@@ -532,14 +531,10 @@ export default function Store() {
                     aria-expanded={store.showForm}
                     aria-controls="submit-project"
                     ref={submitButtonRef}
-                    aria-label={
-                      store.hasSubmittedProject ? "Submit project" : "Submit first project"
-                    }
+                    aria-label="Submit project"
                   >
                     <Plus size={18} weight="bold" aria-hidden="true" />
-                    <span className="hidden lg:inline">
-                      {store.hasSubmittedProject ? "Submit project" : "Submit first project"}
-                    </span>
+                    <span className="hidden lg:inline">Submit project</span>
                   </Button>
                 )}
               </div>

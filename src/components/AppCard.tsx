@@ -1,3 +1,4 @@
+import { CloseButton } from "./CloseButton";
 import React, { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -6,7 +7,6 @@ import {
   Heart,
   PencilSimple,
   User as UserIcon,
-  X,
 } from "@phosphor-icons/react";
 import Comments from "./Comments";
 import MentionText from "./MentionText";
@@ -251,17 +251,12 @@ export default function AppCard({
                   <h4 className="truncate text-lg font-black">
                     Feedback ({app.comments}) · {app.title}
                   </h4>
-                  <Button
-                    variant="icon"
-                    size="small"
+                  <CloseButton
                     type="button"
                     onClick={() => onToggle(app.id)}
                     aria-label="Close comments"
                     autoFocus
-                    className=""
-                  >
-                    <X size={16} weight="bold" />
-                  </Button>
+                  />
                 </div>
                 <div className="flex min-h-0 flex-1 flex-col">
                   <Comments

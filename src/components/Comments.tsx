@@ -1,3 +1,4 @@
+import { userFacingError } from "../utils/userFacingError";
 import React, { useEffect, useMemo, useState } from "react";
 import { ChatCircleDots, Heart, PaperPlaneTilt, User as UserIcon } from "@phosphor-icons/react";
 import Avatar from "./Avatar";
@@ -270,7 +271,7 @@ export default function Comments({
       )}
       {postError && (
         <p role="alert" className="mt-2 text-sm font-bold">
-          {postError}
+          {userFacingError(postError)}
         </p>
       )}
     </>
@@ -449,7 +450,7 @@ export default function Comments({
         )}
         {replyTo === c.id && replyError && (
           <p role="alert" className="mt-2 text-sm font-bold">
-            {replyError}
+            {userFacingError(replyError)}
           </p>
         )}
       </li>
@@ -475,7 +476,7 @@ export default function Comments({
           )}
           {error && (
             <p role="alert" className="mt-2 text-sm font-bold">
-              {error}
+              {userFacingError(error)}
             </p>
           )}
         </div>
